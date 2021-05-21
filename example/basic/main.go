@@ -2,9 +2,12 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rosberry/rauther"
 	"github.com/rosberry/rauther/example/basic/controllers"
+	"github.com/rosberry/rauther/example/basic/models"
 )
 
 func main() {
@@ -12,12 +15,21 @@ func main() {
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
 
-	r.GET("/profile", controllers.Profile)
+	sessioner := &models.Sessioner{
+		Sessions: make(map[string]*models.Session),
+	}
+
+	rauth := rauther.New(rauther.Deps{
+		R:             r,
+		SessionStorer: sessioner,
+	})
+
+	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
 	r.Run()
 }
