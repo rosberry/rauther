@@ -1,4 +1,11 @@
 package rauther
 
 // Definition of session interface
-// type Session interface{}
+// Session interface
+type Session interface {
+	GetID() (id string)
+	GetToken() (token string)
+
+	SetID(id string)
+	SetToken(token string)
+}
