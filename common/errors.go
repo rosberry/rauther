@@ -17,11 +17,13 @@ const (
 	ErrSessionSave
 	ErrNotAuth
 	ErrAuthFailed
+	ErrNotSessionID
 )
 
 var Errors = map[ErrTypes]Err{
-	ErrSessionLoad: {"failed_load_session", "Failed load session"},
-	ErrSessionSave: {"failed_save_session", "Failed save session"},
-	ErrNotAuth:     {"not_auth", "Auth token required"},
-	ErrAuthFailed:  {"auth_failed", "Invalid token"},
+	ErrSessionLoad:  {"failed_load_session", "Failed load session"},
+	ErrSessionSave:  {"failed_save_session", "Failed save session"},
+	ErrNotAuth:      {"not_auth", "Auth token required"},
+	ErrAuthFailed:   {"auth_failed", "Invalid token"},
+	ErrNotSessionID: {"not_session", "Session ID required"},
 }

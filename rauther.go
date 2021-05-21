@@ -34,6 +34,14 @@ func New(deps Deps) *Rauther {
 func (r *Rauther) authHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionID := c.Query(r.Config.SessionToken)
+		if sessionID == "" {
+			err := common.Errors[common.ErrNotSessionID]
+
+			log.Print(err)
+			errorResponse(c, http.StatusUnauthorized, err)
+
+			return
+		}
 
 		session := r.deps.SessionStorer.LoadByID(sessionID)
 		if session == nil {
