@@ -213,3 +213,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		})
 	}
 }
+
+func (r *Rauther) SignInHandler() gin.HandlerFunc {
+	return r.signInHandler()
+}
