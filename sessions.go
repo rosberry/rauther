@@ -5,7 +5,9 @@ package rauther
 type Session interface {
 	GetID() (id string)
 	GetToken() (token string)
+	GetUserPID() (pid string)
 
 	SetID(id string)
 	SetToken(token string)
+	SetUserPID(pid string)
 }

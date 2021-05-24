@@ -1,8 +1,10 @@
 package rauther_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -303,6 +305,146 @@ func TestAuthMiddleware(t *testing.T) {
 							So(resp.Session, ShouldNotBeEmpty)
 						})
 					})
+				})
+			})
+		})
+	})
+}
+
+func TestDefaultSignUpRouter(t *testing.T) {
+	Convey("We want have default /sign-up router", t, func() {
+		Convey("Given correctly created default instance of Rauther", func() {
+			sessioner := sessionStorer{
+				Sessions: map[string]*Session{
+					"auth1": {
+						SessionID: "auth1",
+						Token:     "auth1",
+					},
+				},
+			}
+			useoner := userStorer{
+				Users: make(map[string]*User),
+			}
+			r := gin.Default()
+
+			deps := rauther.Deps{
+				R:             r,
+				SessionStorer: &sessioner,
+				UserStorer:    &useoner,
+			}
+
+			_ = rauther.New(deps)
+
+			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
+
+			Convey("When we send request to /sign-up with some correct value", func() {
+				pid := "t1@email.com"
+				password := "123456"
+
+				requestBody := struct {
+					PID      string `json:"email"`
+					Password string `json:"password"`
+				}{
+					PID:      pid,
+					Password: password,
+				}
+
+				bt, err := json.Marshal(requestBody)
+				if err != nil {
+					log.Print(err)
+				}
+
+				request, _ := http.NewRequest(http.MethodPost, "/sign-up", bytes.NewBuffer(bt))
+				request.Header.Add("Authorization", "Bearer auth1")
+				request.Header.Add("Content-Type", "application/json")
+
+				rr := httptest.NewRecorder()
+				r.ServeHTTP(rr, request)
+				Convey("Then response should be correct", func() {
+					resp := struct {
+						Result bool
+						PID    string `json:"pid"`
+						Error  struct {
+							Code    string
+							Message string
+						}
+					}{}
+
+					json.Unmarshal(rr.Body.Bytes(), &resp)
+					log.Print(resp)
+
+					So(resp.Result, ShouldBeTrue)
+					So(resp.PID, ShouldEqual, pid)
+					So(resp.Error.Code, ShouldBeEmpty)
+					So(resp.Error.Message, ShouldBeEmpty)
+				})
+			})
+		})
+		Convey("Given correctly created instance of Rauther with AuthType=username", func() {
+			sessioner := sessionStorer{
+				Sessions: map[string]*Session{
+					"auth1": {
+						SessionID: "auth1",
+						Token:     "auth1",
+					},
+				},
+			}
+			useoner := userStorer{
+				Users: make(map[string]*User),
+			}
+			r := gin.Default()
+
+			deps := rauther.Deps{
+				R:             r,
+				SessionStorer: &sessioner,
+				UserStorer:    &useoner,
+			}
+
+			rauth := rauther.New(deps)
+			rauth.Config.AuthType = rauther.AuthByUsername
+
+			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
+
+			Convey("When we send request to /sign-up with some correct value", func() {
+				pid := "t1@email.com"
+				password := "123456"
+
+				requestBody := struct {
+					PID      string `json:"username"`
+					Password string `json:"password"`
+				}{
+					PID:      pid,
+					Password: password,
+				}
+
+				bt, err := json.Marshal(requestBody)
+				if err != nil {
+					log.Print(err)
+				}
+
+				request, _ := http.NewRequest(http.MethodPost, "/sign-up", bytes.NewBuffer(bt))
+				request.Header.Add("Authorization", "Bearer auth1")
+				request.Header.Add("Content-Type", "application/json")
+
+				rr := httptest.NewRecorder()
+				r.ServeHTTP(rr, request)
+				Convey("Then response should be correct", func() {
+					resp := struct {
+						Result bool
+						PID    string `json:"pid"`
+						Error  struct {
+							Code    string
+							Message string
+						}
+					}{}
+
+					json.Unmarshal(rr.Body.Bytes(), &resp)
+					log.Print(resp)
+
+					So(resp.Result, ShouldBeTrue)
+					So(resp.PID, ShouldEqual, pid)
+					So(resp.Error.Code, ShouldBeEmpty)
+					So(resp.Error.Message, ShouldBeEmpty)
 				})
 			})
 		})

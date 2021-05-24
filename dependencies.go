@@ -9,4 +9,7 @@ type Deps struct {
 
 	// SessionStorer for load/save sessions
 	SessionStorer SessionStorer
+
+	// UserStorer for load/save users
+	UserStorer UserStorer
 }
