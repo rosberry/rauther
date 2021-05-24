@@ -22,6 +22,8 @@ const (
 	ErrUserExist
 	ErrUserNotFound
 	ErrIncorrectPassword
+	ErrUserLoad
+	ErrUserSave
 )
 
 var Errors = map[ErrTypes]Err{
@@ -34,4 +36,6 @@ var Errors = map[ErrTypes]Err{
 	ErrUserExist:         {"alredy_signUp", "User alredy exist"},
 	ErrUserNotFound:      {"user_not_found", "User not found"},
 	ErrIncorrectPassword: {"incorrect_password", "Incorrect password"},
+	ErrUserLoad:          {"failed_load_user", "Failed load user"},
+	ErrUserSave:          {"failed_save_user", "Failed save user"},
 }

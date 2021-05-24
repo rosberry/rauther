@@ -1,6 +1,8 @@
 package rauther
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,16 +40,16 @@ func parseSignUpRequestData(r *Rauther, c *gin.Context) (SignUpRequest, error) {
 		request := signUpRequestByEmail{}
 		err := c.Bind(&request)
 
-		return request, err
+		return request, fmt.Errorf("failed parse auth data: %w", err)
 	case AuthByUsername:
 		request := signUpRequestByUsername{}
 		err := c.Bind(&request)
 
-		return request, err
+		return request, fmt.Errorf("failed parse auth data: %w", err)
 	default:
 		request := signUpRequestByEmail{}
 		err := c.Bind(&request)
 
-		return request, err
+		return request, fmt.Errorf("failed parse auth data: %w", err)
 	}
 }

@@ -113,10 +113,12 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request SignUpRequest
+
 		request, err := parseSignUpRequestData(r, c)
 		if err != nil {
 			log.Print(err)
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+
 			return
 		}
 
@@ -145,8 +147,17 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		authableUser.SetPassword(password)
 
-		r.deps.SessionStorer.Save(sess)
-		r.deps.UserStorer.Save(authableUser)
+		err = r.deps.SessionStorer.Save(sess)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
+			return
+		}
+
+		err = r.deps.UserStorer.Save(authableUser)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+			return
+		}
 
 		c.Set(r.Config.ContextNames.Session, sess)
 		c.Set(r.Config.ContextNames.User, authableUser)
@@ -165,10 +176,12 @@ func (r *Rauther) SignUpHandler() gin.HandlerFunc {
 func (r *Rauther) signInHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request SignUpRequest
+
 		request, err := parseSignUpRequestData(r, c)
 		if err != nil {
 			log.Print(err)
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+
 			return
 		}
 
@@ -202,8 +215,17 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		r.deps.SessionStorer.Save(sess)
-		r.deps.UserStorer.Save(authableUser)
+		err = r.deps.SessionStorer.Save(sess)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
+			return
+		}
+
+		err = r.deps.UserStorer.Save(authableUser)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+			return
+		}
 
 		c.Set(r.Config.ContextNames.Session, sess)
 		c.Set(r.Config.ContextNames.User, authableUser)
