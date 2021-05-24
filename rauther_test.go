@@ -32,9 +32,9 @@ func TestNewRauther(t *testing.T) {
 				Convey("Then instance not nil", func() {
 					So(rauth, ShouldNotBeNil)
 					Convey("And config contain default values", func() {
-						So(rauth.Config.AuthPath, ShouldEqual, "auth")
+						So(rauth.Config.Routes.Auth, ShouldEqual, "auth")
 						So(rauth.Config.SessionToken, ShouldEqual, "session")
-						So(rauth.Config.SessionCtxName, ShouldEqual, "session")
+						So(rauth.Config.ContextNames.Session, ShouldEqual, "session")
 					})
 				})
 			})
@@ -184,7 +184,7 @@ func TestAuthMiddleware(t *testing.T) {
 			rauth := rauther.New(deps)
 			Convey("And router with connected auth middleware", func() {
 				r.GET("/mw", rauth.AuthMiddleware(), func(c *gin.Context) {
-					if session, ok := c.Get(rauth.SessionCtxName); ok {
+					if session, ok := c.Get(rauth.ContextNames.Session); ok {
 						c.JSON(http.StatusOK, gin.H{
 							"result":  true,
 							"session": session.(*Session),

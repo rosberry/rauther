@@ -26,11 +26,11 @@ func New(deps Deps) *Rauther {
 		deps:   deps,
 	}
 
-	r.deps.R.POST(r.Config.AuthPath, r.authHandler())
+	r.deps.R.POST(r.Config.Routes.Auth, r.authHandler())
 	authable := r.deps.R.Group("", r.authMiddleware())
 	{
-		authable.POST(r.Config.SignUpPath, r.signUpHandler())
-		authable.POST(r.Config.SignInPath, r.signInHandler())
+		authable.POST(r.Config.Routes.SignUp, r.signUpHandler())
+		authable.POST(r.Config.Routes.SignIn, r.signInHandler())
 	}
 
 	return r
@@ -96,7 +96,7 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 						return
 					}
 
-					c.Set(r.Config.SessionCtxName, session)
+					c.Set(r.Config.ContextNames.Session, session)
 					c.Next()
 
 					return
@@ -123,7 +123,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		pid := request.GetPID()
 		password := request.GetPassword()
 
-		s, ok := c.Get(r.Config.SessionCtxName)
+		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
 			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
 			return
@@ -148,8 +148,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		r.deps.SessionStorer.Save(sess)
 		r.deps.UserStorer.Save(authableUser)
 
-		c.Set(r.Config.SessionCtxName, sess)
-		c.Set(r.Config.UserCtxName, authableUser)
+		c.Set(r.Config.ContextNames.Session, sess)
+		c.Set(r.Config.ContextNames.User, authableUser)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
@@ -175,7 +175,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		pid := request.GetPID()
 		password := request.GetPassword()
 
-		s, ok := c.Get(r.Config.SessionCtxName)
+		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
 			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
 			return
@@ -205,8 +205,8 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		r.deps.SessionStorer.Save(sess)
 		r.deps.UserStorer.Save(authableUser)
 
-		c.Set(r.Config.SessionCtxName, sess)
-		c.Set(r.Config.UserCtxName, authableUser)
+		c.Set(r.Config.ContextNames.Session, sess)
+		c.Set(r.Config.ContextNames.User, authableUser)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
