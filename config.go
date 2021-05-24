@@ -20,6 +20,9 @@ type Config struct {
 	// AuthType is type of auth (sign-up/sign-in) user.
 	// Can be AuthByEmail or AuthByUsername. Default: AuthByEmail
 	AuthType AuthType
+
+	// SignInPath is gin route path for sign-in handler. Default: "sign-in"
+	SignInPath string
 }
 
 // Default set default values to configuration
@@ -31,4 +34,5 @@ func (c *Config) Default() {
 	c.UserCtxName = "user"
 	c.AuthType = AuthByEmail
 	c.SignUpPath = "sign-up"
+	c.SignInPath = "sign-in"
 }

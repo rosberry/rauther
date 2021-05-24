@@ -27,7 +27,11 @@ func New(deps Deps) *Rauther {
 	}
 
 	r.deps.R.POST(r.Config.AuthPath, r.authHandler())
-	r.deps.R.POST(r.Config.SignUpPath, r.authMiddleware(), r.signUpHandler())
+	authable := r.deps.R.Group("", r.authMiddleware())
+	{
+		authable.POST(r.Config.SignUpPath, r.signUpHandler())
+		authable.POST(r.Config.SignInPath, r.signInHandler())
+	}
 
 	return r
 }
@@ -156,4 +160,56 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 func (r *Rauther) SignUpHandler() gin.HandlerFunc {
 	return r.signUpHandler()
+}
+
+func (r *Rauther) signInHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var request SignUpRequest
+		request, err := parseSignUpRequestData(r, c)
+		if err != nil {
+			log.Print(err)
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			return
+		}
+
+		pid := request.GetPID()
+		password := request.GetPassword()
+
+		s, ok := c.Get(r.Config.SessionCtxName)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			return
+		}
+
+		sess := s.(Session)
+		sess.SetUserPID(pid)
+
+		user, exist := r.deps.UserStorer.LoadByPID(pid)
+		if !exist {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			return
+		}
+
+		authableUser, ok := user.(AuthableUser)
+		if !ok {
+			panic("Not implement AuthableUser interface")
+		}
+
+		userPassword := authableUser.GetPassword()
+
+		if !passwordCompare(userPassword, password) {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrIncorrectPassword])
+			return
+		}
+
+		r.deps.SessionStorer.Save(sess)
+		r.deps.UserStorer.Save(authableUser)
+
+		c.Set(r.Config.SessionCtxName, sess)
+		c.Set(r.Config.UserCtxName, authableUser)
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+		})
+	}
 }

@@ -20,14 +20,18 @@ const (
 	ErrNotSessionID
 	ErrInvalidRequest
 	ErrUserExist
+	ErrUserNotFound
+	ErrIncorrectPassword
 )
 
 var Errors = map[ErrTypes]Err{
-	ErrSessionLoad:    {"failed_load_session", "Failed load session"},
-	ErrSessionSave:    {"failed_save_session", "Failed save session"},
-	ErrNotAuth:        {"not_auth", "Auth token required"},
-	ErrAuthFailed:     {"auth_failed", "Invalid token"},
-	ErrNotSessionID:   {"not_session", "Session ID required"},
-	ErrInvalidRequest: {"req_invalid", "The request is not valid"},
-	ErrUserExist:      {"alredy_signUp", "User alredy exist"},
+	ErrSessionLoad:       {"failed_load_session", "Failed load session"},
+	ErrSessionSave:       {"failed_save_session", "Failed save session"},
+	ErrNotAuth:           {"not_auth", "Auth token required"},
+	ErrAuthFailed:        {"auth_failed", "Invalid token"},
+	ErrNotSessionID:      {"not_session", "Session ID required"},
+	ErrInvalidRequest:    {"req_invalid", "The request is not valid"},
+	ErrUserExist:         {"alredy_signUp", "User alredy exist"},
+	ErrUserNotFound:      {"user_not_found", "User not found"},
+	ErrIncorrectPassword: {"incorrect_password", "Incorrect password"},
 }

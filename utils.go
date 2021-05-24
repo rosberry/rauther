@@ -11,3 +11,7 @@ func errorResponse(c *gin.Context, status int, err common.Err) {
 		"error":  err,
 	})
 }
+
+func passwordCompare(password1, password2 string) (ok bool) {
+	return password1 == password2
+}
