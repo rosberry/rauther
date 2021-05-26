@@ -37,10 +37,13 @@ func (s *Sessioner) Save(session rauther.Session) error {
 type Session struct {
 	SessionID string
 	Token     string
+	UserPID   string
 }
 
 func (s *Session) GetID() (id string)       { return s.SessionID }
 func (s *Session) GetToken() (token string) { return s.Token }
+func (s *Session) GetUserPID() (pid string) { return s.UserPID }
 
 func (s *Session) SetID(id string)       { s.SessionID = id }
 func (s *Session) SetToken(token string) { s.Token = token }
+func (s *Session) SetUserPID(pid string) { s.UserPID = pid }
