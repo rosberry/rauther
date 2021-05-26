@@ -1,7 +1,6 @@
 package rauther
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
@@ -41,8 +40,6 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		sessionID := c.Query(r.Config.SessionToken)
 		if sessionID == "" {
 			err := common.Errors[common.ErrNotSessionID]
-
-			log.Print(err)
 			errorResponse(c, http.StatusUnauthorized, err)
 
 			return
@@ -51,11 +48,30 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		session := r.deps.SessionStorer.LoadByID(sessionID)
 		if session == nil {
 			err := common.Errors[common.ErrSessionLoad]
-
-			log.Print(err)
 			errorResponse(c, http.StatusInternalServerError, err)
 
 			return
+		}
+
+		// Create new guest user if it enabled in config
+		if r.Config.CreateGuestUser && session.GetUserPID() == "" {
+			tempUserPID := "guest:" + uuid.New().String()
+
+			user, exist := r.deps.UserStorer.LoadByPID(tempUserPID)
+			if exist {
+				errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUnknownError])
+				return
+			}
+
+			err := r.deps.UserStorer.Save(user)
+			if err != nil {
+				err := common.Errors[common.ErrUserSave]
+				errorResponse(c, http.StatusInternalServerError, err)
+
+				return
+			}
+
+			session.SetUserPID(tempUserPID)
 		}
 
 		session.SetToken(uuid.New().String())
@@ -63,8 +79,6 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		err := r.deps.SessionStorer.Save(session)
 		if err != nil {
 			err := common.Errors[common.ErrSessionSave]
-
-			log.Print(err)
 			errorResponse(c, http.StatusInternalServerError, err)
 
 			return
@@ -84,24 +98,25 @@ func (r *Rauther) AuthMiddleware() gin.HandlerFunc {
 
 func (r *Rauther) authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if authHeader := c.Request.Header.Get("Authorization"); authHeader != "" { // nolint:nestif
-			if strings.HasPrefix(authHeader, "Bearer ") {
-				if token := authHeader[7:]; len(token) > 0 {
-					session := r.deps.SessionStorer.FindByToken(token)
-					if session == nil {
-						err := common.Errors[common.ErrAuthFailed]
-						errorResponse(c, http.StatusUnauthorized, err)
-						c.Abort()
+		if token := parseAuthToken(c); token != "" {
+			session := r.deps.SessionStorer.FindByToken(token)
+			if session == nil {
+				err := common.Errors[common.ErrAuthFailed]
+				errorResponse(c, http.StatusUnauthorized, err)
+				c.Abort()
 
-						return
-					}
-
-					c.Set(r.Config.ContextNames.Session, session)
-					c.Next()
-
-					return
-				}
+				return
 			}
+
+			if r.Config.CreateGuestUser {
+				user, _ := r.deps.UserStorer.LoadByPID(session.GetUserPID())
+				c.Set(r.Config.ContextNames.User, user)
+			}
+
+			c.Set(r.Config.ContextNames.Session, session)
+			c.Next()
+
+			return
 		}
 
 		err := common.Errors[common.ErrNotAuth]
@@ -116,7 +131,6 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		request, err := parseSignUpRequestData(r, c)
 		if err != nil {
-			log.Print(err)
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
 
 			return
@@ -179,7 +193,6 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		request, err := parseSignUpRequestData(r, c)
 		if err != nil {
-			log.Print(err)
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
 
 			return
@@ -238,4 +251,16 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 func (r *Rauther) SignInHandler() gin.HandlerFunc {
 	return r.signInHandler()
+}
+
+func parseAuthToken(c *gin.Context) (token string) {
+	if authHeader := c.Request.Header.Get("Authorization"); authHeader != "" {
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			if token = authHeader[7:]; len(token) > 0 {
+				return token
+			}
+		}
+	}
+
+	return ""
 }

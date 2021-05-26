@@ -27,6 +27,9 @@ type Config struct {
 	// AuthType is type of auth (sign-up/sign-in) user.
 	// Can be AuthByEmail or AuthByUsername. Default: AuthByEmail
 	AuthType AuthType
+
+	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
+	CreateGuestUser bool
 }
 
 // Default set default values to configuration

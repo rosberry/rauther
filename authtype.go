@@ -38,18 +38,30 @@ func parseSignUpRequestData(r *Rauther, c *gin.Context) (SignUpRequest, error) {
 	switch r.Config.AuthType {
 	case AuthByEmail:
 		request := signUpRequestByEmail{}
-		err := c.Bind(&request)
 
-		return request, fmt.Errorf("failed parse auth data: %w", err)
+		err := c.Bind(&request)
+		if err != nil {
+			err = fmt.Errorf("failed parse auth data: %w", err)
+		}
+
+		return request, err
 	case AuthByUsername:
 		request := signUpRequestByUsername{}
-		err := c.Bind(&request)
 
-		return request, fmt.Errorf("failed parse auth data: %w", err)
+		err := c.Bind(&request)
+		if err != nil {
+			err = fmt.Errorf("failed parse auth data: %w", err)
+		}
+
+		return request, err
 	default:
 		request := signUpRequestByEmail{}
-		err := c.Bind(&request)
 
-		return request, fmt.Errorf("failed parse auth data: %w", err)
+		err := c.Bind(&request)
+		if err != nil {
+			err = fmt.Errorf("failed parse auth data: %w", err)
+		}
+
+		return request, err
 	}
 }

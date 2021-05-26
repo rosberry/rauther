@@ -24,6 +24,7 @@ const (
 	ErrIncorrectPassword
 	ErrUserLoad
 	ErrUserSave
+	ErrUnknownError
 )
 
 var Errors = map[ErrTypes]Err{
@@ -38,4 +39,5 @@ var Errors = map[ErrTypes]Err{
 	ErrIncorrectPassword: {"incorrect_password", "Incorrect password"},
 	ErrUserLoad:          {"failed_load_user", "Failed load user"},
 	ErrUserSave:          {"failed_save_user", "Failed save user"},
+	ErrUnknownError:      {"unknown_error", "Unknown server error"},
 }
