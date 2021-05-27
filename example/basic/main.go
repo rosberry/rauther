@@ -24,9 +24,14 @@ func main() {
 		Sessions: make(map[string]*models.Session),
 	}
 
+	useoner := &models.UserStorer{
+		Users: make(map[string]*models.User),
+	}
+
 	rauth := rauther.New(rauther.Deps{
 		R:             r,
 		SessionStorer: sessioner,
+		UserStorer:    useoner,
 	})
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)

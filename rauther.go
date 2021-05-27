@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -20,6 +21,8 @@ func New(deps Deps) *Rauther {
 	cfg := Config{}
 	cfg.Default()
 
+	deps.checker = &Checker{}
+
 	r := &Rauther{
 		Config: cfg,
 		deps:   deps,
@@ -28,8 +31,16 @@ func New(deps Deps) *Rauther {
 	r.deps.R.POST(r.Config.Routes.Auth, r.authHandler())
 	authable := r.deps.R.Group("", r.authMiddleware())
 	{
-		authable.POST(r.Config.Routes.SignUp, r.signUpHandler())
-		authable.POST(r.Config.Routes.SignIn, r.signInHandler())
+		if deps.checker != nil {
+			user, _ := deps.UserStorer.LoadByPID("")
+
+			if deps.checker.IsAuthableUser(user) {
+				authable.POST(r.Config.Routes.SignUp, r.signUpHandler())
+				authable.POST(r.Config.Routes.SignIn, r.signInHandler())
+			} else {
+				log.Print("Please implement AuthableUser interface for SignUp and SighIn handlers")
+			}
+		}
 	}
 
 	return r
