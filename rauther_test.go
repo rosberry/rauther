@@ -33,7 +33,7 @@ func TestNewRauther(t *testing.T) {
 					So(rauth, ShouldNotBeNil)
 					Convey("And config contain default values", func() {
 						So(rauth.Config.Routes.Auth, ShouldEqual, "auth")
-						So(rauth.Config.SessionToken, ShouldEqual, "session")
+						So(rauth.Config.QueryNames.Session, ShouldEqual, "session")
 						So(rauth.Config.ContextNames.Session, ShouldEqual, "session")
 					})
 				})

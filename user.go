@@ -14,5 +14,19 @@ type AuthableUser interface {
 	SetPassword(password string)
 }
 
-// type ConfirmableUser interface{}
-// ..etc
+type EmailableUser interface {
+	User
+
+	GetEmail() (email string)
+	SetEmail(email string)
+}
+
+type ConfirmableUser interface {
+	EmailableUser
+
+	GetConfirmed() (ok bool)
+	GetConfirmCode() (code string)
+
+	SetConfirmed(ok bool)
+	SetConfirmCode(code string)
+}

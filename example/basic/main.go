@@ -34,6 +34,8 @@ func main() {
 		UserStorer:    useoner,
 	})
 
+	rauth.AuthType = rauther.AuthByUsername
+
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
 	err := r.Run()
