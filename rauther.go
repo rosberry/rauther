@@ -12,7 +12,8 @@ import (
 // Rauther main object - contains configuration and other details for running.
 type Rauther struct {
 	Config
-	deps Deps
+	Modules *Modules
+	deps    Deps
 }
 
 // New make new instance of Rauther with default configuration
@@ -21,34 +22,52 @@ func New(deps Deps) *Rauther {
 	cfg.Default()
 
 	deps.checker = &Checker{}
-	if deps.checker != nil {
-		user, _ := deps.UserStorer.LoadByPID("")
-		deps.checker.checkAllInterfaces(user)
-	}
+
+	user, _ := deps.UserStorer.LoadByPID("")
+	deps.checker.checkAllInterfaces(user)
 
 	r := &Rauther{
-		Config: cfg,
-		deps:   deps,
+		Config:  cfg,
+		deps:    deps,
+		Modules: defaultModules(user),
 	}
 
-	r.deps.R.POST(r.Config.Routes.Auth, r.authHandler())
-	authable := r.deps.R.Group("", r.authMiddleware())
-	{
-		if deps.checker.Authable {
-			authable.POST(r.Config.Routes.SignUp, r.signUpHandler())
-			authable.POST(r.Config.Routes.SignIn, r.signInHandler())
+	return r
+}
 
-			if deps.checker.Confirmable {
-				authable.GET(r.Config.Routes.EmailConfirm, r.confirmEmailHandler())
-			} else {
-				log.Print("Please implement ConfirmableUser interface for email confirm handler")
-			}
+func (r *Rauther) Run(addr ...string) error {
+	if r.Modules.Session {
+		r.includeSession()
+	}
+
+	return r.deps.R.Run(addr...)
+}
+
+func (r *Rauther) includeSession() {
+	r.deps.R.POST(r.Config.Routes.Auth, r.authHandler())
+	withSession := r.deps.R.Group("", r.authMiddleware())
+	{
+		if r.Modules.AuthableUser && r.deps.checker.Authable {
+			r.includeAuthable(withSession)
 		} else {
 			log.Print("Please implement AuthableUser interface for SignUp and SighIn handlers")
 		}
 	}
+}
 
-	return r
+func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
+	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
+	router.POST(r.Config.Routes.SignIn, r.signInHandler())
+
+	if r.Modules.ConfirmableUser && r.deps.checker.Confirmable {
+		r.includeConfirmable(router)
+	} else {
+		log.Print("Please implement ConfirmableUser interface for email confirm handler")
+	}
+}
+
+func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
+	router.GET(r.Config.Routes.EmailConfirm, r.confirmEmailHandler())
 }
 
 func (r *Rauther) authHandler() gin.HandlerFunc {
@@ -176,7 +195,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		if !r.deps.checker.Authable {
-			panic("Not implement AuthableUser interface")
+			log.Print("Not implement AuthableUser interface")
+			return
 		}
 
 		user.(AuthableUser).SetPassword(password)
@@ -244,7 +264,8 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		if !r.deps.checker.Authable {
-			panic("Not implement AuthableUser interface")
+			log.Print("Not implement AuthableUser interface")
+			return
 		}
 
 		userPassword := user.(AuthableUser).GetPassword()

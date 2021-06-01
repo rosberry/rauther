@@ -34,11 +34,12 @@ func main() {
 		UserStorer:    useoner,
 	})
 
+	// rauth.Modules.AuthableUser = false // disable module
 	rauth.AuthType = rauther.AuthByUsername
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
-	err := r.Run()
+	err := rauth.Run()
 	if err != nil {
 		log.Print(err)
 	}

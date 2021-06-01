@@ -6,6 +6,13 @@ type Checker struct {
 	Confirmable bool
 }
 
+func newCheckerByUser(user User) *Checker {
+	checker := &Checker{}
+	checker.checkAllInterfaces(user)
+
+	return checker
+}
+
 // IsAuthableUser check implement user AuthableUser interface or not
 func (c *Checker) IsAuthableUser(user User) (ok bool) {
 	_, ok = user.(AuthableUser)
