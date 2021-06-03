@@ -37,7 +37,20 @@ func New(deps Deps) *Rauther {
 
 func (r *Rauther) authHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sessionID := c.Query(r.Config.SessionToken)
+		type authRequest struct {
+			DeviceID string `json:"device_id"`
+		}
+
+		request := authRequest{}
+
+		err := c.Bind(&request)
+		if err != nil {
+			err := common.Errors[common.ErrInvalidRequest]
+			errorResponse(c, http.StatusBadRequest, err)
+			return
+		}
+		sessionID := request.DeviceID
+
 		if sessionID == "" {
 			err := common.Errors[common.ErrNotSessionID]
 			errorResponse(c, http.StatusUnauthorized, err)
@@ -76,7 +89,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 		session.SetToken(uuid.New().String())
 
-		err := r.deps.SessionStorer.Save(session)
+		err = r.deps.SessionStorer.Save(session)
 		if err != nil {
 			err := common.Errors[common.ErrSessionSave]
 			errorResponse(c, http.StatusInternalServerError, err)
