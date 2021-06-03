@@ -27,6 +27,7 @@ const (
 	ErrUnknownError
 	ErrNotConfirmed
 	ErrInvalidConfirmCode
+	ErrGinDependency
 )
 
 var Errors = map[ErrTypes]Err{
@@ -44,4 +45,5 @@ var Errors = map[ErrTypes]Err{
 	ErrUnknownError:       {"unknown_error", "Unknown server error"},
 	ErrNotConfirmed:       {"email_not_confirmed", "Email not confirmed"},
 	ErrInvalidConfirmCode: {"invalid_code", "Invalid confirm code"},
+	ErrGinDependency:      {"gin_dependency_nil", "Nil gin dependency"},
 }

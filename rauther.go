@@ -18,12 +18,20 @@ type Rauther struct {
 
 // New make new instance of Rauther with default configuration
 func New(deps Deps) *Rauther {
+	if deps.SessionStorer == nil {
+		log.Fatal("Session storer is nil")
+	}
+
 	cfg := Config{}
 	cfg.Default()
 
 	deps.checker = &Checker{}
 
-	user, _ := deps.UserStorer.LoadByPID("")
+	var user User
+	if deps.UserStorer != nil {
+		user, _ = deps.UserStorer.LoadByPID("")
+	}
+
 	deps.checker.checkAllInterfaces(user)
 
 	r := &Rauther{
@@ -36,6 +44,10 @@ func New(deps Deps) *Rauther {
 }
 
 func (r *Rauther) Run(addr ...string) error {
+	if r.deps.R == nil {
+		return common.Errors[common.ErrGinDependency]
+	}
+
 	if r.Modules.Session {
 		r.includeSession()
 	}

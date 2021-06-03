@@ -20,21 +20,23 @@ func main() {
 		})
 	})
 
-	sessioner := &models.Sessioner{
-		Sessions: make(map[string]*models.Session),
-	}
-
-	useoner := &models.UserStorer{
-		Users: make(map[string]*models.User),
-	}
-
 	rauth := rauther.New(rauther.Deps{
-		R:             r,
-		SessionStorer: sessioner,
-		UserStorer:    useoner,
+		R: r,
+		SessionStorer: &models.Sessioner{
+			Sessions: make(map[string]*models.Session),
+		},
+
+		UserStorer: nil,
+		/*
+			UserStorer: &models.UserStorer{
+				Users: make(map[string]*models.User),
+			},
+		*/
 	})
 
-	// rauth.Modules.AuthableUser = false // disable module
+	// rauth.Config.CreateGuestUser = false
+	// rauth.Modules.AuthableUser = false
+
 	rauth.AuthType = rauther.AuthByUsername
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
