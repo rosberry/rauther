@@ -17,8 +17,11 @@ type SessionStorer interface {
 
 // UserStorer interface
 type UserStorer interface {
-	// LoadByPID return User by PID or create new if not found.
-	LoadByPID(pid string) (user User, exist bool)
+	// Load return User by PID or return error if not found.
+	Load(pid string) (user User, err error)
+
+	// CreateByPID create new user and set PID to him
+	CreateByPID(pid string) (user User)
 
 	// Save User
 	Save(user User) error

@@ -69,18 +69,22 @@ type userStorer struct {
 	Users map[string]*User
 }
 
-func (s *userStorer) LoadByPID(pid string) (user rauther.User, exist bool) {
+func (s *userStorer) Load(pid string) (user rauther.User, err error) {
 	if user, ok := s.Users[pid]; ok {
-		return user, true
+		return user, nil
 	}
 
+	return nil, errors.New("User not found")
+}
+
+func (s *userStorer) CreateByPID(pid string) (user rauther.User) {
 	u := &User{
 		PID: pid,
 	}
 
 	s.Users[pid] = u
 
-	return u, false
+	return u
 }
 
 func (s *userStorer) Save(user rauther.User) error {
