@@ -56,7 +56,7 @@ func TestDefaultAuthRouter(t *testing.T) {
 			}
 
 			rauth := rauther.New(deps)
-			rauth.Run()
+			rauth.InitHandlers()
 			Convey("When we send request to /auth with some session value", func() {
 				sessionID := "test_session"
 				request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
@@ -183,7 +183,7 @@ func TestAuthMiddleware(t *testing.T) {
 			}
 
 			rauth := rauther.New(deps)
-			rauth.Run()
+			rauth.InitHandlers()
 			Convey("And router with connected auth middleware", func() {
 				r.GET("/mw", rauth.AuthMiddleware(), func(c *gin.Context) {
 					if session, ok := c.Get(rauth.ContextNames.Session); ok {
@@ -336,7 +336,7 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			}
 
 			rauth := rauther.New(deps)
-			rauth.Run()
+			rauth.InitHandlers()
 
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
@@ -406,7 +406,7 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			rauth := rauther.New(deps)
 			rauth.Config.AuthType = rauther.AuthByUsername
 
-			rauth.Run()
+			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
 			Convey("When we send request to /sign-up with some correct value", func() {
@@ -486,7 +486,7 @@ func TestDefaultSignInRouter(t *testing.T) {
 			}
 
 			rauth := rauther.New(deps)
-			rauth.Run()
+			rauth.InitHandlers()
 
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
@@ -566,7 +566,7 @@ func TestSignInByUsernameRouter(t *testing.T) {
 			rauth := rauther.New(deps)
 			rauth.Config.AuthType = rauther.AuthByUsername
 
-			rauth.Run()
+			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
 			Convey("When we send request to /sign-in with some correct value", func() {

@@ -41,8 +41,10 @@ func main() {
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
-	err := rauth.Run()
+	err := rauth.InitHandlers()
 	if err != nil {
 		log.Print(err)
 	}
+
+	r.Run()
 }

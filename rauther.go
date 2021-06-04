@@ -43,7 +43,7 @@ func New(deps Deps) *Rauther {
 	return r
 }
 
-func (r *Rauther) Run(addr ...string) error {
+func (r *Rauther) InitHandlers() error {
 	if r.deps.R == nil {
 		return common.Errors[common.ErrGinDependency]
 	}
@@ -52,7 +52,6 @@ func (r *Rauther) Run(addr ...string) error {
 		r.includeSession()
 	}
 
-	// return r.deps.R.Run(addr...)
 	return nil
 }
 
