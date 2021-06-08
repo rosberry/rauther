@@ -322,8 +322,9 @@ func (r *Rauther) SignInHandler() gin.HandlerFunc {
 	return r.signInHandler()
 }
 
-func (r *Rauther) sendConfirmCode(email, code string) {
-	log.Printf("Confirm code for %s: %s", email, code)
+func (r *Rauther) sendConfirmCode(recipient, code string) {
+	log.Printf("Confirm code for %s: %s", recipient, code)
+	r.deps.Sender.Send(common.CodeConfirmationEvent, recipient, code)
 }
 
 func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {

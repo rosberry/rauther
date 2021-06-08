@@ -15,4 +15,7 @@ type Deps struct {
 
 	// checker for check implement user interfaces
 	checker *Checker
+	
+	// sender for send user notifications
+	Sender Sender
 }
