@@ -19,7 +19,11 @@ type Rauther struct {
 // New make new instance of Rauther with default configuration
 func New(deps Deps) *Rauther {
 	if deps.SessionStorer == nil {
-		log.Fatal("Session storer is nil")
+		log.Fatal(common.Errors[common.ErrSessionStorerDependency])
+	}
+
+	if deps.R == nil {
+		log.Fatal(common.Errors[common.ErrGinDependency])
 	}
 
 	cfg := Config{}
@@ -44,10 +48,6 @@ func New(deps Deps) *Rauther {
 }
 
 func (r *Rauther) InitHandlers() error {
-	if r.deps.R == nil {
-		return common.Errors[common.ErrGinDependency]
-	}
-
 	if r.Modules.Session {
 		r.includeSession()
 	}
