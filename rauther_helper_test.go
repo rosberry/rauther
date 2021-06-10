@@ -77,7 +77,7 @@ func (s *userStorer) Load(pid string) (user rauther.User, err error) {
 	return nil, errors.New("User not found")
 }
 
-func (s *userStorer) CreateByPID(pid string) (user rauther.User) {
+func (s *userStorer) Create(pid string) (user rauther.User) {
 	u := &User{
 		PID: pid,
 	}

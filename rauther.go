@@ -29,7 +29,7 @@ func New(deps Deps) *Rauther {
 
 	var user User
 	if deps.UserStorer != nil {
-		user = deps.UserStorer.CreateByPID("")
+		user = deps.UserStorer.Create("")
 	}
 
 	deps.checker.checkAllInterfaces(user)
@@ -125,7 +125,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 				return
 			}
 
-			user = r.deps.UserStorer.CreateByPID(tempUserPID)
+			user = r.deps.UserStorer.Create(tempUserPID)
 
 			err = r.deps.UserStorer.Save(user)
 			if err != nil {
@@ -222,7 +222,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserExist])
 			return
 		}
-		user = r.deps.UserStorer.CreateByPID(pid)
+		user = r.deps.UserStorer.Create(pid)
 
 		if !r.deps.checker.Authable {
 			log.Print("Not implement AuthableUser interface")

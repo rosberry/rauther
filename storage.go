@@ -20,8 +20,8 @@ type UserStorer interface {
 	// Load return User by PID or return error if not found.
 	Load(pid string) (user User, err error)
 
-	// CreateByPID create new user and set PID to him
-	CreateByPID(pid string) (user User)
+	// Create create new User and set PID to him
+	Create(pid string) (user User)
 
 	// Save User
 	Save(user User) error
