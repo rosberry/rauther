@@ -3,7 +3,6 @@ package rauther_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -58,8 +57,9 @@ func TestDefaultAuthRouter(t *testing.T) {
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
 			Convey("When we send request to /auth with some session value", func() {
-				sessionID := "test_session"
-				request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+				// sessionID := "test_session"
+				request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":"test_session"}`))
+				request.Header.Add("Content-Type", "application/json")
 				rr := httptest.NewRecorder()
 				r.ServeHTTP(rr, request)
 				Convey("Then response should be correct", func() {
@@ -75,9 +75,9 @@ func TestDefaultAuthRouter(t *testing.T) {
 					So(resp.Token, ShouldNotBeEmpty)
 				})
 			})
-			Convey("When we send request to /auth without session value", func() {
-				sessionID := ""
-				request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+			Convey("When we send request to /auth with empty session value", func() {
+				request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":""}`))
+				request.Header.Add("Content-Type", "application/json")
 				rr := httptest.NewRecorder()
 				r.ServeHTTP(rr, request)
 				Convey("Then response should return error", func() {
@@ -101,8 +101,8 @@ func TestDefaultAuthRouter(t *testing.T) {
 			})
 			Convey("When we send request to /auth", func() {
 				Convey("And Rauther.SessionStorer Load() return nil Session", func() {
-					sessionID := "nil"
-					request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+					request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":"nil"}`))
+					request.Header.Add("Content-Type", "application/json")
 					rr := httptest.NewRecorder()
 					r.ServeHTTP(rr, request)
 					Convey("Then response should return error", func() {
@@ -125,8 +125,8 @@ func TestDefaultAuthRouter(t *testing.T) {
 					})
 				})
 				Convey("And Rauther.SessionStorer Save() return error", func() {
-					sessionID := "error_session"
-					request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+					request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":"error_session"}`))
+					request.Header.Add("Content-Type", "application/json")
 					rr := httptest.NewRecorder()
 					r.ServeHTTP(rr, request)
 					Convey("Then response should return error", func() {

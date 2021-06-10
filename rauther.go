@@ -88,14 +88,16 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 			DeviceID string `json:"device_id"`
 		}
 
-		request := authRequest{}
+		var request authRequest
 
 		err := c.Bind(&request)
 		if err != nil {
 			err := common.Errors[common.ErrInvalidRequest]
 			errorResponse(c, http.StatusBadRequest, err)
+
 			return
 		}
+
 		sessionID := request.DeviceID
 
 		if sessionID == "" {
