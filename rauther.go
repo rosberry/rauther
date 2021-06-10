@@ -59,26 +59,30 @@ func (r *Rauther) includeSession() {
 	r.deps.R.POST(r.Config.Routes.Auth, r.authHandler())
 	withSession := r.deps.R.Group("", r.authMiddleware())
 	{
-		if r.Modules.AuthableUser && r.deps.checker.Authable {
+		if r.Modules.AuthableUser {
 			r.includeAuthable(withSession)
-		} else {
-			log.Print("Please implement AuthableUser interface for SignUp and SighIn handlers")
 		}
 	}
 }
 
 func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
+	if !r.deps.checker.Authable {
+		log.Fatal("Please implement AuthableUser interface for SignUp and SighIn handlers")
+	}
+
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
 	router.POST(r.Config.Routes.SignIn, r.signInHandler())
 
-	if r.Modules.ConfirmableUser && r.deps.checker.Confirmable {
+	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
-	} else {
-		log.Print("Please implement ConfirmableUser interface for email confirm handler")
 	}
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
+	if !r.deps.checker.Confirmable {
+		log.Fatal("Please implement ConfirmableUser interface for email confirm handler")
+	}
+
 	router.GET(r.Config.Routes.EmailConfirm, r.confirmEmailHandler())
 }
 
