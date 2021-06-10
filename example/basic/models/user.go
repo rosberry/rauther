@@ -40,7 +40,7 @@ func (s *UserStorer) Load(pid string) (user rauther.User, err error) {
 		return user, nil
 	}
 
-	return nil, errors.New("User not found")
+	return nil, errors.New("User not found") // nolint:goerr113
 }
 
 func (s *UserStorer) Create(pid string) (user rauther.User) {

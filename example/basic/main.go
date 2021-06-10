@@ -46,5 +46,8 @@ func main() {
 		log.Print(err)
 	}
 
-	r.Run()
+	err = r.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
