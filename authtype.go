@@ -18,6 +18,12 @@ type SignUpRequest interface {
 	GetPassword() (password string)
 }
 
+type SignUpEmailableRequest interface {
+	SignUpRequest
+
+	GetEmail() (email string)
+}
+
 type signUpRequestByEmail struct {
 	Email    string `json:"email" form:"email" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
@@ -25,14 +31,17 @@ type signUpRequestByEmail struct {
 
 func (r signUpRequestByEmail) GetPID() (pid string)           { return r.Email } // trim spaces, toLower
 func (r signUpRequestByEmail) GetPassword() (password string) { return r.Password }
+func (r signUpRequestByEmail) GetEmail() (email string)       { return r.Email }
 
 type signUpRequestByUsername struct {
 	Username string `json:"username" form:"username" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
+	Email    string `json:"email" form:"email"`
 }
 
 func (r signUpRequestByUsername) GetPID() (pid string)           { return r.Username } // trim spaces
 func (r signUpRequestByUsername) GetPassword() (password string) { return r.Password }
+func (r signUpRequestByUsername) GetEmail() (email string)       { return r.Email }
 
 func parseSignUpRequestData(r *Rauther, c *gin.Context) (SignUpRequest, error) {
 	switch r.Config.AuthType {

@@ -12,4 +12,7 @@ type Deps struct {
 
 	// UserStorer for load/save users
 	UserStorer UserStorer
+
+	// checker for check implement user interfaces
+	checker *Checker
 }
