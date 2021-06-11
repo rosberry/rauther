@@ -35,3 +35,8 @@ func parseAuthToken(c *gin.Context) (token string) {
 
 	return ""
 }
+
+func generateSessionID() string {
+	// TODO: Implement me!
+	return uuid.NewString()
+}

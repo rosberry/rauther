@@ -105,8 +105,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		sessionID := request.DeviceID
 
 		if sessionID == "" {
-			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotSessionID])
-			return
+			sessionID = generateSessionID()
 		}
 
 		session := r.deps.SessionStorer.LoadByID(sessionID)
@@ -145,8 +144,9 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"result": true,
-			"token":  session.GetToken(),
+			"result":    true,
+			"device_id": sessionID,
+			"token":     session.GetToken(),
 		})
 	}
 }
