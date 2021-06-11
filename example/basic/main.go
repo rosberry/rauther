@@ -28,7 +28,9 @@ func main() {
 				SessionStorer: &models.Sessioner{
 					Sessions: make(map[string]*models.Session),
 				},
-				UserStorer: nil,
+				UserStorer: &models.UserStorer{
+					Users: make(map[string]*models.User),
+				},
 			},
 		))
 

@@ -85,7 +85,8 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
 	}
 
-	router.GET(r.Config.Routes.EmailConfirm, r.confirmEmailHandler())
+	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
+	router.GET(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
 }
 
 func (r *Rauther) authHandler() gin.HandlerFunc {
@@ -371,6 +372,38 @@ func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
 			return
 		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+		})
+	}
+}
+
+func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		s, ok := c.Get(r.Config.ContextNames.Session)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			return
+		}
+
+		sess := s.(session.Session)
+
+		pid := sess.GetUserPID()
+		if pid == "" {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			return
+		}
+
+		u, err := r.deps.UserStorer.Load(pid)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			return
+		}
+
+		confirmCode := generateConfirmCode()
+		u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
+		r.sendConfirmCode(u.(user.ConfirmableUser).GetEmail(), confirmCode)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
