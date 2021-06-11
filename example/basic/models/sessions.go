@@ -1,12 +1,14 @@
 package models
 
-import "github.com/rosberry/rauther"
+import (
+	"github.com/rosberry/rauther/session"
+)
 
 type Sessioner struct {
 	Sessions map[string]*Session
 }
 
-func (s *Sessioner) LoadByID(id string) rauther.Session {
+func (s *Sessioner) LoadByID(id string) session.Session {
 	if sess, ok := s.Sessions[id]; ok {
 		return sess
 	}
@@ -18,7 +20,7 @@ func (s *Sessioner) LoadByID(id string) rauther.Session {
 	return s.Sessions[id]
 }
 
-func (s *Sessioner) FindByToken(token string) rauther.Session {
+func (s *Sessioner) FindByToken(token string) session.Session {
 	for _, sess := range s.Sessions {
 		if sess.Token == token {
 			return sess
@@ -28,7 +30,7 @@ func (s *Sessioner) FindByToken(token string) rauther.Session {
 	return nil
 }
 
-func (s *Sessioner) Save(session rauther.Session) error {
+func (s *Sessioner) Save(session session.Session) error {
 	s.Sessions[session.GetID()] = session.(*Session)
 
 	return nil

@@ -10,7 +10,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
+	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
+	"github.com/rosberry/rauther/deps"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -21,10 +23,7 @@ func TestNewRauther(t *testing.T) {
 			sessioner := sessionStorer{}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
 			Convey("When we create new instance of Rauther", func() {
 				// create Rauther
 				rauth := rauther.New(deps)
@@ -49,10 +48,7 @@ func TestDefaultAuthRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
@@ -177,16 +173,13 @@ func TestAuthMiddleware(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
 			Convey("And router with connected auth middleware", func() {
 				r.GET("/mw", rauth.AuthMiddleware(), func(c *gin.Context) {
-					if session, ok := c.Get(rauth.ContextNames.Session); ok {
+					if session, ok := c.Get(rauth.Config.ContextNames.Session); ok {
 						c.JSON(http.StatusOK, gin.H{
 							"result":  true,
 							"session": session.(*Session),
@@ -329,11 +322,7 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
@@ -397,14 +386,10 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
-			rauth.Config.AuthType = rauther.AuthByUsername
+			rauth.Config.AuthType = authtype.AuthByUsername
 
 			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
@@ -479,11 +464,7 @@ func TestDefaultSignInRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
@@ -557,14 +538,10 @@ func TestSignInByUsernameRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
-			rauth.Config.AuthType = rauther.AuthByUsername
+			rauth.Config.AuthType = authtype.AuthByUsername
 
 			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())

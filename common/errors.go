@@ -50,6 +50,6 @@ var Errors = map[ErrTypes]Err{
 	ErrInvalidConfirmCode:          {"invalid_code", "Invalid confirm code"},
 	ErrGinDependency:               {"gin_dependency_nil", "Nil gin dependency"},
 	ErrSessionStorerDependency:     {"session_storer_nil", "Nil SessionStorer dependency"},
-	ErrAuthableUserNotImplement:    {"authable_user_not_implement", "Please implement AuthableUser interface for SignUp and SighIn handlers"},
-	ErrConfirmableUserNotImplement: {"confirmable_user_not_implement", "Please implement ConfirmableUser interface for email confirm handler"},
+	ErrAuthableUserNotImplement:    {"authable_user_not_implement", "Please implement AuthableUser interface"},
+	ErrConfirmableUserNotImplement: {"confirmable_user_not_implement", "Please implement ConfirmableUser interface"},
 }

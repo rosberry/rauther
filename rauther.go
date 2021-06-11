@@ -6,18 +6,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
+	"github.com/rosberry/rauther/config"
+	"github.com/rosberry/rauther/deps"
+	"github.com/rosberry/rauther/modules"
+	"github.com/rosberry/rauther/session"
+	"github.com/rosberry/rauther/user"
 )
 
 // Rauther main object - contains configuration and other details for running.
 type Rauther struct {
-	Config
-	Modules *Modules
-	deps    Deps
+	Config  config.Config
+	Modules *modules.Modules
+	deps    deps.Deps
 }
 
 // New make new instance of Rauther with default configuration
-func New(deps Deps) *Rauther {
+func New(deps deps.Deps) *Rauther {
 	if deps.SessionStorer == nil {
 		log.Fatal(common.Errors[common.ErrSessionStorerDependency])
 	}
@@ -26,22 +32,18 @@ func New(deps Deps) *Rauther {
 		log.Fatal(common.Errors[common.ErrGinDependency])
 	}
 
-	cfg := Config{}
+	cfg := config.Config{}
 	cfg.Default()
 
-	deps.checker = &Checker{}
-
-	var user User
-	if deps.UserStorer != nil {
-		user = deps.UserStorer.Create("")
+	var u user.User
+	if deps.Storage.UserStorer != nil {
+		u = deps.Storage.UserStorer.Create("")
 	}
-
-	deps.checker.checkAllInterfaces(user)
 
 	r := &Rauther{
 		Config:  cfg,
 		deps:    deps,
-		Modules: defaultModules(user),
+		Modules: modules.New(u),
 	}
 
 	return r
@@ -66,7 +68,7 @@ func (r *Rauther) includeSession() {
 }
 
 func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
-	if !r.deps.checker.Authable {
+	if !r.deps.Checker().Authable {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
@@ -79,7 +81,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
-	if !r.deps.checker.Confirmable {
+	if !r.deps.Checker().Confirmable {
 		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
 	}
 
@@ -184,15 +186,15 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 }
 
 func (r *Rauther) signUpHandler() gin.HandlerFunc {
-	if !r.deps.checker.Authable {
+	if !r.deps.Checker().Authable {
 		log.Print("Not implement AuthableUser interface")
 		return nil
 	}
 
 	return func(c *gin.Context) {
-		var request SignUpRequest
+		var request authtype.SignUpRequest
 
-		request, err := parseSignUpRequestData(r, c)
+		request, err := authtype.ParseSignUpRequestData(r.Config.AuthType, c)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
 			return
@@ -206,7 +208,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		sess := s.(Session)
+		sess := s.(session.Session)
 		sess.SetUserPID(pid)
 
 		if err = r.deps.SessionStorer.Save(sess); err != nil {
@@ -214,39 +216,39 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		user, err := r.deps.UserStorer.Load(pid)
-		if err == nil && user != nil {
+		u, err := r.deps.UserStorer.Load(pid)
+		if err == nil && u != nil {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserExist])
 			return
 		}
 
-		user = r.deps.UserStorer.Create(pid)
+		u = r.deps.UserStorer.Create(pid)
 
-		user.(AuthableUser).SetPassword(password)
+		u.(user.AuthableUser).SetPassword(password)
 
-		if r.deps.checker.Emailable {
-			email := request.(SignUpEmailableRequest).GetEmail()
-			user.(EmailableUser).SetEmail(email)
+		if r.deps.Checker().Emailable {
+			email := request.(authtype.SignUpEmailableRequest).GetEmail()
+			u.(user.EmailableUser).SetEmail(email)
 
-			if r.deps.checker.Confirmable {
+			if r.deps.Checker().Confirmable {
 				confirmCode := generateConfirmCode()
 
-				user.(ConfirmableUser).SetConfirmCode(confirmCode)
-				r.sendConfirmCode(user.(ConfirmableUser).GetEmail(), confirmCode)
+				u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
+				r.sendConfirmCode(u.(user.ConfirmableUser).GetEmail(), confirmCode)
 			}
 		}
 
-		if err = r.deps.UserStorer.Save(user); err != nil {
+		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
 			return
 		}
 
 		c.Set(r.Config.ContextNames.Session, sess)
-		c.Set(r.Config.ContextNames.User, user)
+		c.Set(r.Config.ContextNames.User, u)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
-			"pid":    user.GetPID(),
+			"pid":    u.GetPID(),
 			// "code":   user.(ConfirmableUser).GetConfirmCode(), // FIXME: Debug
 		})
 	}
@@ -262,15 +264,15 @@ func (r *Rauther) SignUpHandler() gin.HandlerFunc {
 }
 
 func (r *Rauther) signInHandler() gin.HandlerFunc {
-	if !r.deps.checker.Authable {
+	if !r.deps.Checker().Authable {
 		log.Print("Not implement AuthableUser interface")
 		return nil
 	}
 
 	return func(c *gin.Context) {
-		var request SignUpRequest
+		var request authtype.SignUpRequest
 
-		request, err := parseSignUpRequestData(r, c)
+		request, err := authtype.ParseSignUpRequestData(r.Config.AuthType, c)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
 			return
@@ -284,23 +286,23 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		sess := s.(Session)
+		sess := s.(session.Session)
 		sess.SetUserPID(pid)
 
-		user, err := r.deps.UserStorer.Load(pid)
+		u, err := r.deps.UserStorer.Load(pid)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
 			return
 		}
 
-		userPassword := user.(AuthableUser).GetPassword()
+		userPassword := u.(user.AuthableUser).GetPassword()
 
 		if !passwordCompare(userPassword, password) {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrIncorrectPassword])
 			return
 		}
 
-		if r.deps.checker.Confirmable && !user.(ConfirmableUser).GetConfirmed() {
+		if r.deps.Checker().Confirmable && !u.(user.ConfirmableUser).GetConfirmed() {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
 			return
 		}
@@ -310,13 +312,13 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		if err = r.deps.UserStorer.Save(user); err != nil {
+		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
 			return
 		}
 
 		c.Set(r.Config.ContextNames.Session, sess)
-		c.Set(r.Config.ContextNames.User, user)
+		c.Set(r.Config.ContextNames.User, u)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
@@ -351,20 +353,20 @@ func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {
 			return
 		}
 
-		user, err := r.deps.UserStorer.Load(pid)
+		u, err := r.deps.UserStorer.Load(pid)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
 			return
 		}
 
-		if confirmCode != user.(ConfirmableUser).GetConfirmCode() {
+		if confirmCode != u.(user.ConfirmableUser).GetConfirmCode() {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidConfirmCode])
 			return
 		}
 
-		user.(ConfirmableUser).SetConfirmed(true)
+		u.(user.ConfirmableUser).SetConfirmed(true)
 
-		err = r.deps.UserStorer.Save(user)
+		err = r.deps.UserStorer.Save(u)
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
 			return

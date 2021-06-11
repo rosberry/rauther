@@ -1,4 +1,4 @@
-package rauther
+package session
 
 // Definition of session interface
 // Session interface
