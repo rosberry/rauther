@@ -14,8 +14,11 @@ type Config struct {
 		// SignIn is gin route path for sign-in handler. Default: "sign-in"
 		SignIn string
 
-		// EmailConfirm is gin route path for email confirmation handler. Default: "confirm/email"
-		EmailConfirm string
+		// ConfirmCode is gin route path for email confirmation handler. Default: "code/confirm/email"
+		ConfirmCode string
+
+		// ConfirmResend is gin route path for request resend confirm code. Default: "resend/confirm/email"
+		ConfirmResend string
 	}
 
 	ContextNames struct {
@@ -59,7 +62,9 @@ func (c *Config) Default() {
 	c.Routes.SignUp = "sign-up"
 	c.Routes.SignIn = "sign-in"
 
-	c.Routes.EmailConfirm = "confirm/email"
+	c.Routes.ConfirmCode = "code/confirm/email"
+	c.Routes.ConfirmResend = "resend/confirm/email"
+
 	c.QueryNames.EmailConfirm.PID = "pid"
 	c.QueryNames.EmailConfirm.Code = "code"
 }
