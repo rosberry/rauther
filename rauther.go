@@ -235,7 +235,9 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 				confirmCode := generateConfirmCode()
 
 				u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
-				r.sendConfirmCode(u.(user.ConfirmableUser).GetEmail(), confirmCode)
+
+				sender := r.deps.Senders[r.deps.SenderSelector(c)]
+				sender.sendConfirmCode(u.(user.ConfirmableUser).GetEmail(), confirmCode)
 			}
 		}
 

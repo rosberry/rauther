@@ -32,6 +32,15 @@ func main() {
 					Users: make(map[string]*models.User),
 				},
 			},
+			Senders: map[string]interface{}{
+				"email": "EmailSender",
+				"sms": "SMSSender",
+				"phone": "PhoneCaller",
+			},
+			SenderSelector: func(c *gin.Context) string {
+				senderType := c.Query("type")
+				return senderType
+			}
 		))
 
 	// rauth.Config.CreateGuestUser = false
