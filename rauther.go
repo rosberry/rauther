@@ -11,6 +11,7 @@ import (
 	"github.com/rosberry/rauther/config"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/modules"
+	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/user"
 )
@@ -83,6 +84,10 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 	if !r.deps.Checker().Confirmable {
 		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
+	}
+
+	if r.deps.Senders == nil || len(r.deps.Senders.List) == 0 {
+		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
 	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
@@ -236,8 +241,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 				u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
 
-				sender := r.deps.Senders[r.deps.SenderSelector(c)]
-				sender.sendConfirmCode(u.(user.ConfirmableUser).GetEmail(), confirmCode)
+				sendConfirmCode(r.deps.Senders.Select(c), u.(user.ConfirmableUser).GetEmail(), confirmCode)
 			}
 		}
 
@@ -338,9 +342,13 @@ func (r *Rauther) SignInHandler() gin.HandlerFunc {
 	return f
 }
 
-func (r *Rauther) sendConfirmCode(recipient, code string) {
+func sendConfirmCode(sender sender.Sender, recipient, code string) {
 	log.Printf("Confirm code for %s: %s", recipient, code)
-	r.deps.Sender.Send(common.CodeConfirmationEvent, recipient, code)
+
+	err := sender.Send(common.CodeConfirmationEvent, recipient, code)
+	if err != nil {
+		log.Print(err)
+	}
 }
 
 func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {
@@ -406,7 +414,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 		confirmCode := generateConfirmCode()
 		u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
-		r.sendConfirmCode(u.(user.ConfirmableUser).GetEmail(), confirmCode)
+		sendConfirmCode(r.deps.Senders.Select(c), u.(user.ConfirmableUser).GetEmail(), confirmCode)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,

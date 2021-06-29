@@ -30,30 +30,26 @@ func main() {
 			SessionStorer: &models.Sessioner{
 				Sessions: make(map[string]*models.Session),
 			},
-			Senders: map[string]interface{}{
-				"email": "EmailSender",
-				"sms": "SMSSender",
-				"phone": "PhoneCaller",
-			},
-			SenderSelector: func(c *gin.Context) string {
-				senderType := c.Query("type")
-				return senderType
-			},
-		))
-
-		Sender: sender.DefaultEmailSender{
-			Credentials: sender.EmailCredentials{
-				Server: "smtp.mail.ru",
-				Port:   465,
-				Subjects: map[int]string{
-					common.CodeConfirmationEvent: "Code confirmation for App",
-					common.PasswordRecoveryEvent: "Recovery password for App",
-				},
-				FromName: "My App",
-				From:     "example@gmail.com",
-				Pass:     "test",
-			},
+			UserStorer: nil,
 		},
+		Senders: sender.NewSenders(
+			sender.SendersList{
+				"email": sender.DefaultEmailSender{
+					Credentials: sender.EmailCredentials{
+						Server: "smtp.mail.ru",
+						Port:   465,
+						Subjects: map[int]string{
+							common.CodeConfirmationEvent: "Code confirmation for App",
+							common.PasswordRecoveryEvent: "Recovery password for App",
+						},
+						FromName: "My App",
+						From:     "example@gmail.com",
+						Pass:     "test",
+					},
+				},
+			},
+			nil,
+		),
 	})
 
 	rauth.Config.AuthType = authtype.AuthByUsername

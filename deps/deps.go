@@ -19,8 +19,8 @@ type Deps struct {
 	// checker for check implement user interfaces
 	checker *checker.Checker
 
-	// sender for send user notifications
-	Sender sender.Sender
+	// senders - list of senders for various types of sending
+	Senders *sender.Senders
 }
 
 type Storage struct {
