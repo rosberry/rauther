@@ -3,6 +3,7 @@ package deps
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther/checker"
+	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
 )
@@ -17,6 +18,9 @@ type Deps struct {
 
 	// checker for check implement user interfaces
 	checker *checker.Checker
+
+	// sender for send user notifications
+	Sender sender.Sender
 }
 
 type Storage struct {

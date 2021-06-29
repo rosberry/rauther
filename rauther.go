@@ -106,8 +106,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		sessionID := request.DeviceID
 
 		if sessionID == "" {
-			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotSessionID])
-			return
+			sessionID = generateSessionID()
 		}
 
 		session := r.deps.SessionStorer.LoadByID(sessionID)
@@ -146,8 +145,9 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"result": true,
-			"token":  session.GetToken(),
+			"result":    true,
+			"device_id": sessionID,
+			"token":     session.GetToken(),
 		})
 	}
 }
@@ -338,8 +338,9 @@ func (r *Rauther) SignInHandler() gin.HandlerFunc {
 	return f
 }
 
-func (r *Rauther) sendConfirmCode(email, code string) {
-	log.Printf("Confirm code for %s: %s", email, code)
+func (r *Rauther) sendConfirmCode(recipient, code string) {
+	log.Printf("Confirm code for %s: %s", recipient, code)
+	r.deps.Sender.Send(common.CodeConfirmationEvent, recipient, code)
 }
 
 func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {

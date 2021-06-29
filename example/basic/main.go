@@ -7,9 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
 	"github.com/rosberry/rauther/authtype"
+	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
+	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
@@ -22,15 +24,11 @@ func main() {
 		})
 	})
 
-	rauth := rauther.New(
-		deps.New(r,
-			deps.Storage{
-				SessionStorer: &models.Sessioner{
-					Sessions: make(map[string]*models.Session),
-				},
-				UserStorer: &models.UserStorer{
-					Users: make(map[string]*models.User),
-				},
+	rauth := rauther.New(deps.Deps{
+		R: r,
+		Storage: deps.Storage{
+			SessionStorer: &models.Sessioner{
+				Sessions: make(map[string]*models.Session),
 			},
 			Senders: map[string]interface{}{
 				"email": "EmailSender",
@@ -40,11 +38,23 @@ func main() {
 			SenderSelector: func(c *gin.Context) string {
 				senderType := c.Query("type")
 				return senderType
-			}
+			},
 		))
 
-	// rauth.Config.CreateGuestUser = false
-	// rauth.Modules.AuthableUser = false
+		Sender: sender.DefaultEmailSender{
+			Credentials: sender.EmailCredentials{
+				Server: "smtp.mail.ru",
+				Port:   465,
+				Subjects: map[int]string{
+					common.CodeConfirmationEvent: "Code confirmation for App",
+					common.PasswordRecoveryEvent: "Recovery password for App",
+				},
+				FromName: "My App",
+				From:     "example@gmail.com",
+				Pass:     "test",
+			},
+		},
+	})
 
 	rauth.Config.AuthType = authtype.AuthByUsername
 

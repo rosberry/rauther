@@ -88,11 +88,9 @@ func TestDefaultAuthRouter(t *testing.T) {
 
 					json.Unmarshal(rr.Body.Bytes(), &resp)
 
-					So(rr.Code, ShouldEqual, http.StatusUnauthorized)
-					So(resp.Result, ShouldBeFalse)
-					So(resp.Error.Code, ShouldNotBeEmpty)
-					So(resp.Error.Message, ShouldNotBeEmpty)
-					So(resp.Token, ShouldBeEmpty)
+					So(rr.Code, ShouldEqual, http.StatusOK)
+					So(resp.Result, ShouldBeTrue)
+					So(resp.Token, ShouldNotBeEmpty)
 				})
 			})
 			Convey("When we send request to /auth", func() {
