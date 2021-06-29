@@ -1,4 +1,4 @@
-package rauther
+package sender
 
 import (
 	"fmt"
@@ -11,13 +11,13 @@ type Sender interface {
 }
 
 type EmailCredentials struct {
-	Server string
-	Port int
+	Server   string
+	Port     int
 	Subjects map[int]string
-	From string
+	From     string
 	FromName string
-	Pass string
-	Message string
+	Pass     string
+	Message  string
 }
 
 type DefaultEmailSender struct {
@@ -25,14 +25,13 @@ type DefaultEmailSender struct {
 }
 
 func (sender DefaultEmailSender) Send(event int, recipient string, message string) error {
-
 	provider := fmt.Sprintf("%s:%v", sender.Credentials.Server, sender.Credentials.Port)
 	from := fmt.Sprintf("%s <%s>", sender.Credentials.FromName, sender.Credentials.From)
 	body := fmt.Sprintf(
-		"To: %s\r\n" +
-		"Subject: %s\r\n" +
-		"\r\n" +
-		"%s\r\n",
+		"To: %s\r\n"+
+			"Subject: %s\r\n"+
+			"\r\n"+
+			"%s\r\n",
 		recipient,
 		sender.Credentials.Subjects[event],
 		message,
@@ -47,10 +46,9 @@ func (sender DefaultEmailSender) Send(event int, recipient string, message strin
 			sender.Credentials.Server,
 		),
 		sender.Credentials.From,
-		[]string{recipient}, 
+		[]string{recipient},
 		[]byte(body),
 	)
-
 	if err != nil {
 		log.Printf("smtp error: %s", err)
 		return err

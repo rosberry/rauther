@@ -1,4 +1,6 @@
-package rauther
+package config
+
+import "github.com/rosberry/rauther/authtype"
 
 // Config contain all configurations for Rauther and modules
 type Config struct {
@@ -12,8 +14,11 @@ type Config struct {
 		// SignIn is gin route path for sign-in handler. Default: "sign-in"
 		SignIn string
 
-		// EmailConfirm is gin route path for email confirmation handler. Default: "confirm/email"
-		EmailConfirm string
+		// ConfirmCode is gin route path for email confirmation handler. Default: "code/confirm/email"
+		ConfirmCode string
+
+		// ConfirmResend is gin route path for request resend confirm code. Default: "resend/confirm/email"
+		ConfirmResend string
 	}
 
 	ContextNames struct {
@@ -40,7 +45,7 @@ type Config struct {
 
 	// AuthType is type of auth (sign-up/sign-in) user.
 	// Can be AuthByEmail or AuthByUsername. Default: AuthByEmail
-	AuthType AuthType
+	AuthType authtype.AuthType
 
 	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
 	CreateGuestUser bool
@@ -53,11 +58,13 @@ func (c *Config) Default() {
 	c.ContextNames.Session = "session"
 
 	c.ContextNames.User = "user"
-	c.AuthType = AuthByEmail
+	c.AuthType = authtype.AuthByEmail
 	c.Routes.SignUp = "sign-up"
 	c.Routes.SignIn = "sign-in"
 
-	c.Routes.EmailConfirm = "confirm/email"
+	c.Routes.ConfirmCode = "code/confirm/email"
+	c.Routes.ConfirmResend = "resend/confirm/email"
+
 	c.QueryNames.EmailConfirm.PID = "pid"
 	c.QueryNames.EmailConfirm.Code = "code"
 }

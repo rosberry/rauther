@@ -1,4 +1,9 @@
-package rauther
+package modules
+
+import (
+	"github.com/rosberry/rauther/checker"
+	"github.com/rosberry/rauther/user"
+)
 
 type Modules struct {
 	Session         bool
@@ -7,8 +12,8 @@ type Modules struct {
 	// RecoverableUser bool
 }
 
-func defaultModules(user User) *Modules {
-	checker := newCheckerByUser(user)
+func New(user user.User) *Modules {
+	checker := checker.New(user)
 
 	return &Modules{
 		Session:         true,

@@ -1,6 +1,10 @@
 package models
 
-import "github.com/rosberry/rauther"
+import (
+	"errors"
+
+	"github.com/rosberry/rauther/user"
+)
 
 // User model
 type User struct {
@@ -31,21 +35,25 @@ type UserStorer struct {
 	Users map[string]*User
 }
 
-func (s *UserStorer) LoadByPID(pid string) (user rauther.User, exist bool) {
+func (s *UserStorer) Load(pid string) (user user.User, err error) {
 	if user, ok := s.Users[pid]; ok {
-		return user, true
+		return user, nil
 	}
 
+	return nil, errors.New("User not found") // nolint:goerr113
+}
+
+func (s *UserStorer) Create(pid string) (user user.User) {
 	u := &User{
 		PID: pid,
 	}
 
 	s.Users[pid] = u
 
-	return u, false
+	return u
 }
 
-func (s *UserStorer) Save(user rauther.User) error {
+func (s *UserStorer) Save(user user.User) error {
 	s.Users[user.GetPID()] = user.(*User)
 
 	return nil

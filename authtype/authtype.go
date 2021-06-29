@@ -1,4 +1,6 @@
-package rauther
+package authtype
+
+// Own package ?
 
 import (
 	"fmt"
@@ -43,8 +45,8 @@ func (r signUpRequestByUsername) GetPID() (pid string)           { return r.User
 func (r signUpRequestByUsername) GetPassword() (password string) { return r.Password }
 func (r signUpRequestByUsername) GetEmail() (email string)       { return r.Email }
 
-func parseSignUpRequestData(r *Rauther, c *gin.Context) (SignUpRequest, error) {
-	switch r.Config.AuthType {
+func ParseSignUpRequestData(authType AuthType, c *gin.Context) (SignUpRequest, error) {
+	switch authType {
 	case AuthByEmail:
 		request := signUpRequestByEmail{}
 
