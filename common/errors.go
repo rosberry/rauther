@@ -32,6 +32,7 @@ const (
 	ErrAuthableUserNotImplement
 	ErrConfirmableUserNotImplement
 	ErrSenderRequired
+	ErrRecoverableUserNotImplement
 )
 
 var Errors = map[ErrTypes]Err{
@@ -54,4 +55,5 @@ var Errors = map[ErrTypes]Err{
 	ErrAuthableUserNotImplement:    {"authable_user_not_implement", "Please implement AuthableUser interface"},
 	ErrConfirmableUserNotImplement: {"confirmable_user_not_implement", "Please implement ConfirmableUser interface"},
 	ErrSenderRequired:              {"sender_required", "At least one sender is required"},
+	ErrRecoverableUserNotImplement: {"recoverable_user_not_implement", "Please implement RecoverableUser interface"},
 }

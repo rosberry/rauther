@@ -24,35 +24,40 @@ func main() {
 		})
 	})
 
-	rauth := rauther.New(deps.Deps{
-		R: r,
-		Storage: deps.Storage{
+	d := deps.New(
+		r,
+		deps.Storage{
 			SessionStorer: &models.Sessioner{
 				Sessions: make(map[string]*models.Session),
 			},
-			UserStorer: nil,
-		},
-		Senders: sender.NewSenders(
-			sender.SendersList{
-				"email": sender.DefaultEmailSender{
-					Credentials: sender.EmailCredentials{
-						Server: "smtp.mail.ru",
-						Port:   465,
-						Subjects: map[int]string{
-							common.CodeConfirmationEvent: "Code confirmation for App",
-							common.PasswordRecoveryEvent: "Recovery password for App",
-						},
-						FromName: "My App",
-						From:     "example@gmail.com",
-						Pass:     "test",
+			UserStorer: &models.UserStorer{
+				Users: make(map[string]*models.User),
+			},
+		})
+
+	d.Senders = sender.NewSenders(
+		sender.SendersList{
+			"email": sender.DefaultEmailSender{
+				Credentials: sender.EmailCredentials{
+					Server: "smtp.mail.ru",
+					Port:   465,
+					Subjects: map[int]string{
+						common.CodeConfirmationEvent: "Code confirmation for App",
+						common.PasswordRecoveryEvent: "Recovery password for App",
 					},
+					FromName: "My App",
+					From:     "example@gmail.com",
+					Pass:     "test",
 				},
 			},
-			nil,
-		),
-	})
+		},
+		nil,
+	)
+
+	rauth := rauther.New(d)
 
 	rauth.Config.AuthType = authtype.AuthByUsername
+	rauth.Modules.RecoverableUser = true
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 

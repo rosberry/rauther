@@ -31,6 +31,9 @@ func (u *User) GetConfirmCode() (code string) { return u.ConfirmCode }
 func (u *User) SetConfirmed(ok bool)       { u.Confirmed = ok }
 func (u *User) SetConfirmCode(code string) { u.ConfirmCode = code }
 
+func (u *User) SetRecoveryCode(code string)    { u.ConfirmCode = code }
+func (u *User) GetRecoveryCode() (code string) { return u.ConfirmCode }
+
 type UserStorer struct {
 	Users map[string]*User
 }

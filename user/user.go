@@ -30,3 +30,11 @@ type ConfirmableUser interface {
 	SetConfirmed(ok bool)
 	SetConfirmCode(code string)
 }
+
+type RecoverableUser interface {
+	EmailableUser
+
+	GetRecoveryCode() (code string)
+
+	SetRecoveryCode(code string)
+}

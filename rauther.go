@@ -79,6 +79,9 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
 	}
+	if r.Modules.RecoverableUser {
+		r.includeRecoverable(router)
+	}
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
@@ -92,6 +95,19 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 
 	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
 	router.GET(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
+}
+
+func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
+	if !r.deps.Checker().Recoverable {
+		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
+	}
+
+	if r.deps.Senders == nil || len(r.deps.Senders.List) == 0 {
+		log.Fatal(common.Errors[common.ErrSenderRequired])
+	}
+
+	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
+	router.GET(r.Config.Routes.RecoveryCode, r.recoveryHandler())
 }
 
 func (r *Rauther) authHandler() gin.HandlerFunc {
@@ -419,5 +435,17 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
 		})
+	}
+}
+
+func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"result": false, "status": "not implement"})
+	}
+}
+
+func (r *Rauther) recoveryHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"result": false, "status": "not implement"})
 	}
 }

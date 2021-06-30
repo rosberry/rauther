@@ -9,7 +9,7 @@ type Modules struct {
 	Session         bool
 	AuthableUser    bool
 	ConfirmableUser bool
-	// RecoverableUser bool
+	RecoverableUser bool
 }
 
 func New(user user.User) *Modules {
@@ -19,5 +19,6 @@ func New(user user.User) *Modules {
 		Session:         true,
 		AuthableUser:    checker.Authable,
 		ConfirmableUser: checker.Confirmable,
+		RecoverableUser: checker.Recoverable,
 	}
 }
