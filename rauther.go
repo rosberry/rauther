@@ -466,6 +466,11 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
+		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
+			return
+		}
+
 		code := generateConfirmCode()
 		u.(user.RecoverableUser).SetRecoveryCode(code)
 
