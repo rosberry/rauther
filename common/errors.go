@@ -33,6 +33,7 @@ const (
 	ErrConfirmableUserNotImplement
 	ErrSenderRequired
 	ErrRecoverableUserNotImplement
+	ErrInvalidRecoveryCode
 )
 
 var Errors = map[ErrTypes]Err{
@@ -56,4 +57,5 @@ var Errors = map[ErrTypes]Err{
 	ErrConfirmableUserNotImplement: {"confirmable_user_not_implement", "Please implement ConfirmableUser interface"},
 	ErrSenderRequired:              {"sender_required", "At least one sender is required"},
 	ErrRecoverableUserNotImplement: {"recoverable_user_not_implement", "Please implement RecoverableUser interface"},
+	ErrInvalidRecoveryCode:         {"invalid_code", "Invalid recovery code"},
 }
