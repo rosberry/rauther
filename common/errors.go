@@ -31,6 +31,7 @@ const (
 	ErrSessionStorerDependency
 	ErrAuthableUserNotImplement
 	ErrConfirmableUserNotImplement
+	ErrSenderRequired
 )
 
 var Errors = map[ErrTypes]Err{
@@ -52,4 +53,5 @@ var Errors = map[ErrTypes]Err{
 	ErrSessionStorerDependency:     {"session_storer_nil", "Nil SessionStorer dependency"},
 	ErrAuthableUserNotImplement:    {"authable_user_not_implement", "Please implement AuthableUser interface"},
 	ErrConfirmableUserNotImplement: {"confirmable_user_not_implement", "Please implement ConfirmableUser interface"},
+	ErrSenderRequired:              {"sender_required", "At least one sender is required"},
 }

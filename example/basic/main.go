@@ -10,6 +10,7 @@ import (
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
+	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
@@ -22,22 +23,26 @@ func main() {
 		})
 	})
 
-	rauth := rauther.New(
-		deps.New(r,
-			deps.Storage{
-				SessionStorer: &models.Sessioner{
-					Sessions: make(map[string]*models.Session),
-				},
-				UserStorer: &models.UserStorer{
-					Users: make(map[string]*models.User),
-				},
+	d := deps.New(
+		r,
+		deps.Storage{
+			SessionStorer: &models.Sessioner{
+				Sessions: make(map[string]*models.Session),
 			},
-		))
+			UserStorer: &models.UserStorer{
+				Users: make(map[string]*models.User),
+			},
+		},
+	)
 
-	// rauth.Config.CreateGuestUser = false
-	// rauth.Modules.AuthableUser = false
+	d.Senders = sender.NewSenders(nil).
+		AddSender("email", &fakeEmailSender{}).
+		AddSender("sms", &fakeSmsSender{})
+
+	rauth := rauther.New(d)
 
 	rauth.Config.AuthType = authtype.AuthByUsername
+	//	rauth.Modules.ConfirmableUser = false
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
@@ -50,4 +55,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+type fakeEmailSender struct{}
+
+func (s *fakeEmailSender) Send(event int, recipient string, message string) error {
+	log.Printf("Send '%s' to %v by email", message, recipient)
+	return nil
+}
+
+type fakeSmsSender struct{}
+
+func (s *fakeSmsSender) Send(event int, recipient string, message string) error {
+	log.Printf("Send '%s' to %v by sms", message, recipient)
+	return nil
 }
