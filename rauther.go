@@ -103,7 +103,7 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
 	}
 
-	if r.deps.Senders == nil || len(r.deps.Senders.List) == 0 {
+	if r.deps.Senders == nil || r.deps.Senders.IsEmpty() {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
