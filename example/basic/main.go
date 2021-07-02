@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
 	"github.com/rosberry/rauther/authtype"
-	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
@@ -24,35 +23,26 @@ func main() {
 		})
 	})
 
-	rauth := rauther.New(deps.Deps{
-		R: r,
-		Storage: deps.Storage{
+	d := deps.New(
+		r,
+		deps.Storage{
 			SessionStorer: &models.Sessioner{
 				Sessions: make(map[string]*models.Session),
 			},
-			UserStorer: nil,
-		},
-		Senders: sender.NewSenders(
-			sender.SendersList{
-				"email": sender.DefaultEmailSender{
-					Credentials: sender.EmailCredentials{
-						Server: "smtp.mail.ru",
-						Port:   465,
-						Subjects: map[int]string{
-							common.CodeConfirmationEvent: "Code confirmation for App",
-							common.PasswordRecoveryEvent: "Recovery password for App",
-						},
-						FromName: "My App",
-						From:     "example@gmail.com",
-						Pass:     "test",
-					},
-				},
+			UserStorer: &models.UserStorer{
+				Users: make(map[string]*models.User),
 			},
-			nil,
-		),
-	})
+		},
+	)
+
+	d.Senders = sender.NewSenders(nil).
+		AddSender("email", &fakeEmailSender{}).
+		AddSender("sms", &fakeSmsSender{})
+
+	rauth := rauther.New(d)
 
 	rauth.Config.AuthType = authtype.AuthByUsername
+	//	rauth.Modules.ConfirmableUser = false
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
@@ -65,4 +55,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+type fakeEmailSender struct{}
+
+func (s *fakeEmailSender) Send(event int, recipient string, message string) error {
+	log.Printf("Send '%s' to %v by email", message, recipient)
+	return nil
+}
+
+type fakeSmsSender struct{}
+
+func (s *fakeSmsSender) Send(event int, recipient string, message string) error {
+	log.Printf("Send '%s' to %v by sms", message, recipient)
+	return nil
 }
