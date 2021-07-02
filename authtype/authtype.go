@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 type AuthType int
@@ -50,7 +51,7 @@ func ParseSignUpRequestData(authType AuthType, c *gin.Context) (SignUpRequest, e
 	case AuthByEmail:
 		request := signUpRequestByEmail{}
 
-		err := c.Bind(&request)
+		err := c.ShouldBindBodyWith(&request, binding.JSON)
 		if err != nil {
 			err = fmt.Errorf("failed parse auth data: %w", err)
 		}
@@ -59,7 +60,7 @@ func ParseSignUpRequestData(authType AuthType, c *gin.Context) (SignUpRequest, e
 	case AuthByUsername:
 		request := signUpRequestByUsername{}
 
-		err := c.Bind(&request)
+		err := c.ShouldBindBodyWith(&request, binding.JSON)
 		if err != nil {
 			err = fmt.Errorf("failed parse auth data: %w", err)
 		}
@@ -68,7 +69,7 @@ func ParseSignUpRequestData(authType AuthType, c *gin.Context) (SignUpRequest, e
 	default:
 		request := signUpRequestByEmail{}
 
-		err := c.Bind(&request)
+		err := c.ShouldBindBodyWith(&request, binding.JSON)
 		if err != nil {
 			err = fmt.Errorf("failed parse auth data: %w", err)
 		}
