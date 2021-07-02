@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
@@ -79,6 +80,9 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
 	}
+	if r.Modules.RecoverableUser {
+		r.includeRecoverable(router)
+	}
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
@@ -92,6 +96,19 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 
 	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
 	router.GET(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
+}
+
+func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
+	if !r.deps.Checker().Recoverable {
+		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
+	}
+
+	if r.deps.Senders == nil || r.deps.Senders.IsEmpty() {
+		log.Fatal(common.Errors[common.ErrSenderRequired])
+	}
+
+	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
+	router.POST(r.Config.Routes.RecoveryCode, r.recoveryHandler())
 }
 
 func (r *Rauther) authHandler() gin.HandlerFunc {
@@ -236,7 +253,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			email := request.(authtype.SignUpEmailableRequest).GetEmail()
 			u.(user.EmailableUser).SetEmail(email)
 
-			if r.deps.Checker().Confirmable {
+			if r.Modules.ConfirmableUser {
 				confirmCode := generateConfirmCode()
 
 				u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
@@ -309,7 +326,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.deps.Checker().Confirmable && !u.(user.ConfirmableUser).GetConfirmed() {
+		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
 			return
 		}
@@ -346,6 +363,15 @@ func sendConfirmCode(sender sender.Sender, recipient, code string) {
 	log.Printf("Confirm code for %s: %s", recipient, code)
 
 	err := sender.Send(common.CodeConfirmationEvent, recipient, code)
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+func sendRecoveryCode(sender sender.Sender, recipient, code string) {
+	log.Printf("Recovery code for %s: %s", recipient, code)
+
+	err := sender.Send(common.PasswordRecoveryEvent, recipient, code)
 	if err != nil {
 		log.Print(err)
 	}
@@ -419,5 +445,80 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
 		})
+	}
+}
+
+func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		type recoveryRequest struct {
+			PID string `json:"pid"`
+		}
+
+		var request recoveryRequest
+		if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			return
+		}
+
+		u, err := r.deps.Storage.UserStorer.Load(request.PID)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			return
+		}
+
+		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
+			return
+		}
+
+		code := generateConfirmCode()
+		u.(user.RecoverableUser).SetRecoveryCode(code)
+
+		err = r.deps.Storage.UserStorer.Save(u)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserSave])
+			return
+		}
+
+		sendRecoveryCode(r.deps.Senders.Select(c), u.(user.RecoverableUser).GetEmail(), code)
+		c.JSON(http.StatusOK, gin.H{"result": true})
+	}
+}
+
+func (r *Rauther) recoveryHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		type recoveryRequest struct {
+			PID      string `json:"pid"`
+			Code     string `json:"code"`
+			Password string `json:"password"`
+		}
+
+		var request recoveryRequest
+		if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			return
+		}
+
+		u, err := r.deps.Storage.UserStorer.Load(request.PID)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			return
+		}
+
+		code := u.(user.RecoverableUser).GetRecoveryCode()
+		if code != request.Code {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRecoveryCode])
+			return
+		}
+
+		u.(user.AuthableUser).SetPassword(request.Password)
+
+		err = r.deps.Storage.UserStorer.Save(u)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserSave])
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"result": true})
 	}
 }

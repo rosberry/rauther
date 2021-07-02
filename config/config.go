@@ -19,6 +19,10 @@ type Config struct {
 
 		// ConfirmResend is gin route path for request resend confirm code. Default: "resend/confirm/email"
 		ConfirmResend string
+
+		RecoveryRequest string
+
+		RecoveryCode string
 	}
 
 	ContextNames struct {
@@ -64,6 +68,9 @@ func (c *Config) Default() {
 
 	c.Routes.ConfirmCode = "code/confirm/email"
 	c.Routes.ConfirmResend = "resend/confirm/email"
+
+	c.Routes.RecoveryRequest = "request/recovery/email"
+	c.Routes.RecoveryCode = "code/recovery/email"
 
 	c.QueryNames.EmailConfirm.PID = "pid"
 	c.QueryNames.EmailConfirm.Code = "code"

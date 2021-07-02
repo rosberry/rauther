@@ -1,11 +1,14 @@
 package checker
 
-import "github.com/rosberry/rauther/user"
+import (
+	"github.com/rosberry/rauther/user"
+)
 
 type Checker struct {
 	Authable    bool
 	Emailable   bool
 	Confirmable bool
+	Recoverable bool
 }
 
 func New(user user.User) *Checker {
@@ -33,8 +36,14 @@ func (c *Checker) IsConfirmableUser(u user.User) (ok bool) {
 	return
 }
 
+func (c *Checker) IsRecoverableUser(u user.User) (ok bool) {
+	_, ok = u.(user.RecoverableUser)
+	return
+}
+
 func (c *Checker) checkAllInterfaces(u user.User) {
 	c.Authable = c.IsAuthableUser(u)
 	c.Emailable = c.IsEmailableUser(u)
 	c.Confirmable = c.IsConfirmableUser(u)
+	c.Recoverable = c.IsRecoverableUser(u)
 }
