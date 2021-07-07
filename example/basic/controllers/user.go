@@ -8,15 +8,17 @@ import (
 )
 
 func Profile(c *gin.Context) {
-	s, ok := c.Get("session")
+	s, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusForbidden, gin.H{
 			"result":  "false",
 			"message": "not found session",
 		})
+
+		return
 	}
 
-	sess := s.(*models.Session)
+	sess := s.(*models.User)
 
 	c.JSON(http.StatusOK, gin.H{
 		"result":  "true",

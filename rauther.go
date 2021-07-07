@@ -48,7 +48,19 @@ func New(deps deps.Deps) *Rauther {
 		Modules: modules.New(u),
 	}
 
+	if ok := r.checkAuthTypes(u); !ok {
+		log.Fatal("failed auth types")
+	}
+
 	return r
+}
+
+func (r *Rauther) checkAuthTypes(user user.User) bool {
+	if r.deps.Types == nil {
+		return false
+	}
+
+	return r.deps.Types.Valid(user)
 }
 
 func (r *Rauther) InitHandlers() error {
@@ -80,6 +92,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
 	}
+
 	if r.Modules.RecoverableUser {
 		r.includeRecoverable(router)
 	}
@@ -90,7 +103,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
 	}
 
-	if r.deps.Senders == nil || r.deps.Senders.IsEmpty() {
+	if r.deps.Types == nil || r.deps.Types.IsEmpty() {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
@@ -103,7 +116,7 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
 	}
 
-	if r.deps.Senders == nil || r.deps.Senders.IsEmpty() {
+	if r.deps.Types == nil || r.deps.Types.IsEmpty() {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
@@ -191,12 +204,14 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			if r.Config.CreateGuestUser {
-				user, _ := r.deps.UserStorer.Load(session.GetUserPID())
-				c.Set(r.Config.ContextNames.User, user)
+			user, err := r.deps.UserStorer.Load(session.GetUserPID())
+			if err != nil && r.Config.CreateGuestUser {
+				user = r.deps.UserStorer.Create(session.GetUserPID())
 			}
 
+			c.Set(r.Config.ContextNames.User, user)
 			c.Set(r.Config.ContextNames.Session, session)
+
 			c.Next()
 
 			return
@@ -215,13 +230,23 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		var request authtype.SignUpRequest
-
-		request, err := authtype.ParseSignUpRequestData(r.Config.AuthType, c)
-		if err != nil {
+		at := r.deps.Types.Select(c)
+		if at == nil {
+			log.Print("sign up handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+		}
+
+		req := at.SignUpRequest
+
+		err := c.ShouldBindBodyWith(&req, binding.JSON)
+		if err != nil {
+			log.Print("sign up handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+
 			return
 		}
+
+		request := req.(authtype.SignUpRequest)
 
 		pid, password := request.GetPID(), request.GetPassword()
 
@@ -234,7 +259,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		sess := s.(session.Session)
 		sess.SetUserPID(pid)
 
-		if err = r.deps.SessionStorer.Save(sess); err != nil {
+		err = r.deps.SessionStorer.Save(sess)
+		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
 			return
 		}
@@ -249,16 +275,25 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		u.(user.AuthableUser).SetPassword(password)
 
-		if r.deps.Checker().Emailable {
-			email := request.(authtype.SignUpEmailableRequest).GetEmail()
-			u.(user.EmailableUser).SetEmail(email)
+		if r.deps.Checker().WithExpandableFields {
+			contacts := request.(authtype.SignUpContactableRequest).Fields()
+			for contactType, contact := range contacts {
+				err := user.SetFields(u, contactType, contact)
+				if err != nil {
+					log.Printf("sign up: set fields %v: %v", contactType, err)
+					errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+
+					return
+				}
+			}
 
 			if r.Modules.ConfirmableUser {
 				confirmCode := generateConfirmCode()
 
 				u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
 
-				sendConfirmCode(r.deps.Senders.Select(c), u.(user.ConfirmableUser).GetEmail(), confirmCode)
+				contact, _ := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
+				sendConfirmCode(at.Sender, contact.(string), confirmCode)
 			}
 		}
 
@@ -294,13 +329,23 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		var request authtype.SignUpRequest
-
-		request, err := authtype.ParseSignUpRequestData(r.Config.AuthType, c)
-		if err != nil {
+		at := r.deps.Types.Select(c)
+		if at == nil {
+			log.Print("sign in handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
 			return
 		}
+
+		req := at.SignInRequest
+
+		err := c.ShouldBindBodyWith(&req, binding.JSON)
+		if err != nil {
+			log.Print("sign in handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			return
+		}
+
+		request := req.(authtype.SignUpRequest)
 
 		pid, password := request.GetPID(), request.GetPassword()
 
@@ -440,7 +485,10 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 		confirmCode := generateConfirmCode()
 		u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
-		sendConfirmCode(r.deps.Senders.Select(c), u.(user.ConfirmableUser).GetEmail(), confirmCode)
+
+		at := r.deps.Types.Select(c)
+		contact, _ := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
+		sendConfirmCode(at.Sender, contact.(string), confirmCode)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
@@ -480,7 +528,9 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		sendRecoveryCode(r.deps.Senders.Select(c), u.(user.RecoverableUser).GetEmail(), code)
+		at := r.deps.Types.Select(c)
+		contact, _ := u.(user.RecoverableUser).GetField(at.Sender.RecipientKey())
+		sendRecoveryCode(at.Sender, contact.(string), code)
 		c.JSON(http.StatusOK, gin.H{"result": true})
 	}
 }

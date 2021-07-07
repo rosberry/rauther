@@ -10,7 +10,6 @@ import (
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
-	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
@@ -35,14 +34,14 @@ func main() {
 		},
 	)
 
-	d.Senders = sender.NewSenders(nil).
-		AddSender("email", &fakeEmailSender{}).
-		AddSender("sms", &fakeSmsSender{})
+	d.Types = authtype.New(nil).
+		Add("pochta", &fakeEmailSender{}, &customReqEmail{}, &customReqEmail{}).
+		Add("email", &fakeEmailSender{}, nil, nil).
+		Add("username", &fakeEmailSender{}, &authtype.SignUpRequestByUsername{}, &authtype.SignUpRequestByUsername{}).
+		Add("custom", &fakeSmsSender{}, &customReq2{}, &customReq2{})
 
 	rauth := rauther.New(d)
-
-	rauth.Config.AuthType = authtype.AuthByUsername
-	//	rauth.Modules.ConfirmableUser = false
+	rauth.Modules.ConfirmableUser = false
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
@@ -64,9 +63,46 @@ func (s *fakeEmailSender) Send(event int, recipient string, message string) erro
 	return nil
 }
 
+func (s *fakeEmailSender) RecipientKey() string {
+	return "email"
+}
+
 type fakeSmsSender struct{}
 
 func (s *fakeSmsSender) Send(event int, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by sms", message, recipient)
 	return nil
+}
+
+func (s *fakeSmsSender) RecipientKey() string {
+	return "phone"
+}
+
+type customReqEmail struct {
+	Email    string `json:"pochta"`
+	Password string `json:"parol"`
+}
+
+func (r customReqEmail) GetPID() (pid string)           { return r.Email } // trim spaces, toLower
+func (r customReqEmail) GetPassword() (password string) { return r.Password }
+func (r customReqEmail) Fields() map[string]string      { return map[string]string{"email": r.Email} }
+
+type customReq2 struct {
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
+func (r customReq2) GetPID() (pid string)           { return r.Email } // trim spaces, toLower
+func (r customReq2) GetPassword() (password string) { return r.Password }
+
+func (r customReq2) Fields() map[string]string {
+	return map[string]string{
+		"email":    r.Email,
+		"username": r.Username,
+		"fname":    r.FirstName,
+		"lname":    r.LastName,
+	}
 }

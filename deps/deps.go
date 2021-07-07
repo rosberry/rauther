@@ -2,8 +2,8 @@ package deps
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/checker"
-	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
 )
@@ -19,8 +19,8 @@ type Deps struct {
 	// checker for check implement user interfaces
 	checker *checker.Checker
 
-	// senders - list of senders for various types of sending
-	Senders *sender.Senders
+	// Types is list of auth types - default or custom sign-up/sign-ip structs and code sender
+	Types *authtype.AuthTypes
 }
 
 type Storage struct {

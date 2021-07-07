@@ -3,77 +3,122 @@ package authtype
 // Own package ?
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
+	"github.com/rosberry/rauther/sender"
+	"github.com/rosberry/rauther/user"
 )
 
-type AuthType int
+type (
+	AuthType struct {
+		Key    string
+		Sender sender.Sender
 
-const (
-	AuthByEmail AuthType = iota + 1
-	AuthByUsername
-)
-
-type SignUpRequest interface {
-	GetPID() (pid string)
-	GetPassword() (password string)
-}
-
-type SignUpEmailableRequest interface {
-	SignUpRequest
-
-	GetEmail() (email string)
-}
-
-type signUpRequestByEmail struct {
-	Email    string `json:"email" form:"email" binding:"required"`
-	Password string `json:"password" form:"password" binding:"required"`
-}
-
-func (r signUpRequestByEmail) GetPID() (pid string)           { return r.Email } // trim spaces, toLower
-func (r signUpRequestByEmail) GetPassword() (password string) { return r.Password }
-func (r signUpRequestByEmail) GetEmail() (email string)       { return r.Email }
-
-type signUpRequestByUsername struct {
-	Username string `json:"username" form:"username" binding:"required"`
-	Password string `json:"password" form:"password" binding:"required"`
-	Email    string `json:"email" form:"email"`
-}
-
-func (r signUpRequestByUsername) GetPID() (pid string)           { return r.Username } // trim spaces
-func (r signUpRequestByUsername) GetPassword() (password string) { return r.Password }
-func (r signUpRequestByUsername) GetEmail() (email string)       { return r.Email }
-
-func ParseSignUpRequestData(authType AuthType, c *gin.Context) (SignUpRequest, error) {
-	switch authType {
-	case AuthByEmail:
-		request := signUpRequestByEmail{}
-
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
-		if err != nil {
-			err = fmt.Errorf("failed parse auth data: %w", err)
-		}
-
-		return request, err
-	case AuthByUsername:
-		request := signUpRequestByUsername{}
-
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
-		if err != nil {
-			err = fmt.Errorf("failed parse auth data: %w", err)
-		}
-
-		return request, err
-	default:
-		request := signUpRequestByEmail{}
-
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
-		if err != nil {
-			err = fmt.Errorf("failed parse auth data: %w", err)
-		}
-
-		return request, err
+		SignUpRequest SignUpRequest
+		SignInRequest SignUpRequest
 	}
+
+	List map[string]AuthType
+
+	AuthTypes struct {
+		list     List
+		Selector Selector
+	}
+
+	Selector func(c *gin.Context) (senderKey string)
+)
+
+type (
+	SignUpRequest interface {
+		GetPID() (pid string)
+		GetPassword() (password string)
+	}
+
+	SignUpContactableRequest interface {
+		SignUpRequest
+
+		Fields() map[string]string
+	}
+)
+
+func New(selector Selector) *AuthTypes {
+	authTypes := &AuthTypes{
+		list:     make(List),
+		Selector: DefaultSelector,
+	}
+
+	if selector != nil {
+		authTypes.Selector = selector
+	}
+
+	return authTypes
+}
+
+func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInRequest SignUpRequest) *AuthTypes {
+	if a == nil {
+		log.Fatal("auth types is nil")
+	}
+
+	if sender == nil {
+		log.Fatal("sender can not be nil")
+	}
+
+	if signUpRequest == nil {
+		signUpRequest = &SignUpRequestByEmail{}
+	}
+
+	if signInRequest == nil {
+		signInRequest = &SignUpRequestByEmail{}
+	}
+
+	t := AuthType{
+		Key:           key,
+		Sender:        sender,
+		SignUpRequest: signUpRequest,
+		SignInRequest: signInRequest,
+	}
+
+	a.list[key] = t
+
+	return a
+}
+
+func (a *AuthTypes) IsEmpty() bool {
+	return len(a.list) == 0
+}
+
+func (a *AuthTypes) Select(c *gin.Context) *AuthType {
+	if a.Selector == nil {
+		a.Selector = DefaultSelector
+	}
+
+	key := a.Selector(c)
+
+	if at, ok := a.list[key]; ok {
+		return &at
+	}
+
+	return nil
+}
+
+func (a *AuthTypes) Valid(u user.User) bool {
+	for _, at := range a.list {
+		fields := at.SignInRequest.(SignUpContactableRequest).Fields()
+		for k := range fields {
+			_, err := u.(user.WithExpandableFieldsUser).GetField(k)
+			if err != nil {
+				log.Printf("failed check '%v' field in user model", k)
+				return false
+			}
+		}
+
+		_, err := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
+		if err != nil {
+			log.Printf("failed check '%v' field in user model", at.Sender.RecipientKey())
+			return false
+		}
+	}
+
+	return true
 }

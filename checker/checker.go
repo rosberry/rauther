@@ -5,10 +5,10 @@ import (
 )
 
 type Checker struct {
-	Authable    bool
-	Emailable   bool
-	Confirmable bool
-	Recoverable bool
+	Authable             bool
+	WithExpandableFields bool
+	Confirmable          bool
+	Recoverable          bool
 }
 
 func New(user user.User) *Checker {
@@ -24,9 +24,8 @@ func (c *Checker) IsAuthableUser(u user.User) (ok bool) {
 	return
 }
 
-// IsEmailableUser check implement user EmailableUser interface or not
-func (c *Checker) IsEmailableUser(u user.User) (ok bool) {
-	_, ok = u.(user.EmailableUser)
+func (c *Checker) IsWithExpandableFieldsUser(u user.User) (ok bool) {
+	_, ok = u.(user.WithExpandableFieldsUser)
 	return
 }
 
@@ -43,7 +42,7 @@ func (c *Checker) IsRecoverableUser(u user.User) (ok bool) {
 
 func (c *Checker) checkAllInterfaces(u user.User) {
 	c.Authable = c.IsAuthableUser(u)
-	c.Emailable = c.IsEmailableUser(u)
+	c.WithExpandableFields = c.IsWithExpandableFieldsUser(u)
 	c.Confirmable = c.IsConfirmableUser(u)
 	c.Recoverable = c.IsRecoverableUser(u)
 }

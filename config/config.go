@@ -1,7 +1,5 @@
 package config
 
-import "github.com/rosberry/rauther/authtype"
-
 // Config contain all configurations for Rauther and modules
 type Config struct {
 	Routes struct {
@@ -47,10 +45,6 @@ type Config struct {
 		Session string
 	}
 
-	// AuthType is type of auth (sign-up/sign-in) user.
-	// Can be AuthByEmail or AuthByUsername. Default: AuthByEmail
-	AuthType authtype.AuthType
-
 	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
 	CreateGuestUser bool
 }
@@ -62,15 +56,15 @@ func (c *Config) Default() {
 	c.ContextNames.Session = "session"
 
 	c.ContextNames.User = "user"
-	c.AuthType = authtype.AuthByEmail
+	// c.AuthType = authtype.AuthByEmail
 	c.Routes.SignUp = "sign-up"
 	c.Routes.SignIn = "sign-in"
 
-	c.Routes.ConfirmCode = "code/confirm/email"
-	c.Routes.ConfirmResend = "resend/confirm/email"
+	c.Routes.ConfirmCode = "confirm"
+	c.Routes.ConfirmResend = "confirm/resend"
 
-	c.Routes.RecoveryRequest = "request/recovery/email"
-	c.Routes.RecoveryCode = "code/recovery/email"
+	c.Routes.RecoveryRequest = "recovery/request"
+	c.Routes.RecoveryCode = "recovery"
 
 	c.QueryNames.EmailConfirm.PID = "pid"
 	c.QueryNames.EmailConfirm.Code = "code"

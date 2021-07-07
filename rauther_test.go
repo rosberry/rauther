@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
-	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/deps"
 	. "github.com/smartystreets/goconvey/convey"
@@ -387,7 +386,6 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
-			rauth.Config.AuthType = authtype.AuthByUsername
 
 			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
@@ -539,7 +537,6 @@ func TestSignInByUsernameRouter(t *testing.T) {
 			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
-			rauth.Config.AuthType = authtype.AuthByUsername
 
 			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
