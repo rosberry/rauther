@@ -203,6 +203,8 @@ Library have some modules for differend work types. modules turn on automaticall
 
 You can..
 
+[Default Example](./example/default/full/README.md)
+
 #### Code example
 
 Code...
@@ -214,6 +216,8 @@ Requests-Responses...
 ### Max custom usage
 
 If you need..
+
+[Default Example](./example/custom/full/README.md)
 
 #### Code example
 
