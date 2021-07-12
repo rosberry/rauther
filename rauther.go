@@ -404,19 +404,19 @@ func (r *Rauther) SignInHandler() gin.HandlerFunc {
 	return f
 }
 
-func sendConfirmCode(sender sender.Sender, recipient, code string) {
+func sendConfirmCode(s sender.Sender, recipient, code string) {
 	log.Printf("Confirm code for %s: %s", recipient, code)
 
-	err := sender.Send(common.CodeConfirmationEvent, recipient, code)
+	err := s.Send(sender.ConfirmationEvent, recipient, code)
 	if err != nil {
 		log.Print(err)
 	}
 }
 
-func sendRecoveryCode(sender sender.Sender, recipient, code string) {
+func sendRecoveryCode(s sender.Sender, recipient, code string) {
 	log.Printf("Recovery code for %s: %s", recipient, code)
 
-	err := sender.Send(common.PasswordRecoveryEvent, recipient, code)
+	err := s.Send(sender.PasswordRecoveryEvent, recipient, code)
 	if err != nil {
 		log.Print(err)
 	}

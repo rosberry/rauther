@@ -10,6 +10,7 @@ import (
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
+	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
@@ -34,9 +35,17 @@ func main() {
 		},
 	)
 
+	stdEmailSender := sender.NewDefaultEmailSender(sender.EmailCredentials{
+		Server:   "smtp.gmail.com",
+		Port:     587,
+		From:     "example@gmail.com",
+		FromName: "name",
+		Pass:     "xxx",
+	}, nil, nil)
+
 	d.Types = authtype.New(nil).
+		Add("email", stdEmailSender, nil, nil).
 		Add("pochta", &fakeEmailSender{}, &customReqEmail{}, &customReqEmail{}).
-		Add("email", &fakeEmailSender{}, nil, nil).
 		Add("username", &fakeEmailSender{}, &authtype.SignUpRequestByUsername{}, &authtype.SignUpRequestByUsername{}).
 		Add("custom", &fakeSmsSender{}, &customReq2{}, &customReq2{})
 
@@ -58,7 +67,7 @@ func main() {
 
 type fakeEmailSender struct{}
 
-func (s *fakeEmailSender) Send(event int, recipient string, message string) error {
+func (s *fakeEmailSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by email", message, recipient)
 	return nil
 }
@@ -69,7 +78,7 @@ func (s *fakeEmailSender) RecipientKey() string {
 
 type fakeSmsSender struct{}
 
-func (s *fakeSmsSender) Send(event int, recipient string, message string) error {
+func (s *fakeSmsSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by sms", message, recipient)
 	return nil
 }
