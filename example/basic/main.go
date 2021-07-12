@@ -35,13 +35,16 @@ func main() {
 		},
 	)
 
-	stdEmailSender := sender.NewDefaultEmailSender(sender.EmailCredentials{
+	stdEmailSender, err := sender.NewDefaultEmailSender(sender.EmailCredentials{
 		Server:   "smtp.gmail.com",
 		Port:     587,
 		From:     "example@gmail.com",
 		FromName: "name",
 		Pass:     "xxx",
 	}, nil, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	d.Types = authtype.New(nil).
 		Add("email", stdEmailSender, nil, nil).
@@ -50,11 +53,11 @@ func main() {
 		Add("custom", &fakeSmsSender{}, &customReq2{}, &customReq2{})
 
 	rauth := rauther.New(d)
-	rauth.Modules.ConfirmableUser = false
+	// rauth.Modules.ConfirmableUser = false
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
-	err := rauth.InitHandlers()
+	err = rauth.InitHandlers()
 	if err != nil {
 		log.Print(err)
 	}

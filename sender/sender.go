@@ -3,6 +3,7 @@ package sender
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"mime"
 	"net/mail"
 	"net/smtp"
@@ -35,7 +36,7 @@ type (
 
 // NewDefaultEmailSender return Sender
 // Argument 'Messages' should be exists '%s' symbols for use substring to wrap your dynamic message
-func NewDefaultEmailSender(cr EmailCredentials, sj Subjects, m Messages) Sender {
+func NewDefaultEmailSender(cr EmailCredentials, sj Subjects, m Messages) (Sender, error) {
 	s := &defaultEmailSender{
 		Credentials: cr,
 		Subjects: Subjects{
@@ -56,7 +57,11 @@ func NewDefaultEmailSender(cr EmailCredentials, sj Subjects, m Messages) Sender 
 		s.Messages[key] = item
 	}
 
-	return s
+	if err := s.validate(); err != nil {
+		return s, err
+	}
+
+	return s, nil
 }
 
 type defaultEmailSender struct {
@@ -65,15 +70,20 @@ type defaultEmailSender struct {
 	Messages
 }
 
-func (sender defaultEmailSender) Send(event Event, recipient string, message string) error {
-	auth := smtp.PlainAuth(
-		"",
-		sender.Credentials.From,
-		sender.Credentials.Pass,
-		sender.Credentials.Server,
-	)
+func (sender defaultEmailSender) validate() error {
+	log.Print("Start validate smtp connect for default email sender")
 
-	provider := fmt.Sprintf("%s:%v", sender.Credentials.Server, sender.Credentials.Port)
+	client, err := smtp.Dial(sender.getProvider())
+	if err != nil {
+		return fmt.Errorf("smtp connect error: %w", err)
+	}
+
+	defer client.Close()
+
+	return nil
+}
+
+func (sender defaultEmailSender) Send(event Event, recipient string, message string) error {
 	title := sender.Subjects[event]
 	from := mail.Address{
 		Name:    sender.Credentials.FromName,
@@ -105,14 +115,14 @@ func (sender defaultEmailSender) Send(event Event, recipient string, message str
 	body += "\r\n" + base64.StdEncoding.EncodeToString([]byte(message))
 
 	err := smtp.SendMail(
-		provider,
-		auth,
+		sender.getProvider(),
+		sender.getAuth(),
 		from.Address,
 		[]string{to.Address},
 		[]byte(body),
 	)
 	if err != nil {
-		return fmt.Errorf("smtp error: %w", err)
+		return fmt.Errorf("smtp send message error: %w", err)
 	}
 
 	return nil
@@ -120,4 +130,17 @@ func (sender defaultEmailSender) Send(event Event, recipient string, message str
 
 func (sender defaultEmailSender) RecipientKey() string {
 	return "email"
+}
+
+func (sender defaultEmailSender) getProvider() string {
+	return fmt.Sprintf("%s:%v", sender.Credentials.Server, sender.Credentials.Port)
+}
+
+func (sender defaultEmailSender) getAuth() smtp.Auth {
+	return smtp.PlainAuth(
+		"",
+		sender.Credentials.From,
+		sender.Credentials.Pass,
+		sender.Credentials.Server,
+	)
 }
