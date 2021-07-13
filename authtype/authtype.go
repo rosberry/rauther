@@ -113,7 +113,7 @@ func (a *AuthTypes) Valid(u user.User) (ok bool, badFields map[string][]string) 
 		notFoundFields := make([]string, 0)
 
 		for k := range fields {
-			_, err := u.(user.WithExpandableFieldsUser).GetField(k)
+			_, err := user.GetField(u, k)
 			if err != nil {
 				// log.Printf("failed check '%v' field in user model", k)
 				notFoundFields = append(notFoundFields, k)
@@ -150,7 +150,7 @@ func (a *AuthTypes) Valid(u user.User) (ok bool, badFields map[string][]string) 
 			}
 		}
 
-		_, err := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
+		_, err := user.GetField(u, at.Sender.RecipientKey())
 		if err != nil {
 			// log.Printf("failed check '%v' field in user model", at.Sender.RecipientKey())
 			// return false
