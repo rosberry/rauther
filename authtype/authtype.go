@@ -108,25 +108,66 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 	return nil
 }
 
-func (a *AuthTypes) Valid(u user.User) bool {
-	for _, at := range a.list {
-		fields := at.SignInRequest.(SignUpContactableRequest).Fields()
+func (a *AuthTypes) Valid(u user.User) (ok bool, badFields map[string][]string) {
+	checkFields := func(fields map[string]string) []string {
+		notFoundFields := make([]string, 0)
+
 		for k := range fields {
 			_, err := u.(user.WithExpandableFieldsUser).GetField(k)
 			if err != nil {
-				log.Printf("failed check '%v' field in user model", k)
-				return false
+				// log.Printf("failed check '%v' field in user model", k)
+				notFoundFields = append(notFoundFields, k)
+			}
+		}
+
+		return notFoundFields
+	}
+
+	failFields := make(map[string][]string)
+
+	for _, at := range a.list {
+		if r, ok := at.SignUpRequest.(SignUpContactableRequest); ok {
+			fields := r.Fields()
+			if f := checkFields(fields); len(f) > 0 {
+				key := "sign-up " + at.Key
+				if _, ok := failFields[key]; !ok {
+					failFields[key] = make([]string, 0)
+				}
+
+				failFields[key] = append(failFields[key], f...)
+			}
+		}
+
+		if r, ok := at.SignInRequest.(SignUpContactableRequest); ok {
+			fields := r.Fields()
+			if f := checkFields(fields); len(f) > 0 {
+				key := "sign-in " + at.Key
+				if _, ok := failFields[key]; !ok {
+					failFields[key] = make([]string, 0)
+				}
+
+				failFields[key] = append(failFields[key], f...)
 			}
 		}
 
 		_, err := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
 		if err != nil {
-			log.Printf("failed check '%v' field in user model", at.Sender.RecipientKey())
-			return false
+			// log.Printf("failed check '%v' field in user model", at.Sender.RecipientKey())
+			// return false
+			key := "sender " + at.Key
+			if _, ok := failFields[key]; !ok {
+				failFields[key] = make([]string, 0)
+			}
+
+			failFields[key] = append(failFields[key], at.Sender.RecipientKey())
 		}
 	}
 
-	return true
+	if len(failFields) > 0 {
+		return false, failFields
+	}
+
+	return true, nil
 }
 
 func (a *AuthTypes) CheckSenders() bool {

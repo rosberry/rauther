@@ -64,7 +64,15 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 		return false
 	}
 
-	return r.deps.Types().Valid(user)
+	ok, badFields := r.deps.Types().Valid(user)
+	if !ok {
+		log.Print("Please, check `auth` tags in user model:")
+		for k, v := range badFields {
+			log.Printf("Fields %v for '%v' not found in user model", v, k)
+		}
+	}
+
+	return ok
 }
 
 func (r *Rauther) InitHandlers() error {
