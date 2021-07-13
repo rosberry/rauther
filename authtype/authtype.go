@@ -99,6 +99,12 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 		return &at
 	}
 
+	if len(a.list) == 1 {
+		for _, at := range a.list {
+			return &at
+		}
+	}
+
 	return nil
 }
 

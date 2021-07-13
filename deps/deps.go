@@ -91,6 +91,10 @@ func (d *Deps) AddAuthType(key string, sender sender.Sender,
 
 // AuthSelector specifies the selector with which the type of authorization will be selected
 func (d *Deps) AuthSelector(selector authtype.Selector) *Deps {
+	if d.types == nil {
+		d.types = authtype.New(selector)
+	}
+
 	d.types.Selector = selector
 
 	return d
