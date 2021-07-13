@@ -42,6 +42,10 @@ func New(deps deps.Deps) *Rauther {
 		u = deps.Storage.UserStorer.Create("")
 	}
 
+	if deps.EmptyAuthTypes() {
+		deps.AddAuthType("email", nil, nil, nil)
+	}
+
 	r := &Rauther{
 		Config:  cfg,
 		deps:    deps,
@@ -56,11 +60,11 @@ func New(deps deps.Deps) *Rauther {
 }
 
 func (r *Rauther) checkAuthTypes(user user.User) bool {
-	if r.deps.Types == nil {
+	if r.deps.Types() == nil {
 		return false
 	}
 
-	return r.deps.Types.Valid(user)
+	return r.deps.Types().Valid(user)
 }
 
 func (r *Rauther) InitHandlers() error {
@@ -103,7 +107,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
 	}
 
-	if r.deps.Types == nil || r.deps.Types.IsEmpty() {
+	if !r.checkSender() {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
@@ -116,7 +120,7 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
 	}
 
-	if r.deps.Types == nil || r.deps.Types.IsEmpty() {
+	if !r.checkSender() {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
@@ -230,10 +234,12 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.deps.Types.Select(c)
+		at := r.deps.Types().Select(c)
 		if at == nil {
 			log.Print("sign up handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+
+			return
 		}
 
 		req := at.SignUpRequest
@@ -329,10 +335,11 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.deps.Types.Select(c)
+		at := r.deps.Types().Select(c)
 		if at == nil {
 			log.Print("sign in handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+
 			return
 		}
 
@@ -342,6 +349,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		if err != nil {
 			log.Print("sign in handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+
 			return
 		}
 
@@ -486,7 +494,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 		confirmCode := generateConfirmCode()
 		u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
 
-		at := r.deps.Types.Select(c)
+		at := r.deps.Types().Select(c)
 		contact, _ := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
 		sendConfirmCode(at.Sender, contact.(string), confirmCode)
 
@@ -528,7 +536,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		at := r.deps.Types.Select(c)
+		at := r.deps.Types().Select(c)
 		contact, _ := u.(user.RecoverableUser).GetField(at.Sender.RecipientKey())
 		sendRecoveryCode(at.Sender, contact.(string), code)
 		c.JSON(http.StatusOK, gin.H{"result": true})
@@ -571,4 +579,16 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{"result": true})
 	}
+}
+
+func (r *Rauther) checkSender() (ok bool) {
+	if r.deps.Types() != nil && !r.deps.Types().IsEmpty() {
+		if !r.deps.Types().CheckSenders() {
+			return false
+		}
+	} else if !r.deps.CheckDefaultSender() {
+		return false
+	}
+
+	return true
 }

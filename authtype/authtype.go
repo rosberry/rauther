@@ -60,10 +60,6 @@ func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInR
 		log.Fatal("auth types is nil")
 	}
 
-	if sender == nil {
-		log.Fatal("sender can not be nil")
-	}
-
 	if signUpRequest == nil {
 		signUpRequest = &SignUpRequestByEmail{}
 	}
@@ -89,6 +85,10 @@ func (a *AuthTypes) IsEmpty() bool {
 }
 
 func (a *AuthTypes) Select(c *gin.Context) *AuthType {
+	if a == nil {
+		log.Fatal("AuthTypes is nil")
+	}
+
 	if a.Selector == nil {
 		a.Selector = DefaultSelector
 	}
@@ -116,6 +116,17 @@ func (a *AuthTypes) Valid(u user.User) bool {
 		_, err := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
 		if err != nil {
 			log.Printf("failed check '%v' field in user model", at.Sender.RecipientKey())
+			return false
+		}
+	}
+
+	return true
+}
+
+func (a *AuthTypes) CheckSenders() bool {
+	for k, at := range a.list {
+		if at.Sender == nil {
+			log.Printf("Nil sender in %v auth type", k)
 			return false
 		}
 	}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
-	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/custom/full/controllers"
 	"github.com/rosberry/rauther/example/custom/full/models"
@@ -30,7 +29,7 @@ func main() {
 
 	// set Rauther auth types
 	// we use &defaultEmailSender{} in this example, becaus lib default email sender in draft
-	d.Types = authtype.New(func(c *gin.Context) string {
+	d.AuthSelector(func(c *gin.Context) string {
 		authtype := c.Request.Header.Get("authtype")
 		if authtype == "" {
 			log.Print("not found header")
@@ -38,7 +37,7 @@ func main() {
 		}
 
 		return authtype
-	}).Add(
+	}).AddAuthType(
 		"phone",
 		&customPhoneSMSSender{},
 		&controllers.SignUpRequest{},

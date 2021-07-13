@@ -43,5 +43,9 @@ func DefaultSelector(c *gin.Context) string {
 		return defaultKey
 	}
 
+	if r.Type == "" {
+		return defaultKey
+	}
+
 	return r.Type
 }

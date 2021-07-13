@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
-	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/default/full/controllers"
 	"github.com/rosberry/rauther/example/default/full/models"
@@ -30,7 +29,7 @@ func main() {
 
 	// set Rauther auth types
 	// we use &defaultEmailSender{} in this example, becaus lib default email sender in draft
-	d.Types = authtype.New(nil).Add("email", &defaultEmailSender{}, nil, nil)
+	d.AddAuthType("email", &defaultEmailSender{}, nil, nil)
 
 	// create Rauther instance
 	rauth := rauther.New(d)

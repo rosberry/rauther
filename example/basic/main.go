@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
-	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
@@ -34,14 +33,19 @@ func main() {
 		},
 	)
 
-	d.Types = authtype.New(nil).
-		Add("pochta", &fakeEmailSender{}, &customReqEmail{}, &customReqEmail{}).
-		Add("email", &fakeEmailSender{}, nil, nil).
-		Add("username", &fakeEmailSender{}, &authtype.SignUpRequestByUsername{}, &authtype.SignUpRequestByUsername{}).
-		Add("custom", &fakeSmsSender{}, &customReq2{}, &customReq2{})
+	d.DefaultSender(&fakeEmailSender{})
+
+	/*
+		d.Types = authtype.New(nil).
+			Add("pochta", &fakeEmailSender{}, &customReqEmail{}, &customReqEmail{}).
+			Add("email", &fakeEmailSender{}, nil, nil).
+			Add("username", &fakeEmailSender{}, &authtype.SignUpRequestByUsername{}, &authtype.SignUpRequestByUsername{}).
+			Add("custom", &fakeSmsSender{}, &customReq2{}, &customReq2{})
+	*/
 
 	rauth := rauther.New(d)
-	rauth.Modules.ConfirmableUser = false
+	rauth.Modules.ConfirmableUser = true
+	rauth.Modules.RecoverableUser = true
 
 	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 
