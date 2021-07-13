@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"mime"
+	"net"
 	"net/mail"
 	"net/smtp"
+	"time"
 )
 
 const (
@@ -28,6 +30,7 @@ type (
 		From     string
 		FromName string
 		Pass     string
+		Timeout  time.Duration
 	}
 
 	Subjects map[Event]string
@@ -73,9 +76,37 @@ type defaultEmailSender struct {
 func (sender defaultEmailSender) validate() error {
 	log.Print("Start validate smtp connect for default email sender")
 
-	client, err := smtp.Dial(sender.getProvider())
+	_, err := mail.ParseAddress(sender.Credentials.From)
 	if err != nil {
-		return fmt.Errorf("smtp connect error: %w", err)
+		return fmt.Errorf("email credentials error: %w", err)
+	}
+
+	var client *smtp.Client
+	if sender.Credentials.Timeout == 0 {
+		client, err = smtp.Dial(sender.getProvider())
+		if err != nil {
+			return fmt.Errorf("smtp connect error: %w", err)
+		}
+	} else {
+		conn, err := net.DialTimeout("tcp", sender.getProvider(), sender.Credentials.Timeout)
+		if err != nil {
+			return fmt.Errorf("smtp connect error: %w", err)
+		}
+		defer conn.Close()
+
+		client, err = smtp.NewClient(conn, sender.Credentials.Server)
+		if err != nil {
+			return fmt.Errorf("smtp connect error: %w", err)
+		}
+	}
+
+	err = client.Auth(sender.getAuth())
+	if err != nil {
+		if err.Error() == "unencrypted connection" {
+			log.Print("smtp warning: unencrypted connection")
+		} else {
+			return fmt.Errorf("smtp auth error: %w", err)
+		}
 	}
 
 	defer client.Close()
@@ -84,6 +115,11 @@ func (sender defaultEmailSender) validate() error {
 }
 
 func (sender defaultEmailSender) Send(event Event, recipient string, message string) error {
+	_, err := mail.ParseAddress(recipient)
+	if err != nil {
+		return fmt.Errorf("recipient email error: %w", err)
+	}
+
 	title := sender.Subjects[event]
 	from := mail.Address{
 		Name:    sender.Credentials.FromName,
@@ -114,7 +150,7 @@ func (sender defaultEmailSender) Send(event Event, recipient string, message str
 
 	body += "\r\n" + base64.StdEncoding.EncodeToString([]byte(message))
 
-	err := smtp.SendMail(
+	err = smtp.SendMail(
 		sender.getProvider(),
 		sender.getAuth(),
 		from.Address,

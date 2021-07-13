@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
@@ -41,6 +42,7 @@ func main() {
 		From:     "example@gmail.com",
 		FromName: "name",
 		Pass:     "xxx",
+		Timeout:  10 * time.Second,
 	}, nil, nil)
 	if err != nil {
 		log.Fatal(err)
