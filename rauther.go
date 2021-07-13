@@ -151,7 +151,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		// Create new guest user if it enabled in config
-		if r.Config.CreateGuestUser && session.GetUserPID() == "" {
+		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserPID() == "" {
 			tempUserPID := "guest:" + uuid.New().String()
 
 			user, _ := r.deps.UserStorer.Load(tempUserPID)
@@ -204,12 +204,12 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			user, err := r.deps.UserStorer.Load(session.GetUserPID())
-			if err != nil && r.Config.CreateGuestUser {
-				user = r.deps.UserStorer.Create(session.GetUserPID())
+			if r.Modules.AuthableUser {
+				if u, err := r.deps.UserStorer.Load(session.GetUserPID()); err == nil && u != nil {
+					c.Set(r.Config.ContextNames.User, u)
+				}
 			}
 
-			c.Set(r.Config.ContextNames.User, user)
 			c.Set(r.Config.ContextNames.Session, session)
 
 			c.Next()
