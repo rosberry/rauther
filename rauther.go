@@ -64,7 +64,7 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 		return false
 	}
 
-	ok, badFields := r.deps.Types().Valid(user)
+	ok, badFields := r.deps.Types().CheckFieldsDefine(user)
 	if !ok {
 		log.Print("Please, check `auth` tags in user model:")
 		for k, v := range badFields {
@@ -260,7 +260,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		request := req.(authtype.SignUpRequest)
+		request := req.(authtype.AuthRequest)
 
 		pid, password := request.GetPID(), request.GetPassword()
 
@@ -289,8 +289,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		u.(user.AuthableUser).SetPassword(password)
 
-		if _, ok := request.(authtype.SignUpContactableRequest); ok {
-			contacts := request.(authtype.SignUpContactableRequest).Fields()
+		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
+			contacts := request.(authtype.AuhtRequestFieldable).Fields()
 			for contactType, contact := range contacts {
 				err := user.SetFields(u, contactType, contact)
 				if err != nil {
@@ -352,7 +352,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		request := req.(authtype.SignUpRequest)
+		request := req.(authtype.AuthRequest)
 
 		pid, password := request.GetPID(), request.GetPassword()
 

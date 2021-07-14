@@ -11,37 +11,43 @@ import (
 )
 
 type (
+	// AuthType stores request structures, key and sender that use to send confirmation/recovery codes.
 	AuthType struct {
 		Key    string
 		Sender sender.Sender
 
-		SignUpRequest SignUpRequest
-		SignInRequest SignUpRequest
+		SignUpRequest AuthRequest
+		SignInRequest AuthRequest
 	}
 
-	List map[string]AuthType
+	// List of AuthType by key
+	List map[string]AuthType // TODO: Public?
 
+	// AuthTypes is list of AuthType by key and selector for select AuthType
 	AuthTypes struct {
 		list     List
 		Selector Selector
 	}
 
+	// Selector defines the key of authorization type using gin context
 	Selector func(c *gin.Context) (senderKey string)
 )
 
 type (
-	SignUpRequest interface {
+	AuthRequest interface {
 		GetPID() (pid string)
 		GetPassword() (password string)
 	}
 
-	SignUpContactableRequest interface {
-		SignUpRequest
+	AuhtRequestFieldable interface {
+		AuthRequest
 
 		Fields() map[string]string
 	}
 )
 
+// New create AuthTypes (list of AuthType).
+// If selector is nil - used default selector
 func New(selector Selector) *AuthTypes {
 	authTypes := &AuthTypes{
 		list:     make(List),
@@ -55,7 +61,8 @@ func New(selector Selector) *AuthTypes {
 	return authTypes
 }
 
-func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInRequest SignUpRequest) *AuthTypes {
+// Add new AuthType in AuthTypes list
+func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInRequest AuthRequest) *AuthTypes {
 	if a == nil {
 		log.Fatal("auth types is nil")
 	}
@@ -84,6 +91,8 @@ func (a *AuthTypes) IsEmpty() bool {
 	return len(a.list) == 0
 }
 
+// Select uses the selector and returns the found type of authorization
+// if key not found in list, but in list only one type - use first type as default and return it
 func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 	if a == nil {
 		log.Fatal("AuthTypes is nil")
@@ -108,7 +117,8 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 	return nil
 }
 
-func (a *AuthTypes) Valid(u user.User) (ok bool, badFields map[string][]string) {
+// CheckFieldsDefine checks whether all fields required for queries defined in models
+func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) {
 	checkFields := func(fields map[string]string) []string {
 		notFoundFields := make([]string, 0)
 
@@ -126,7 +136,7 @@ func (a *AuthTypes) Valid(u user.User) (ok bool, badFields map[string][]string) 
 	failFields := make(map[string][]string)
 
 	for _, at := range a.list {
-		if r, ok := at.SignUpRequest.(SignUpContactableRequest); ok {
+		if r, ok := at.SignUpRequest.(AuhtRequestFieldable); ok {
 			fields := r.Fields()
 			if f := checkFields(fields); len(f) > 0 {
 				key := "sign-up " + at.Key
@@ -138,7 +148,7 @@ func (a *AuthTypes) Valid(u user.User) (ok bool, badFields map[string][]string) 
 			}
 		}
 
-		if r, ok := at.SignInRequest.(SignUpContactableRequest); ok {
+		if r, ok := at.SignInRequest.(AuhtRequestFieldable); ok {
 			fields := r.Fields()
 			if f := checkFields(fields); len(f) > 0 {
 				key := "sign-in " + at.Key
@@ -170,6 +180,7 @@ func (a *AuthTypes) Valid(u user.User) (ok bool, badFields map[string][]string) 
 	return true, nil
 }
 
+// CheckSenders checks that all types of authorization are set by the sender
 func (a *AuthTypes) CheckSenders() bool {
 	for k, at := range a.list {
 		if at.Sender == nil {
