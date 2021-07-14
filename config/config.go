@@ -2,6 +2,7 @@ package config
 
 // Config contain all configurations for Rauther and modules
 type Config struct {
+	// Routes is group for gin route paths
 	Routes struct {
 		// Auth is gin route path for gin. Default: "auth"
 		Auth string
@@ -12,17 +13,20 @@ type Config struct {
 		// SignIn is gin route path for sign-in handler. Default: "sign-in"
 		SignIn string
 
-		// ConfirmCode is gin route path for email confirmation handler. Default: "code/confirm/email"
+		// ConfirmCode is gin route path for email confirmation handler. Default: "confirm"
 		ConfirmCode string
 
-		// ConfirmResend is gin route path for request resend confirm code. Default: "resend/confirm/email"
+		// ConfirmResend is gin route path for request resend confirm code. Default: "confirm/resend"
 		ConfirmResend string
 
+		// RecoveryRequest is gin route path for request send a password recovery code. Default: "recovery/request"
 		RecoveryRequest string
 
+		// RecoveryCode is gin route path for confirm the password recovery and set a new password. Default "recovery"
 		RecoveryCode string
 	}
 
+	// Context Names is group for setup how save data in context
 	ContextNames struct {
 		// User is name user in gin context. Default: "user"
 		User string
@@ -31,6 +35,7 @@ type Config struct {
 		Session string
 	}
 
+	// QueryNames is group for setup requests query params
 	QueryNames struct {
 		// EmailConfirm params group
 		EmailConfirm struct {
@@ -56,7 +61,7 @@ func (c *Config) Default() {
 	c.ContextNames.Session = "session"
 
 	c.ContextNames.User = "user"
-	// c.AuthType = authtype.AuthByEmail
+
 	c.Routes.SignUp = "sign-up"
 	c.Routes.SignIn = "sign-in"
 

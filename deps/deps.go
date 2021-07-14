@@ -71,7 +71,7 @@ func (d *Deps) CheckDefaultSender() bool {
 
 // AddAuthType adds a new type of authorization and uses a default sender, if not transmitted another
 func (d *Deps) AddAuthType(key string, sender sender.Sender,
-	signUpRequest, signInRequest authtype.SignUpRequest) *Deps {
+	signUpRequest, signInRequest authtype.AuthRequest) *Deps {
 	if d.types == nil {
 		d.types = authtype.New(nil)
 	}
