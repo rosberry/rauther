@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram program="umlet" version="14.3.0">
-  <zoom_level>6</zoom_level>
+  <zoom_level>9</zoom_level>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>300</x>
+      <x>405</x>
       <y>0</y>
-      <w>228</w>
-      <h>318</h>
+      <w>342</w>
+      <h>477</h>
     </coordinates>
     <panel_attributes>lw=2
 rauther::Rauther
@@ -49,10 +49,10 @@ recoveryHandler() gin.HandlerFunc
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>522</x>
-      <y>222</y>
-      <w>354</w>
-      <h>18</h>
+      <x>738</x>
+      <y>333</y>
+      <w>531</w>
+      <h>27</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;570.0;10.0</additional_attributes>
@@ -60,10 +60,10 @@ recoveryHandler() gin.HandlerFunc
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>864</x>
-      <y>96</y>
-      <w>138</w>
-      <h>330</h>
+      <x>1251</x>
+      <y>144</y>
+      <w>207</w>
+      <h>495</h>
     </coordinates>
     <panel_attributes>config::Config
 --
@@ -115,10 +115,10 @@ Default()
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>612</x>
-      <y>282</y>
-      <w>162</w>
-      <h>114</h>
+      <x>873</x>
+      <y>423</y>
+      <w>243</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>deps::Deps
 --
@@ -135,10 +135,10 @@ Checker() checker::Checker</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>522</x>
-      <y>300</y>
-      <w>102</w>
-      <h>18</h>
+      <x>738</x>
+      <y>450</y>
+      <w>153</w>
+      <h>27</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;150.0;10.0</additional_attributes>
@@ -146,10 +146,10 @@ Checker() checker::Checker</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>828</x>
-      <y>642</y>
-      <w>168</w>
-      <h>90</h>
+      <x>1197</x>
+      <y>963</y>
+      <w>252</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 storage::SessionStorer
@@ -165,10 +165,10 @@ Save(session Session) error
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>924</x>
-      <y>768</y>
-      <w>168</w>
-      <h>114</h>
+      <x>1341</x>
+      <y>1152</y>
+      <w>252</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 rauther::Session
@@ -187,10 +187,10 @@ SetUserPID(pid string)
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>768</x>
-      <y>546</y>
-      <w>96</w>
-      <h>108</h>
+      <x>1107</x>
+      <y>819</y>
+      <w>144</w>
+      <h>162</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;140.0;10.0;140.0;160.0</additional_attributes>
@@ -198,10 +198,10 @@ SetUserPID(pid string)
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>936</x>
-      <y>726</y>
-      <w>18</w>
-      <h>54</h>
+      <x>1359</x>
+      <y>1089</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;70.0</additional_attributes>
@@ -209,10 +209,10 @@ SetUserPID(pid string)
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>588</x>
-      <y>642</y>
-      <w>192</w>
-      <h>90</h>
+      <x>837</x>
+      <y>963</y>
+      <w>288</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 storage::UserStorer
@@ -228,10 +228,10 @@ Save(user User) error
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>696</x>
-      <y>576</y>
-      <w>18</w>
-      <h>78</h>
+      <x>999</x>
+      <y>864</y>
+      <w>27</w>
+      <h>117</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;110.0</additional_attributes>
@@ -239,10 +239,10 @@ Save(user User) error
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>612</x>
-      <y>768</y>
-      <w>168</w>
-      <h>90</h>
+      <x>873</x>
+      <y>1152</y>
+      <w>252</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 user::User
@@ -257,10 +257,10 @@ SetPID(pid string)
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>696</x>
-      <y>726</y>
-      <w>18</w>
-      <h>54</h>
+      <x>999</x>
+      <y>1089</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;70.0</additional_attributes>
@@ -268,10 +268,10 @@ SetPID(pid string)
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>708</x>
-      <y>894</y>
-      <w>168</w>
-      <h>90</h>
+      <x>1017</x>
+      <y>1341</y>
+      <w>252</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 user::AuthableUser
@@ -288,10 +288,10 @@ SetPassword(password string)
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>732</x>
-      <y>852</y>
-      <w>18</w>
-      <h>54</h>
+      <x>1053</x>
+      <y>1278</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=-&gt;&gt;</panel_attributes>
     <additional_attributes>10.0;70.0;10.0;10.0</additional_attributes>
@@ -299,10 +299,10 @@ SetPassword(password string)
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>486</x>
-      <y>894</y>
-      <w>210</w>
-      <h>90</h>
+      <x>684</x>
+      <y>1341</y>
+      <w>315</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 user::WithExpandableFieldsUser
@@ -319,10 +319,10 @@ SetField(key string, value interface{}) error
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>666</x>
-      <y>852</y>
-      <w>18</w>
-      <h>54</h>
+      <x>954</x>
+      <y>1278</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=-&gt;&gt;</panel_attributes>
     <additional_attributes>10.0;70.0;10.0;10.0</additional_attributes>
@@ -330,10 +330,10 @@ SetField(key string, value interface{}) error
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>342</x>
-      <y>1020</y>
-      <w>210</w>
-      <h>102</h>
+      <x>468</x>
+      <y>1530</y>
+      <w>315</w>
+      <h>153</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 user::ConfirmableUser
@@ -352,10 +352,10 @@ SetConfirmCode(code string)
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>510</x>
-      <y>978</y>
-      <w>18</w>
-      <h>54</h>
+      <x>720</x>
+      <y>1467</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=-&gt;&gt;</panel_attributes>
     <additional_attributes>10.0;70.0;10.0;10.0</additional_attributes>
@@ -363,10 +363,10 @@ SetConfirmCode(code string)
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>564</x>
-      <y>1020</y>
-      <w>210</w>
-      <h>102</h>
+      <x>801</x>
+      <y>1530</y>
+      <w>315</w>
+      <h>153</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 user::RecoverableUser
@@ -382,10 +382,10 @@ SetRecoveryCode(code string)</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>600</x>
-      <y>978</y>
-      <w>18</w>
-      <h>54</h>
+      <x>855</x>
+      <y>1467</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=-&gt;&gt;</panel_attributes>
     <additional_attributes>10.0;70.0;10.0;10.0</additional_attributes>
@@ -393,10 +393,10 @@ SetRecoveryCode(code string)</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>612</x>
-      <y>528</y>
-      <w>162</w>
-      <h>54</h>
+      <x>873</x>
+      <y>792</y>
+      <w>243</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>deps::Storage
 --
@@ -408,10 +408,10 @@ UserStorer storage::UserStorer
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>666</x>
-      <y>390</y>
-      <w>18</w>
-      <h>150</h>
+      <x>954</x>
+      <y>585</y>
+      <w>27</w>
+      <h>225</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;230.0</additional_attributes>
@@ -419,10 +419,10 @@ UserStorer storage::UserStorer
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>924</x>
-      <y>462</y>
-      <w>216</w>
-      <h>138</h>
+      <x>1341</x>
+      <y>693</y>
+      <w>324</w>
+      <h>207</h>
     </coordinates>
     <panel_attributes>checker::Checker
 --
@@ -442,10 +442,10 @@ checkAllInterfaces(u user::User)</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>732</x>
-      <y>390</y>
-      <w>204</w>
-      <h>114</h>
+      <x>1053</x>
+      <y>585</y>
+      <w>306</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;170.0;320.0;170.0</additional_attributes>
@@ -453,10 +453,10 @@ checkAllInterfaces(u user::User)</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>330</x>
-      <y>438</y>
-      <w>264</w>
-      <h>144</h>
+      <x>450</x>
+      <y>657</y>
+      <w>396</w>
+      <h>216</h>
     </coordinates>
     <panel_attributes>authtype::AuthTypes
 --
@@ -475,10 +475,10 @@ Valid(u user.User) bool</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>474</x>
-      <y>366</y>
-      <w>150</w>
-      <h>84</h>
+      <x>666</x>
+      <y>549</y>
+      <w>225</w>
+      <h>126</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>230.0;10.0;10.0;10.0;10.0;120.0</additional_attributes>
@@ -486,10 +486,10 @@ Valid(u user.User) bool</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>156</x>
-      <y>438</y>
-      <w>114</w>
-      <h>36</h>
+      <x>189</x>
+      <y>657</y>
+      <w>171</w>
+      <h>54</h>
     </coordinates>
     <panel_attributes>authtype::List
 --
@@ -499,10 +499,10 @@ map[string]AuthType</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>108</x>
-      <y>510</y>
-      <w>162</w>
-      <h>84</h>
+      <x>117</x>
+      <y>765</y>
+      <w>243</w>
+      <h>126</h>
     </coordinates>
     <panel_attributes>authtype::AuthType
 --
@@ -516,10 +516,10 @@ SignInRequest SignUpRequest</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>246</x>
-      <y>468</y>
-      <w>18</w>
-      <h>54</h>
+      <x>324</x>
+      <y>702</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;70.0</additional_attributes>
@@ -527,10 +527,10 @@ SignInRequest SignUpRequest</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>264</x>
-      <y>456</y>
-      <w>78</w>
-      <h>18</h>
+      <x>351</x>
+      <y>684</y>
+      <w>117</w>
+      <h>27</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>110.0;10.0;10.0;10.0</additional_attributes>
@@ -538,10 +538,10 @@ SignInRequest SignUpRequest</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>330</x>
-      <y>618</y>
-      <w>114</w>
-      <h>36</h>
+      <x>450</x>
+      <y>927</y>
+      <w>171</w>
+      <h>54</h>
     </coordinates>
     <panel_attributes>authtype::Selector
 --
@@ -551,10 +551,10 @@ func(c *gin.Context) (senderKey string)</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>360</x>
-      <y>576</y>
-      <w>18</w>
-      <h>54</h>
+      <x>495</x>
+      <y>864</y>
+      <w>27</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;70.0</additional_attributes>
@@ -562,10 +562,10 @@ func(c *gin.Context) (senderKey string)</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>108</x>
-      <y>618</y>
-      <w>162</w>
-      <h>72</h>
+      <x>117</x>
+      <y>927</y>
+      <w>243</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 authtype::SignUpRequest
@@ -580,10 +580,10 @@ GetPassword() (password string)
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>240</x>
-      <y>588</y>
-      <w>18</w>
-      <h>42</h>
+      <x>315</x>
+      <y>882</y>
+      <w>27</w>
+      <h>63</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;50.0</additional_attributes>
@@ -591,10 +591,10 @@ GetPassword() (password string)
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>108</x>
-      <y>720</y>
-      <w>162</w>
-      <h>72</h>
+      <x>117</x>
+      <y>1080</y>
+      <w>243</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 authtype::SignUpContactableRequest
@@ -610,10 +610,10 @@ Fields() map[string]string
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>234</x>
-      <y>684</y>
-      <w>18</w>
-      <h>48</h>
+      <x>306</x>
+      <y>1026</y>
+      <w>27</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>lt=-&gt;&gt;</panel_attributes>
     <additional_attributes>10.0;60.0;10.0;10.0</additional_attributes>
@@ -621,10 +621,10 @@ Fields() map[string]string
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>30</x>
-      <y>318</y>
-      <w>240</w>
-      <h>72</h>
+      <x>0</x>
+      <y>477</y>
+      <w>360</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>&lt;&lt;interface&gt;&gt;
 sender::Sender
@@ -638,10 +638,10 @@ RecipientKey() string
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>48</x>
-      <y>384</y>
-      <w>72</w>
-      <h>186</h>
+      <x>27</x>
+      <y>576</y>
+      <w>108</w>
+      <h>279</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>100.0;290.0;10.0;290.0;10.0;10.0</additional_attributes>
@@ -649,10 +649,10 @@ RecipientKey() string
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>576</x>
-      <y>96</y>
-      <w>114</w>
-      <h>66</h>
+      <x>819</x>
+      <y>144</y>
+      <w>171</w>
+      <h>99</h>
     </coordinates>
     <panel_attributes>modules::Modules
 --
@@ -665,10 +665,10 @@ RecoverableUser bool</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>522</x>
-      <y>120</y>
-      <w>66</w>
-      <h>18</h>
+      <x>738</x>
+      <y>180</y>
+      <w>99</w>
+      <h>27</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;90.0;10.0</additional_attributes>

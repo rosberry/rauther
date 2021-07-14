@@ -217,7 +217,7 @@ Requests-Responses...
 
 If you need..
 
-[Default Example](./example/custom/full/README.md)
+[Custom Example](./example/custom/full/README.md)
 
 #### Code example
 
@@ -226,3 +226,7 @@ Code...
 #### Client-Server iteraction
 
 Requests-Responses...
+
+## Diagrams
+
+[diags](./doc/diags/preview)
