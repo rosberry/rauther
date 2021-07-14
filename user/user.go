@@ -21,17 +21,8 @@ type AuthableUser interface {
 	SetPassword(password string)
 }
 
-/*
-type EmailableUser interface {
-	User
-
-	GetEmail() (email string)
-	SetEmail(email string)
-}
-*/
-
 type ConfirmableUser interface {
-	WithExpandableFieldsUser
+	User
 
 	GetConfirmed() (ok bool)
 	GetConfirmCode() (code string)
@@ -41,18 +32,10 @@ type ConfirmableUser interface {
 }
 
 type RecoverableUser interface {
-	WithExpandableFieldsUser
+	User
 
 	GetRecoveryCode() (code string)
 	SetRecoveryCode(code string)
-}
-
-// WithExpandableFieldsUser can set/get some field in user model by tag `auth:"key"`
-type WithExpandableFieldsUser interface {
-	User
-
-	GetField(key string) (value interface{}, err error)
-	SetField(key string, value interface{}) error
 }
 
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")

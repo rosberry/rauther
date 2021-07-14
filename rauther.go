@@ -289,7 +289,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		u.(user.AuthableUser).SetPassword(password)
 
-		if r.deps.Checker().WithExpandableFields {
+		if _, ok := request.(authtype.SignUpContactableRequest); ok {
 			contacts := request.(authtype.SignUpContactableRequest).Fields()
 			for contactType, contact := range contacts {
 				err := user.SetFields(u, contactType, contact)
@@ -306,7 +306,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 				u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
 
-				contact, _ := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
+				contact, _ := user.GetField(u, at.Sender.RecipientKey())
 				sendConfirmCode(at.Sender, contact.(string), confirmCode)
 			}
 		}
@@ -485,7 +485,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 		u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
 
 		at := r.deps.Types().Select(c)
-		contact, _ := u.(user.WithExpandableFieldsUser).GetField(at.Sender.RecipientKey())
+		contact, _ := user.GetField(u, at.Sender.RecipientKey())
 		sendConfirmCode(at.Sender, contact.(string), confirmCode)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -527,7 +527,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 		}
 
 		at := r.deps.Types().Select(c)
-		contact, _ := u.(user.RecoverableUser).GetField(at.Sender.RecipientKey())
+		contact, _ := user.GetField(u, at.Sender.RecipientKey())
 		sendRecoveryCode(at.Sender, contact.(string), code)
 		c.JSON(http.StatusOK, gin.H{"result": true})
 	}
