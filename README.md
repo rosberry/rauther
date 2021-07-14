@@ -67,15 +67,8 @@ type AuthableUser interface {
 	SetPassword(password string)
 }
 
-type WithExpandableFieldsUser interface {
-	User
-
-	GetField(key string) (value interface{}, err error)
-	SetField(key string, value interface{}) error
-}
-
 type ConfirmableUser interface {
-	WithExpandableFieldsUser
+	User
 
 	GetConfirmed() (ok bool)
 	GetConfirmCode() (code string)
@@ -85,14 +78,16 @@ type ConfirmableUser interface {
 }
 
 type RecoverableUser interface {
-	WithExpandableFieldsUser
+	User
 
 	GetRecoveryCode() (code string)
 	SetRecoveryCode(code string)
 }
 ```
 
-4. Implement sender
+4. Use the 'auth' tag to match the fields in the model and fields returned in the Fields() request method
+
+5. Implement sender
 
 ```go
 type Sender interface {
@@ -107,16 +102,16 @@ OR use default email sender
 type DefaultEmailSender struct{} // TODO
 ```
 
-5. Implement sign-up/sign-in request types
+6. Implement sign-up/sign-in request types
 
 ```go
-    type SignUpRequest interface {
+    type AuthRequest interface {
 		GetPID() (pid string)
 		GetPassword() (password string)
 	}
 
-	type SignUpContactableRequest interface {
-		SignUpRequest
+	type AuhtRequestFieldable interface {
+		AuthRequest
 
 		Fields() map[string]string
 	}
@@ -129,16 +124,18 @@ type SignUpRequestByEmail struct {
 	Email    string `json:"email" form:"email" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
 }
+//Fields: `auth:"email"`
 
 type SignUpRequestByUsername struct {
 	Username string `json:"username" form:"username" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
 	Email    string `json:"email" form:"email"`
 }
+//Fields: `auth:"email"`, `auth:"username"`
 ```
 
-6. Init gin engine
-7. Create new deps
+7. Init gin engine
+8. Create new deps
 
 ```go
     d := deps.New(r, deps.Storage{
@@ -147,7 +144,7 @@ type SignUpRequestByUsername struct {
 		})
 ```
 
-8. Opredelit one or more auth types (you can not peredavat signUp/signIn request types, then will be use default )
+9. Determine one or more auth types (you can not transmit signUp/signIn request types, then will be use default )
 
 ```go
 	d.Types = authtype.New(selector).
@@ -163,26 +160,26 @@ type SignUpRequestByUsername struct {
   - `signUpRequest` - signUpRequest is object, that will use for sign up request. Should implement `SignUpRequest` interface or extendable
   - `signInRequest` - signInRequest is object, that will use for sign in request. Should implement `SignUpRequest` interface or extendable
 
-9. Create new rauther usage deps
+10. Create new rauther usage deps
 
 ```go
 rauth := rauther.New(d)
 ```
 
-10. Configure rauther usage Modules and Config
+11. Configure rauther usage Modules and Config
 
 ```go
 rauth.Modules.ConfirmableUser = false
 rauth.Config.Routes.SignUp = "registration"
 ```
 
-11. Init rauther handlers
+12. Init rauther handlers
 
 ```go
 err := rauth.InitHandlers()
 ```
 
-12. Run your gin
+13. Run your gin
 
 ```go
 r.Run()
