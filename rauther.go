@@ -319,15 +319,6 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	}
 }
 
-func (r *Rauther) SignUpHandler() gin.HandlerFunc {
-	f := r.signUpHandler()
-	if f == nil {
-		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
-	}
-
-	return f
-}
-
 func (r *Rauther) signInHandler() gin.HandlerFunc {
 	if !r.deps.Checker().Authable {
 		log.Print("Not implement AuthableUser interface")
@@ -401,15 +392,6 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			"result": true,
 		})
 	}
-}
-
-func (r *Rauther) SignInHandler() gin.HandlerFunc {
-	f := r.signInHandler()
-	if f == nil {
-		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
-	}
-
-	return f
 }
 
 func sendConfirmCode(sender sender.Sender, recipient, code string) {
