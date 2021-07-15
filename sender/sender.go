@@ -81,34 +81,16 @@ func (sender defaultEmailSender) validate() error {
 		return fmt.Errorf("email credentials error: %w", err)
 	}
 
-	var client *smtp.Client
-	if sender.Credentials.Timeout == 0 {
-		client, err = smtp.Dial(sender.getProvider())
-		if err != nil {
-			return fmt.Errorf("smtp connect error: %w", err)
-		}
-	} else {
-		conn, err := net.DialTimeout("tcp", sender.getProvider(), sender.Credentials.Timeout)
-		if err != nil {
-			return fmt.Errorf("smtp connect error: %w", err)
-		}
-		defer conn.Close()
-
-		client, err = smtp.NewClient(conn, sender.Credentials.Server)
-		if err != nil {
-			return fmt.Errorf("smtp connect error: %w", err)
-		}
-	}
-
-	err = client.Auth(sender.getAuth())
+	conn, err := net.DialTimeout("tcp", sender.getProvider(), sender.Credentials.Timeout)
 	if err != nil {
-		if err.Error() == "unencrypted connection" {
-			log.Print("smtp warning: unencrypted connection")
-		} else {
-			return fmt.Errorf("smtp auth error: %w", err)
-		}
+		return fmt.Errorf("smtp connect error: %w", err)
 	}
+	defer conn.Close()
 
+	client, err := smtp.NewClient(conn, sender.Credentials.Server)
+	if err != nil {
+		return fmt.Errorf("smtp connect error: %w", err)
+	}
 	defer client.Close()
 
 	return nil
