@@ -119,7 +119,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
-	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
+	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler())
 	router.GET(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
 }
 
@@ -420,27 +420,27 @@ func sendRecoveryCode(sender sender.Sender, recipient, code string) {
 	}
 }
 
-func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {
+func (r *Rauther) confirmHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		pid := c.Query(r.Config.QueryNames.EmailConfirm.PID)
-		if pid == "" {
+		type confirmRequest struct {
+			PID  string `json:"pid"`
+			Code string `json:"code"`
+		}
+
+		var request confirmRequest
+
+		if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
 			return
 		}
 
-		confirmCode := c.Query(r.Config.QueryNames.EmailConfirm.Code)
-		if confirmCode == "" {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
-			return
-		}
-
-		u, err := r.deps.UserStorer.Load(pid)
+		u, err := r.deps.UserStorer.Load(request.PID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
 			return
 		}
 
-		if confirmCode != u.(user.ConfirmableUser).GetConfirmCode() {
+		if request.Code != u.(user.ConfirmableUser).GetConfirmCode() {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidConfirmCode])
 			return
 		}
