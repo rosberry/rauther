@@ -403,7 +403,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 }
 
-func sendConfirmCode(sender sender.Sender, recipient, code string) {
+func sendConfirmCode(s sender.Sender, recipient, code string) error {
 	log.Printf("Confirm code for %s: %s", recipient, code)
 
 	err := s.Send(sender.ConfirmationEvent, recipient, code)
