@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -405,19 +406,23 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 func sendConfirmCode(sender sender.Sender, recipient, code string) {
 	log.Printf("Confirm code for %s: %s", recipient, code)
 
-	err := sender.Send(common.CodeConfirmationEvent, recipient, code)
+	err := s.Send(sender.ConfirmationEvent, recipient, code)
 	if err != nil {
-		log.Print(err)
+		err = fmt.Errorf("sendConfirmCode error: %w", err)
 	}
+
+	return err
 }
 
-func sendRecoveryCode(sender sender.Sender, recipient, code string) {
+func sendRecoveryCode(s sender.Sender, recipient, code string) error {
 	log.Printf("Recovery code for %s: %s", recipient, code)
 
-	err := sender.Send(common.PasswordRecoveryEvent, recipient, code)
+	err := s.Send(sender.PasswordRecoveryEvent, recipient, code)
 	if err != nil {
-		log.Print(err)
+		err = fmt.Errorf("sendRecoveryCode error: %w", err)
 	}
+
+	return err
 }
 
 func (r *Rauther) confirmHandler() gin.HandlerFunc {
@@ -486,7 +491,13 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		contact, _ := user.GetField(u, at.Sender.RecipientKey())
-		sendConfirmCode(at.Sender, contact.(string), confirmCode)
+
+		err = sendConfirmCode(at.Sender, contact.(string), confirmCode)
+		if err != nil {
+			log.Print(err)
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUnknownError])
+			return
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
@@ -528,7 +539,15 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		contact, _ := user.GetField(u, at.Sender.RecipientKey())
-		sendRecoveryCode(at.Sender, contact.(string), code)
+
+		err = sendRecoveryCode(at.Sender, contact.(string), code)
+		if err != nil {
+			log.Print(err)
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUnknownError])
+
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{"result": true})
 	}
 }
