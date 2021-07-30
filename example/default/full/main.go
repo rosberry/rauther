@@ -8,6 +8,7 @@ import (
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/default/full/controllers"
 	"github.com/rosberry/rauther/example/default/full/models"
+	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
@@ -52,7 +53,7 @@ func main() {
 
 type defaultEmailSender struct{}
 
-func (s *defaultEmailSender) Send(event int, recipient string, message string) error {
+func (s *defaultEmailSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by email", message, recipient)
 	return nil
 }
