@@ -134,6 +134,7 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 	}
 
 	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
+	router.POST(r.Config.Routes.RecoveryValidateCode, r.validateRecoveryCodeHandler())
 	router.POST(r.Config.Routes.RecoveryCode, r.recoveryHandler())
 }
 
@@ -545,6 +546,35 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			log.Print(err)
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUnknownError])
 
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"result": true})
+	}
+}
+
+func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		type recoveryValidationRequest struct {
+			PID  string `json:"pid"`
+			Code string `json:"code"`
+		}
+
+		var request recoveryValidationRequest
+		if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			return
+		}
+
+		u, err := r.deps.Storage.UserStorer.Load(request.PID)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			return
+		}
+
+		code := u.(user.RecoverableUser).GetRecoveryCode()
+		if code != request.Code {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRecoveryCode])
 			return
 		}
 
