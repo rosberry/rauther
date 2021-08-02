@@ -13,8 +13,8 @@ import (
 
 // Deps contain dependencies for Rauther
 type Deps struct {
-	// R is gin Engine
-	R *gin.Engine
+	// R is gin RouterGroup
+	R *gin.RouterGroup
 
 	// Storage is wrapper for User/Session and other storers
 	Storage
@@ -37,7 +37,7 @@ type Storage struct {
 	UserStorer storage.UserStorer
 }
 
-func New(r *gin.Engine, storage Storage) Deps {
+func New(r *gin.RouterGroup, storage Storage) Deps {
 	var u user.User
 	if storage.UserStorer != nil {
 		u = storage.UserStorer.Create("")

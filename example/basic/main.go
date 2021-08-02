@@ -21,9 +21,10 @@ func main() {
 			"message": "pong",
 		})
 	})
+	group := r.Group("")
 
 	d := deps.New(
-		r,
+		group,
 		deps.Storage{
 			SessionStorer: &models.Sessioner{
 				Sessions: make(map[string]*models.Session),

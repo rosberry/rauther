@@ -14,10 +14,11 @@ import (
 func main() {
 	// init gin engine
 	r := gin.Default()
+	group := r.Group("")
 
 	// create Rauther deps
 	d := deps.New(
-		r,
+		group,
 		deps.Storage{
 			SessionStorer: &models.Sessioner{
 				Sessions: make(map[string]*models.Session),
