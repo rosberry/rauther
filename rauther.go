@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -15,6 +16,7 @@ import (
 	"github.com/rosberry/rauther/modules"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/session"
+	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
 )
 
@@ -99,6 +101,12 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
+	_, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
+
+	if r.Config.CreateGuestUser && !isRemovable {
+		log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+	}
+
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
 	router.POST(r.Config.Routes.SignIn, r.signInHandler())
 
@@ -165,23 +173,14 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 		// Create new guest user if it enabled in config
 		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserPID() == "" {
-			tempUserPID := "guest:" + uuid.New().String()
 
-			user, _ := r.deps.UserStorer.Load(tempUserPID)
-			if user != nil {
-				errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserExist])
-				return
-			}
-
-			user = r.deps.UserStorer.Create(tempUserPID)
-
-			err = r.deps.UserStorer.Save(user)
+			user, err := r.createGuestUser()
 			if err != nil {
-				errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+				errorResponse(c, http.StatusInternalServerError, err.(common.Err))
 				return
 			}
 
-			session.SetUserPID(tempUserPID)
+			session.SetUserPID(user.GetPID())
 		}
 
 		session.SetToken(uuid.New().String())
@@ -286,7 +285,18 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		u = r.deps.UserStorer.Create(pid)
+		oldPid := sess.GetUserPID()
+		if oldPid != "" && !IsGuest(oldPid) {
+			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrAlreadyAuth])
+			return
+		}
+
+		if r.Config.CreateGuestUser && IsGuest(oldPid) {
+			u, _ = r.deps.UserStorer.Load(oldPid)
+			u.SetPID(pid)
+		} else {
+			u = r.deps.UserStorer.Create(pid)
+		}
 
 		u.(user.AuthableUser).SetPassword(password)
 
@@ -364,6 +374,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		sess := s.(session.Session)
+		oldPid := sess.GetUserPID()
 		sess.SetUserPID(pid)
 
 		u, err := r.deps.UserStorer.Load(pid)
@@ -392,6 +403,16 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
 			return
+		}
+
+		if r.Config.CreateGuestUser && IsGuest(oldPid) {
+			rmStorer := r.deps.UserStorer.(storage.RemovableUserStorer)
+
+			err := rmStorer.Remove(oldPid)
+			if err != nil {
+				errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUnknownError])
+				return
+			}
 		}
 
 		c.Set(r.Config.ContextNames.Session, sess)
@@ -600,4 +621,26 @@ func (r *Rauther) checkSender() (ok bool) {
 	}
 
 	return true
+}
+
+func (r *Rauther) createGuestUser() (user.User, error) {
+	tempUserPID := "guest:" + uuid.New().String()
+
+	u, _ := r.deps.UserStorer.Load(tempUserPID)
+	if u != nil {
+		return nil, common.Errors[common.ErrUserExist]
+	}
+
+	usr := r.deps.UserStorer.Create(tempUserPID)
+
+	err := r.deps.UserStorer.Save(usr)
+	if err != nil {
+		return nil, common.Errors[common.ErrUserSave]
+	}
+
+	return usr, nil
+}
+
+func IsGuest(pid string) bool {
+	return strings.HasPrefix(pid, "guest:")
 }

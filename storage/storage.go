@@ -31,3 +31,7 @@ type UserStorer interface {
 	// Save User
 	Save(user user.User) error
 }
+
+type RemovableUserStorer interface {
+	Remove(pid string) error
+}
