@@ -13,6 +13,7 @@ import (
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/config"
 	"github.com/rosberry/rauther/deps"
+	"github.com/rosberry/rauther/hooks"
 	"github.com/rosberry/rauther/modules"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/session"
@@ -25,6 +26,7 @@ type Rauther struct {
 	Config  config.Config
 	Modules *modules.Modules
 	deps    deps.Deps
+	hooks   hooks.HookOptions
 }
 
 // New make new instance of Rauther with default configuration
@@ -191,12 +193,22 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
+		respMap := &gin.H{
 			"result":    true,
 			"device_id": sessionID,
 			"token":     session.GetToken(),
-		})
+		}
+
+		if r.hooks.AfterAuth != nil {
+			r.hooks.AfterAuth(respMap, session)
+		}
+
+		c.JSON(http.StatusOK, respMap)
 	}
+}
+
+func (r *Rauther) AfterAuth(f func(resp *gin.H, ses session.Session)) {
+	r.hooks.AfterAuth = f
 }
 
 // AuthMiddleware provide public access to auth middleware
