@@ -148,6 +148,29 @@ paths:
       tags:
       - auth
       
+  /recovery/validate:
+    post:
+      consumes:
+        - application/json
+      description: Validate recovery code
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/ValidateRecoveryCodeRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RecoveryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+      
   /recovery:
     post:
       consumes:
@@ -296,6 +319,16 @@ definitions:
       result:
         example: true
         type: boolean
+    type: object
+    
+  ValidateRecoveryCodeRequest:
+    properties:
+      pid:
+        example: example@mailer.com
+        type: string
+      code:
+        example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+        type: string
     type: object
 
   RecoveryRequest:
