@@ -109,6 +109,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
 	router.POST(r.Config.Routes.SignIn, r.signInHandler())
+	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
 
 	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
@@ -143,7 +144,6 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 
 	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
 	router.POST(r.Config.Routes.RecoveryCode, r.recoveryHandler())
-	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
 }
 
 func (r *Rauther) authHandler() gin.HandlerFunc {
