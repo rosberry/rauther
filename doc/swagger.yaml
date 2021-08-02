@@ -80,6 +80,22 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+  /sign-out:
+    post:
+      consumes:
+      - application/json
+      description: Logout user
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SignOutResponse'
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
       
   /confirm:
     post:
@@ -258,6 +274,16 @@ definitions:
       result:
         example: true
         type: boolean
+    type: object
+
+  SignOutResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+      token:
+        example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+        type: string
     type: object
   
   ConfirmRequest:

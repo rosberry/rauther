@@ -143,6 +143,7 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 
 	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
 	router.POST(r.Config.Routes.RecoveryCode, r.recoveryHandler())
+	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
 }
 
 func (r *Rauther) authHandler() gin.HandlerFunc {
@@ -420,6 +421,67 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
+		})
+	}
+}
+
+func (r *Rauther) signOutHandler() gin.HandlerFunc {
+	if !r.deps.Checker().Authable {
+		log.Print("Not implement AuthableUser interface")
+		return nil
+	}
+
+	return func(c *gin.Context) {
+		s, ok := c.Get(r.Config.ContextNames.Session)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			return
+		}
+
+		session := s.(session.Session)
+
+		u, ok := c.Get(r.Config.ContextNames.User)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			return
+		}
+
+		user := u.(user.User)
+		newToken := uuid.New().String()
+		session.SetToken(newToken)
+
+		// unbind
+
+		if r.Modules.AuthableUser && r.Config.CreateGuestUser {
+			pid := user.GetPID()
+			if IsGuest(pid) {
+				rmStorer := r.deps.UserStorer.(storage.RemovableUserStorer)
+
+				err := rmStorer.Remove(pid)
+				if err != nil {
+					errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUnknownError])
+					return
+				}
+			}
+
+			user, err := r.createGuestUser()
+			if err != nil {
+				errorResponse(c, http.StatusInternalServerError, err.(common.Err))
+				return
+			}
+
+			session.SetUserPID(user.GetPID())
+		}
+
+		err := r.deps.SessionStorer.Save(session)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+			"token":  newToken,
 		})
 	}
 }
