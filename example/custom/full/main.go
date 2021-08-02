@@ -8,6 +8,7 @@ import (
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/custom/full/controllers"
 	"github.com/rosberry/rauther/example/custom/full/models"
+	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
@@ -67,7 +68,7 @@ func main() {
 
 type customPhoneSMSSender struct{}
 
-func (s *customPhoneSMSSender) Send(event int, recipient string, message string) error {
+func (s *customPhoneSMSSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by sms", message, recipient)
 	return nil
 }
