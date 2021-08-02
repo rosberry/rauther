@@ -174,14 +174,13 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 		// Create new guest user if it enabled in config
 		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserPID() == "" {
-
 			user, err := r.createGuestUser()
 			if err != nil {
 				errorResponse(c, http.StatusInternalServerError, err.(common.Err))
 				return
 			}
 
-			session.SetUserPID(user.GetPID())
+			session.BindUser(user)
 		}
 
 		session.SetToken(uuid.New().String())
@@ -272,13 +271,6 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		sess := s.(session.Session)
-		sess.SetUserPID(pid)
-
-		err = r.deps.SessionStorer.Save(sess)
-		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
-			return
-		}
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err == nil && u != nil {
@@ -300,6 +292,14 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		u.(user.AuthableUser).SetPassword(password)
+
+		sess.BindUser(u)
+
+		err = r.deps.SessionStorer.Save(sess)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
+			return
+		}
 
 		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
 			contacts := request.(authtype.AuhtRequestFieldable).Fields()
@@ -376,7 +376,6 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		sess := s.(session.Session)
 		oldPid := sess.GetUserPID()
-		sess.SetUserPID(pid)
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err != nil {
@@ -395,6 +394,8 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
 			return
 		}
+
+		sess.BindUser(u)
 
 		if err = r.deps.SessionStorer.Save(sess); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
@@ -450,7 +451,7 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 		newToken := uuid.New().String()
 		session.SetToken(newToken)
 
-		// unbind
+		session.UnbindUser(user)
 
 		if r.Modules.AuthableUser && r.Config.CreateGuestUser {
 			pid := user.GetPID()
@@ -470,7 +471,7 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 				return
 			}
 
-			session.SetUserPID(user.GetPID())
+			session.BindUser(user)
 		}
 
 		err := r.deps.SessionStorer.Save(session)

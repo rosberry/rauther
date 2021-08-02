@@ -1,5 +1,7 @@
 package session
 
+import "github.com/rosberry/rauther/user"
+
 // Definition of session interface
 // Session interface
 type Session interface {
@@ -9,5 +11,6 @@ type Session interface {
 
 	SetID(id string)
 	SetToken(token string)
-	SetUserPID(pid string)
+	BindUser(u user.User)
+	UnbindUser(u user.User)
 }
