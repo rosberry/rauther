@@ -484,6 +484,11 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 		confirmCode := generateConfirmCode()
 		u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
 
+		if err = r.deps.UserStorer.Save(u); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+			return
+		}
+
 		at := r.deps.Types().Select(c)
 		contact, _ := user.GetField(u, at.Sender.RecipientKey())
 		sendConfirmCode(at.Sender, contact.(string), confirmCode)
