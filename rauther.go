@@ -285,7 +285,7 @@ func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
 		user := u.(user.ConfirmableUser)
 
 		if !user.GetConfirmed() {
-			err := common.Errors[common.ErrNotAuth]
+			err := common.Errors[common.ErrNotConfirmed]
 			errorResponse(c, http.StatusUnauthorized, err)
 			c.Abort()
 
@@ -448,11 +448,6 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		if !passwordCompare(userPassword, password) {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrIncorrectPassword])
-			return
-		}
-
-		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
 			return
 		}
 
