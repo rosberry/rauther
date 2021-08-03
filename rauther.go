@@ -285,14 +285,14 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		oldPid := sess.GetUserPID()
-		if oldPid != "" && !IsGuest(oldPid) {
+		oldPID := sess.GetUserPID()
+		if oldPID != "" && !IsGuest(oldPID) {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrAlreadyAuth])
 			return
 		}
 
-		if r.Config.CreateGuestUser && IsGuest(oldPid) {
-			u, _ = r.deps.UserStorer.Load(oldPid)
+		if r.Config.CreateGuestUser && IsGuest(oldPID) {
+			u, _ = r.deps.UserStorer.Load(oldPID)
 			u.SetPID(pid)
 		} else {
 			u = r.deps.UserStorer.Create(pid)
@@ -374,7 +374,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		sess := s.(session.Session)
-		oldPid := sess.GetUserPID()
+		oldPID := sess.GetUserPID()
 		sess.SetUserPID(pid)
 
 		u, err := r.deps.UserStorer.Load(pid)
@@ -405,10 +405,10 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Config.CreateGuestUser && IsGuest(oldPid) {
+		if r.Config.CreateGuestUser && IsGuest(oldPID) {
 			rmStorer := r.deps.UserStorer.(storage.RemovableUserStorer)
 
-			err := rmStorer.Remove(oldPid)
+			err := rmStorer.Remove(oldPID)
 			if err != nil {
 				errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUnknownError])
 				return
