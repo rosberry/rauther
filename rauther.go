@@ -19,6 +19,7 @@ import (
 	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Rauther main object - contains configuration and other details for running.
@@ -352,7 +353,9 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			u = r.deps.UserStorer.Create(pid)
 		}
 
-		u.(user.AuthableUser).SetPassword(password)
+		encryptedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
 
 		sess.BindUser(u)
 
@@ -446,7 +449,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		userPassword := u.(user.AuthableUser).GetPassword()
 
-		if !passwordCompare(userPassword, password) {
+		if !passwordCompare(password, userPassword) {
 			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrIncorrectPassword])
 			return
 		}
