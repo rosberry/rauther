@@ -193,7 +193,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 			return
 		}
 
-		respMap := &gin.H{
+		respMap := gin.H{
 			"result":    true,
 			"device_id": sessionID,
 			"token":     session.GetToken(),
@@ -207,7 +207,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 	}
 }
 
-func (r *Rauther) AfterAuth(f func(resp *gin.H, ses session.Session)) {
+func (r *Rauther) AfterAuth(f func(resp gin.H, ses session.Session)) {
 	r.hooks.AfterAuth = f
 }
 
