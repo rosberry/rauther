@@ -216,6 +216,14 @@ func (r *Rauther) AuthMiddleware() gin.HandlerFunc {
 	return r.authMiddleware()
 }
 
+func (r *Rauther) AuthUserMiddleware() gin.HandlerFunc {
+	return r.authUserMiddleware()
+}
+
+func (r *Rauther) AuthUserConfirmedMiddleware() gin.HandlerFunc {
+	return r.authUserConfirmedMiddleware()
+}
+
 func (r *Rauther) authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if token := parseAuthToken(c); token != "" {
@@ -244,6 +252,47 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 		err := common.Errors[common.ErrNotAuth]
 		errorResponse(c, http.StatusUnauthorized, err)
 		c.Abort()
+	}
+}
+
+func (r *Rauther) authUserMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		_, ok := c.Get(r.Config.ContextNames.User)
+
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			c.Abort()
+
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		u, ok := c.Get(r.Config.ContextNames.User)
+
+		if !ok {
+			err := common.Errors[common.ErrNotAuth]
+			errorResponse(c, http.StatusUnauthorized, err)
+			c.Abort()
+
+			return
+		}
+
+		user := u.(user.ConfirmableUser)
+
+		if !user.GetConfirmed() {
+			err := common.Errors[common.ErrNotAuth]
+			errorResponse(c, http.StatusUnauthorized, err)
+			c.Abort()
+
+			return
+		}
+
+		c.Next()
 	}
 }
 
