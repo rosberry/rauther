@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rosberry/rauther/common"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
@@ -15,8 +16,13 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	})
 }
 
-func passwordCompare(password1, password2 string) (ok bool) {
-	return password1 == password2
+func passwordCompare(requestPassword, hashedPassword string) (ok bool) {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(requestPassword))
+	if err == nil {
+		ok = true
+	}
+
+	return
 }
 
 func generateConfirmCode() (code string) {
