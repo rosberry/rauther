@@ -121,7 +121,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 	}
 
 	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler())
-	router.GET(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
+	router.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
 }
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
