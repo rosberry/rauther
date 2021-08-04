@@ -8,10 +8,10 @@ import (
 	"github.com/rosberry/rauther/common"
 )
 
-func errorResponse(c *gin.Context, status int, err common.Err) {
+func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	c.JSON(status, gin.H{
 		"result": false,
-		"error":  err,
+		"error":  common.Errors[err],
 	})
 }
 

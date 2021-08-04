@@ -27,11 +27,11 @@ type Rauther struct {
 // New make new instance of Rauther with default configuration
 func New(deps deps.Deps) *Rauther {
 	if deps.SessionStorer == nil {
-		log.Fatal(common.Errors[common.ErrSessionStorerDependency])
+		log.Fatal(common.ErrSessionStorerDependency)
 	}
 
 	if deps.R == nil {
-		log.Fatal(common.Errors[common.ErrGinDependency])
+		log.Fatal(common.ErrGinDependency)
 	}
 
 	cfg := config.Config{}
@@ -97,7 +97,7 @@ func (r *Rauther) includeSession() {
 
 func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if !r.deps.Checker().Authable {
-		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
+		log.Fatal(common.ErrAuthableUserNotImplement)
 	}
 
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
@@ -114,11 +114,11 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 	if !r.deps.Checker().Confirmable {
-		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
+		log.Fatal(common.ErrConfirmableUserNotImplement)
 	}
 
 	if !r.checkSender() {
-		log.Fatal(common.Errors[common.ErrSenderRequired])
+		log.Fatal(common.ErrSenderRequired)
 	}
 
 	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
@@ -127,11 +127,11 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 	if !r.deps.Checker().Recoverable {
-		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
+		log.Fatal(common.ErrRecoverableUserNotImplement)
 	}
 
 	if !r.checkSender() {
-		log.Fatal(common.Errors[common.ErrSenderRequired])
+		log.Fatal(common.ErrSenderRequired)
 	}
 
 	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
@@ -148,7 +148,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 		err := c.Bind(&request)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -160,7 +160,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 		session := r.deps.SessionStorer.LoadByID(sessionID)
 		if session == nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionLoad])
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionLoad)
 			return
 		}
 
@@ -170,7 +170,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 			user, _ := r.deps.UserStorer.Load(tempUserPID)
 			if user != nil {
-				errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserExist])
+				errorResponse(c, http.StatusInternalServerError, common.ErrUserExist)
 				return
 			}
 
@@ -178,7 +178,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 			err = r.deps.UserStorer.Save(user)
 			if err != nil {
-				errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+				errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 				return
 			}
 
@@ -189,7 +189,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 		err = r.deps.SessionStorer.Save(session)
 		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
 
@@ -211,8 +211,7 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 		if token := parseAuthToken(c); token != "" {
 			session := r.deps.SessionStorer.FindByToken(token)
 			if session == nil {
-				err := common.Errors[common.ErrAuthFailed]
-				errorResponse(c, http.StatusUnauthorized, err)
+				errorResponse(c, http.StatusUnauthorized, common.ErrAuthFailed)
 				c.Abort()
 
 				return
@@ -231,8 +230,7 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		err := common.Errors[common.ErrNotAuth]
-		errorResponse(c, http.StatusUnauthorized, err)
+		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
 		c.Abort()
 	}
 }
@@ -247,7 +245,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		at := r.deps.Types().Select(c)
 		if at == nil {
 			log.Print("sign up handler: not found auth type")
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
 		}
@@ -257,7 +255,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		err := c.ShouldBindBodyWith(&req, binding.JSON)
 		if err != nil {
 			log.Print("sign up handler:", err)
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
 		}
@@ -268,7 +266,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
 			return
 		}
 
@@ -277,13 +275,13 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		err = r.deps.SessionStorer.Save(sess)
 		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err == nil && u != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserExist])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			return
 		}
 
@@ -297,7 +295,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 				err := user.SetFields(u, contactType, contact)
 				if err != nil {
 					log.Printf("sign up: set fields %v: %v", contactType, err)
-					errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+					errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 					return
 				}
@@ -314,7 +312,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 			return
 		}
 
@@ -339,7 +337,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		at := r.deps.Types().Select(c)
 		if at == nil {
 			log.Print("sign in handler: not found auth type")
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
 		}
@@ -349,7 +347,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		err := c.ShouldBindBodyWith(&req, binding.JSON)
 		if err != nil {
 			log.Print("sign in handler:", err)
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
 		}
@@ -360,7 +358,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
 			return
 		}
 
@@ -369,29 +367,29 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
 		userPassword := u.(user.AuthableUser).GetPassword()
 
 		if !passwordCompare(userPassword, password) {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrIncorrectPassword])
+			errorResponse(c, http.StatusBadRequest, common.ErrIncorrectPassword)
 			return
 		}
 
 		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
+			errorResponse(c, http.StatusBadRequest, common.ErrNotConfirmed)
 			return
 		}
 
 		if err = r.deps.SessionStorer.Save(sess); err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrSessionSave])
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 			return
 		}
 
@@ -426,24 +424,24 @@ func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		pid := c.Query(r.Config.QueryNames.EmailConfirm.PID)
 		if pid == "" {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
 		confirmCode := c.Query(r.Config.QueryNames.EmailConfirm.Code)
 		if confirmCode == "" {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
 		if confirmCode != u.(user.ConfirmableUser).GetConfirmCode() {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidConfirmCode])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
 			return
 		}
 
@@ -451,7 +449,7 @@ func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {
 
 		err = r.deps.UserStorer.Save(u)
 		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.Errors[common.ErrUserSave])
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 			return
 		}
 
@@ -465,7 +463,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
 			return
 		}
 
@@ -473,13 +471,13 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 		pid := sess.GetUserPID()
 		if pid == "" {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
@@ -504,18 +502,18 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		var request recoveryRequest
 		if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
 		u, err := r.deps.Storage.UserStorer.Load(request.PID)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
 		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrNotConfirmed])
+			errorResponse(c, http.StatusBadRequest, common.ErrNotConfirmed)
 			return
 		}
 
@@ -524,7 +522,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserSave])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserSave)
 			return
 		}
 
@@ -545,19 +543,19 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 
 		var request recoveryRequest
 		if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRequest])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
 		u, err := r.deps.Storage.UserStorer.Load(request.PID)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserNotFound])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
 		code := u.(user.RecoverableUser).GetRecoveryCode()
 		if code != request.Code {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrInvalidRecoveryCode])
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
 			return
 		}
 
@@ -565,7 +563,7 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.Errors[common.ErrUserSave])
+			errorResponse(c, http.StatusBadRequest, common.ErrUserSave)
 			return
 		}
 
