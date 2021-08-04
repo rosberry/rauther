@@ -1,8 +1,10 @@
 package rauther
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -11,9 +13,11 @@ import (
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/config"
 	"github.com/rosberry/rauther/deps"
+	"github.com/rosberry/rauther/hooks"
 	"github.com/rosberry/rauther/modules"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/session"
+	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
 )
 
@@ -22,6 +26,7 @@ type Rauther struct {
 	Config  config.Config
 	Modules *modules.Modules
 	deps    deps.Deps
+	hooks   hooks.HookOptions
 }
 
 // New make new instance of Rauther with default configuration
@@ -100,8 +105,15 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
+	_, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
+
+	if r.Config.CreateGuestUser && !isRemovable {
+		log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+	}
+
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
 	router.POST(r.Config.Routes.SignIn, r.signInHandler())
+	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
 
 	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
@@ -121,7 +133,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
-	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
+	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler())
 	router.GET(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
 }
 
@@ -166,23 +178,13 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 
 		// Create new guest user if it enabled in config
 		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserPID() == "" {
-			tempUserPID := "guest:" + uuid.New().String()
-
-			user, _ := r.deps.UserStorer.Load(tempUserPID)
-			if user != nil {
-				errorResponse(c, http.StatusInternalServerError, common.ErrUserExist)
+			user, errType := r.createGuestUser()
+			if errType != 0 {
+				errorResponse(c, http.StatusInternalServerError, errType)
 				return
 			}
 
-			user = r.deps.UserStorer.Create(tempUserPID)
-
-			err = r.deps.UserStorer.Save(user)
-			if err != nil {
-				errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
-				return
-			}
-
-			session.SetUserPID(tempUserPID)
+			session.BindUser(user)
 		}
 
 		session.SetToken(uuid.New().String())
@@ -193,17 +195,35 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
+		respMap := gin.H{
 			"result":    true,
 			"device_id": sessionID,
 			"token":     session.GetToken(),
-		})
+		}
+
+		if r.hooks.AfterAuth != nil {
+			r.hooks.AfterAuth(respMap, session)
+		}
+
+		c.JSON(http.StatusOK, respMap)
 	}
+}
+
+func (r *Rauther) AfterAuth(f func(resp gin.H, ses session.Session)) {
+	r.hooks.AfterAuth = f
 }
 
 // AuthMiddleware provide public access to auth middleware
 func (r *Rauther) AuthMiddleware() gin.HandlerFunc {
 	return r.authMiddleware()
+}
+
+func (r *Rauther) AuthUserMiddleware() gin.HandlerFunc {
+	return r.authUserMiddleware()
+}
+
+func (r *Rauther) AuthUserConfirmedMiddleware() gin.HandlerFunc {
+	return r.authUserConfirmedMiddleware()
 }
 
 func (r *Rauther) authMiddleware() gin.HandlerFunc {
@@ -232,6 +252,55 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 
 		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
 		c.Abort()
+	}
+}
+
+func (r *Rauther) authUserMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		u, ok := c.Get(r.Config.ContextNames.User)
+
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			c.Abort()
+
+			return
+		}
+
+		user := u.(user.User)
+		pid := user.GetPID()
+
+		if r.Config.CreateGuestUser && IsGuest(pid) {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			c.Abort()
+
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		u, ok := c.Get(r.Config.ContextNames.User)
+
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			c.Abort()
+
+			return
+		}
+
+		user := u.(user.ConfirmableUser)
+
+		if !user.GetConfirmed() {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotConfirmed)
+			c.Abort()
+
+			return
+		}
+
+		c.Next()
 	}
 }
 
@@ -271,13 +340,6 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		sess := s.(session.Session)
-		sess.SetUserPID(pid)
-
-		err = r.deps.SessionStorer.Save(sess)
-		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
-			return
-		}
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err == nil && u != nil {
@@ -285,9 +347,28 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		u = r.deps.UserStorer.Create(pid)
+		oldPID := sess.GetUserPID()
+		if oldPID != "" && !IsGuest(oldPID) {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		if r.Config.CreateGuestUser && IsGuest(oldPID) {
+			u, _ = r.deps.UserStorer.Load(oldPID)
+			u.SetPID(pid)
+		} else {
+			u = r.deps.UserStorer.Create(pid)
+		}
 
 		u.(user.AuthableUser).SetPassword(password)
+
+		sess.BindUser(u)
+
+		err = r.deps.SessionStorer.Save(sess)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
+			return
+		}
 
 		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
 			contacts := request.(authtype.AuhtRequestFieldable).Fields()
@@ -363,7 +444,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		sess := s.(session.Session)
-		sess.SetUserPID(pid)
+		oldPID := sess.GetUserPID()
 
 		u, err := r.deps.UserStorer.Load(pid)
 		if err != nil {
@@ -378,10 +459,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
-			errorResponse(c, http.StatusBadRequest, common.ErrNotConfirmed)
-			return
-		}
+		sess.BindUser(u)
 
 		if err = r.deps.SessionStorer.Save(sess); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
@@ -393,6 +471,16 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
+		if r.Config.CreateGuestUser && IsGuest(oldPID) {
+			rmStorer := r.deps.UserStorer.(storage.RemovableUserStorer)
+
+			err := rmStorer.Remove(oldPID)
+			if err != nil {
+				errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+				return
+			}
+		}
+
 		c.Set(r.Config.ContextNames.Session, sess)
 		c.Set(r.Config.ContextNames.User, u)
 
@@ -402,45 +490,110 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 }
 
-func sendConfirmCode(sender sender.Sender, recipient, code string) {
+func (r *Rauther) signOutHandler() gin.HandlerFunc {
+	if !r.deps.Checker().Authable {
+		log.Print("Not implement AuthableUser interface")
+		return nil
+	}
+
+	return func(c *gin.Context) {
+		s, ok := c.Get(r.Config.ContextNames.Session)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			return
+		}
+
+		session := s.(session.Session)
+
+		u, ok := c.Get(r.Config.ContextNames.User)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			return
+		}
+
+		user := u.(user.User)
+		newToken := uuid.New().String()
+		session.SetToken(newToken)
+
+		session.UnbindUser(user)
+
+		if r.Modules.AuthableUser && r.Config.CreateGuestUser {
+			pid := user.GetPID()
+			if IsGuest(pid) {
+				rmStorer := r.deps.UserStorer.(storage.RemovableUserStorer)
+
+				err := rmStorer.Remove(pid)
+				if err != nil {
+					errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+					return
+				}
+			}
+
+			user, errType := r.createGuestUser()
+			if errType != 0 {
+				errorResponse(c, http.StatusInternalServerError, errType)
+				return
+			}
+
+			session.BindUser(user)
+		}
+
+		err := r.deps.SessionStorer.Save(session)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+			"token":  newToken,
+		})
+	}
+}
+
+func sendConfirmCode(s sender.Sender, recipient, code string) error {
 	log.Printf("Confirm code for %s: %s", recipient, code)
 
-	err := sender.Send(common.CodeConfirmationEvent, recipient, code)
+	err := s.Send(sender.ConfirmationEvent, recipient, code)
 	if err != nil {
-		log.Print(err)
+		err = fmt.Errorf("sendConfirmCode error: %w", err)
 	}
+
+	return err
 }
 
-func sendRecoveryCode(sender sender.Sender, recipient, code string) {
+func sendRecoveryCode(s sender.Sender, recipient, code string) error {
 	log.Printf("Recovery code for %s: %s", recipient, code)
 
-	err := sender.Send(common.PasswordRecoveryEvent, recipient, code)
+	err := s.Send(sender.PasswordRecoveryEvent, recipient, code)
 	if err != nil {
-		log.Print(err)
+		err = fmt.Errorf("sendRecoveryCode error: %w", err)
 	}
+
+	return err
 }
 
-func (r *Rauther) confirmEmailHandler() gin.HandlerFunc {
+func (r *Rauther) confirmHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		pid := c.Query(r.Config.QueryNames.EmailConfirm.PID)
-		if pid == "" {
+		type confirmRequest struct {
+			PID  string `json:"pid"`
+			Code string `json:"code"`
+		}
+
+		var request confirmRequest
+
+		if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
-		confirmCode := c.Query(r.Config.QueryNames.EmailConfirm.Code)
-		if confirmCode == "" {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-			return
-		}
-
-		u, err := r.deps.UserStorer.Load(pid)
+		u, err := r.deps.UserStorer.Load(request.PID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
-		if confirmCode != u.(user.ConfirmableUser).GetConfirmCode() {
+		if request.Code != u.(user.ConfirmableUser).GetConfirmCode() {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
 			return
 		}
@@ -486,7 +639,13 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		contact, _ := user.GetField(u, at.Sender.RecipientKey())
-		sendConfirmCode(at.Sender, contact.(string), confirmCode)
+
+		err = sendConfirmCode(at.Sender, contact.(string), confirmCode)
+		if err != nil {
+			log.Print(err)
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+			return
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
@@ -528,7 +687,15 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		contact, _ := user.GetField(u, at.Sender.RecipientKey())
-		sendRecoveryCode(at.Sender, contact.(string), code)
+
+		err = sendRecoveryCode(at.Sender, contact.(string), code)
+		if err != nil {
+			log.Print(err)
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{"result": true})
 	}
 }
@@ -581,4 +748,26 @@ func (r *Rauther) checkSender() (ok bool) {
 	}
 
 	return true
+}
+
+func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
+	tempUserPID := "guest:" + uuid.New().String()
+
+	u, _ := r.deps.UserStorer.Load(tempUserPID)
+	if u != nil {
+		return nil, common.ErrUserExist
+	}
+
+	usr := r.deps.UserStorer.Create(tempUserPID)
+
+	err := r.deps.UserStorer.Save(usr)
+	if err != nil {
+		return nil, common.ErrUserSave
+	}
+
+	return usr, common.ErrTypes(0)
+}
+
+func IsGuest(pid string) bool {
+	return strings.HasPrefix(pid, "guest:")
 }

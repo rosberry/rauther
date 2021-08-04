@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/rosberry/rauther/session"
+	"github.com/rosberry/rauther/user"
 )
 
 type Sessioner struct {
@@ -48,4 +49,11 @@ func (s *Session) GetUserPID() (pid string) { return s.UserPID }
 
 func (s *Session) SetID(id string)       { s.SessionID = id }
 func (s *Session) SetToken(token string) { s.Token = token }
-func (s *Session) SetUserPID(pid string) { s.UserPID = pid }
+func (s *Session) BindUser(u user.User) {
+	user := u.(*User)
+	s.UserPID = user.PID
+}
+
+func (s *Session) UnbindUser(u user.User) {
+	s.UserPID = ""
+}

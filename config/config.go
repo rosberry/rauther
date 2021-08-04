@@ -13,6 +13,9 @@ type Config struct {
 		// SignIn is gin route path for sign-in handler. Default: "sign-in"
 		SignIn string
 
+		// SignOut is gin route path for sign-out handler. Default: "sign-out"
+		SignOut string
+
 		// ConfirmCode is gin route path for email confirmation handler. Default: "confirm"
 		ConfirmCode string
 
@@ -64,6 +67,7 @@ func (c *Config) Default() {
 
 	c.Routes.SignUp = "sign-up"
 	c.Routes.SignIn = "sign-in"
+	c.Routes.SignOut = "sign-out"
 
 	c.Routes.ConfirmCode = "confirm"
 	c.Routes.ConfirmResend = "confirm/resend"

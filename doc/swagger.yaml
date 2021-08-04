@@ -1,0 +1,375 @@
+swagger: "2.0"
+info:
+  description: "This present an API for default config in Rauther library."
+  version: "1.0.0"
+  title: "Rauther default API"
+paths:
+  /auth:
+    post:
+      consumes:
+      - application/json
+      description: Register device and returns token
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/AuthRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - public
+            
+  /sign-up:
+    post:
+      consumes:
+      - application/json
+      description: Register user
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/SignUpRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SignUpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+      
+  /sign-in:
+    post:
+      consumes:
+      - application/json
+      description: Login user
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/SignInRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SignInResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+  /sign-out:
+    post:
+      consumes:
+      - application/json
+      description: Logout user
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SignOutResponse'
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+      
+  /confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirmation user
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/ConfirmRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ConfirmResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+      
+  /confirm/resend:
+    get:
+      consumes:
+      - application/json
+      description: Resend confirmation code
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResendConfirmationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+      
+  /recovery/request:
+    post:
+      consumes:
+      - application/json
+      description: Send recovery code
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/CodeRecoveryRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/CodeRecoveryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+      
+  /recovery:
+    post:
+      consumes:
+        - application/json
+      description: Send new credentials for user
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/RecoveryRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RecoveryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+  
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Get user info
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProfileResponse'
+        "403":
+          description: Not found session
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      tags:
+      - auth
+        
+definitions:
+  Error:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/Error'
+      result:
+        example: false
+        type: boolean
+    type: object
+    
+  AuthRequest:
+    properties:
+      device_id:
+        example: e01050dc-e834-4a61-826e-8dd592afb8ed
+        type: string
+    required:
+    - device_id
+    type: object
+  AuthResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+      token:
+        example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+        type: string
+    type: object
+    
+  SignUpRequest: 
+    properties:
+      email:
+        example: example@mailer.com
+        type: string
+      password:
+        example: mypass333example
+        type: string
+    type: object
+
+  SignUpResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+      pid:
+        example: example@mailer.com
+        type: string
+    type: object
+        
+  SignInRequest: 
+    properties:
+      email:
+        example: example@mailer.com
+        type: string
+      password:
+        example: mypass333example
+        type: string
+    type: object
+
+  SignInResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+    type: object
+
+  SignOutResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+      token:
+        example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+        type: string
+    type: object
+  
+  ConfirmRequest:
+    properties:
+      pid:
+        example: example@mailer.com
+        type: string
+      code:
+        example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+        type: string
+    type: object
+
+  ConfirmResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+    type: object
+
+  ResendConfirmationResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+    type: object
+        
+  CodeRecoveryRequest:
+    properties:
+      pid:
+        example: example@mailer.com
+        type: string
+    type: object
+
+  CodeRecoveryResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+    type: object
+
+  RecoveryRequest:
+    properties:
+      pid:
+        example: example@mailer.com
+        type: string
+      code:
+        example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+        type: string
+      password:
+        example: my88new88pass
+        type: string
+    type: object
+
+  RecoveryResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+    type: object
+        
+  ProfileResponse:
+    type: object
+    properties:
+      result:
+        example: true
+        type: boolean
+      user:
+        type: object
+        properties:
+          PID:
+            type: string
+            example: example@mailer.com
+          Password:
+            type: string
+            example: mypass333example
+          Email:
+            type: string
+            example: example@mailer.com
+          ConfirmCode:
+            type: string
+            example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+          Confirmed:
+            type: boolean
+            example: true
+          RecoveryCode:
+            type: string
+            example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
+  
+  

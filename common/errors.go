@@ -34,6 +34,7 @@ const (
 	ErrSenderRequired
 	ErrRecoverableUserNotImplement
 	ErrInvalidRecoveryCode
+	ErrAlreadyAuth
 )
 
 var Errors = map[ErrTypes]Err{
@@ -58,4 +59,5 @@ var Errors = map[ErrTypes]Err{
 	ErrSenderRequired:              {"sender_required", "At least one sender is required"},
 	ErrRecoverableUserNotImplement: {"recoverable_user_not_implement", "Please implement RecoverableUser interface"},
 	ErrInvalidRecoveryCode:         {"invalid_code", "Invalid recovery code"},
+	ErrAlreadyAuth:                 {"already_auth", "User already authorised"},
 }

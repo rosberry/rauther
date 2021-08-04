@@ -8,15 +8,17 @@ import (
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/default/full/controllers"
 	"github.com/rosberry/rauther/example/default/full/models"
+	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
 	// init gin engine
 	r := gin.Default()
+	group := r.Group("")
 
 	// create Rauther deps
 	d := deps.New(
-		r,
+		group,
 		deps.Storage{
 			SessionStorer: &models.Sessioner{
 				Sessions: make(map[string]*models.Session),
@@ -52,7 +54,7 @@ func main() {
 
 type defaultEmailSender struct{}
 
-func (s *defaultEmailSender) Send(event int, recipient string, message string) error {
+func (s *defaultEmailSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by email", message, recipient)
 	return nil
 }

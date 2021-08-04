@@ -9,6 +9,7 @@ import (
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
+	"github.com/rosberry/rauther/sender"
 )
 
 func main() {
@@ -20,9 +21,10 @@ func main() {
 			"message": "pong",
 		})
 	})
+	group := r.Group("")
 
 	d := deps.New(
-		r,
+		group,
 		deps.Storage{
 			SessionStorer: &models.Sessioner{
 				Sessions: make(map[string]*models.Session),
@@ -62,7 +64,7 @@ func main() {
 
 type fakeEmailSender struct{}
 
-func (s *fakeEmailSender) Send(event int, recipient string, message string) error {
+func (s *fakeEmailSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by email", message, recipient)
 	return nil
 }
@@ -73,7 +75,7 @@ func (s *fakeEmailSender) RecipientKey() string {
 
 type fakeSmsSender struct{}
 
-func (s *fakeSmsSender) Send(event int, recipient string, message string) error {
+func (s *fakeSmsSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by sms", message, recipient)
 	return nil
 }
