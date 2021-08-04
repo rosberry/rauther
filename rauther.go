@@ -76,6 +76,8 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 }
 
 func (r *Rauther) InitHandlers() error {
+	log.Printf("\nEnabled auth modules:\n%v", r.Modules)
+
 	if r.Modules.Session {
 		r.includeSession()
 	}
