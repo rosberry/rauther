@@ -104,8 +104,14 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 
 	key := a.Selector(c)
 
-	if at, ok := a.list[key]; ok {
-		return &at
+	if key != "" {
+		if at, ok := a.list[key]; ok {
+			return &at
+		}
+	} else if len(a.list) == 1 {
+		for _, at := range a.list {
+			return &at
+		}
 	}
 
 	return nil

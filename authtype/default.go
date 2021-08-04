@@ -31,8 +31,7 @@ func (r SignUpRequestByUsername) Fields() map[string]string {
 }
 
 func DefaultSelector(c *gin.Context) string {
-	const defaultKey = "email"
-	// return defaultKey
+	const defaultKey = ""
 
 	type Request struct {
 		Type string `json:"type"`
