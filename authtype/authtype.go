@@ -92,7 +92,7 @@ func (a *AuthTypes) IsEmpty() bool {
 }
 
 // Select uses the selector and returns the found type of authorization
-// if key not found in list, but in list only one type - use first type as default and return it
+// if selector returned the empty key and in auth list only one type - use first type as default and return it
 func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 	if a == nil {
 		log.Fatal("AuthTypes is nil")
