@@ -257,9 +257,19 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 
 func (r *Rauther) authUserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, ok := c.Get(r.Config.ContextNames.User)
+		u, ok := c.Get(r.Config.ContextNames.User)
 
 		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
+			c.Abort()
+
+			return
+		}
+
+		user := u.(user.User)
+		pid := user.GetPID()
+
+		if r.Config.CreateGuestUser && IsGuest(pid) {
 			errorResponse(c, http.StatusUnauthorized, common.Errors[common.ErrNotAuth])
 			c.Abort()
 
