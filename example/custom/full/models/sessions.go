@@ -30,8 +30,9 @@ func (s *Sessioner) FindByToken(token string) session.Session {
 	return nil
 }
 
-func (s *Sessioner) Save(session session.Session) error {
-	s.Sessions[session.GetID()] = session.(*Session)
+func (s *Sessioner) Save(sess session.Session) error {
+	session := sess.(*Session)
+	s.Sessions[session.GetID()] = session
 
 	return nil
 }
