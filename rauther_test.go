@@ -3,7 +3,6 @@ package rauther_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
 	"github.com/rosberry/rauther/common"
+	"github.com/rosberry/rauther/deps"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -22,10 +22,7 @@ func TestNewRauther(t *testing.T) {
 			sessioner := sessionStorer{}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
 			Convey("When we create new instance of Rauther", func() {
 				// create Rauther
 				rauth := rauther.New(deps)
@@ -33,7 +30,7 @@ func TestNewRauther(t *testing.T) {
 					So(rauth, ShouldNotBeNil)
 					Convey("And config contain default values", func() {
 						So(rauth.Config.Routes.Auth, ShouldEqual, "auth")
-						So(rauth.Config.SessionToken, ShouldEqual, "session")
+						So(rauth.Config.QueryNames.Session, ShouldEqual, "session")
 						So(rauth.Config.ContextNames.Session, ShouldEqual, "session")
 					})
 				})
@@ -50,15 +47,14 @@ func TestDefaultAuthRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
 
-			_ = rauther.New(deps)
+			rauth := rauther.New(deps)
+			rauth.InitHandlers()
 			Convey("When we send request to /auth with some session value", func() {
-				sessionID := "test_session"
-				request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+				// sessionID := "test_session"
+				request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":"test_session"}`))
+				request.Header.Add("Content-Type", "application/json")
 				rr := httptest.NewRecorder()
 				r.ServeHTTP(rr, request)
 				Convey("Then response should be correct", func() {
@@ -74,9 +70,9 @@ func TestDefaultAuthRouter(t *testing.T) {
 					So(resp.Token, ShouldNotBeEmpty)
 				})
 			})
-			Convey("When we send request to /auth without session value", func() {
-				sessionID := ""
-				request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+			Convey("When we send request to /auth with empty session value", func() {
+				request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":""}`))
+				request.Header.Add("Content-Type", "application/json")
 				rr := httptest.NewRecorder()
 				r.ServeHTTP(rr, request)
 				Convey("Then response should return error", func() {
@@ -91,17 +87,15 @@ func TestDefaultAuthRouter(t *testing.T) {
 
 					json.Unmarshal(rr.Body.Bytes(), &resp)
 
-					So(rr.Code, ShouldEqual, http.StatusUnauthorized)
-					So(resp.Result, ShouldBeFalse)
-					So(resp.Error.Code, ShouldNotBeEmpty)
-					So(resp.Error.Message, ShouldNotBeEmpty)
-					So(resp.Token, ShouldBeEmpty)
+					So(rr.Code, ShouldEqual, http.StatusOK)
+					So(resp.Result, ShouldBeTrue)
+					So(resp.Token, ShouldNotBeEmpty)
 				})
 			})
 			Convey("When we send request to /auth", func() {
 				Convey("And Rauther.SessionStorer Load() return nil Session", func() {
-					sessionID := "nil"
-					request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+					request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":"nil"}`))
+					request.Header.Add("Content-Type", "application/json")
 					rr := httptest.NewRecorder()
 					r.ServeHTTP(rr, request)
 					Convey("Then response should return error", func() {
@@ -124,8 +118,8 @@ func TestDefaultAuthRouter(t *testing.T) {
 					})
 				})
 				Convey("And Rauther.SessionStorer Save() return error", func() {
-					sessionID := "error_session"
-					request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/auth?session=%s", sessionID), nil)
+					request, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBufferString(`{"device_id":"error_session"}`))
+					request.Header.Add("Content-Type", "application/json")
 					rr := httptest.NewRecorder()
 					r.ServeHTTP(rr, request)
 					Convey("Then response should return error", func() {
@@ -176,15 +170,13 @@ func TestAuthMiddleware(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
 
 			rauth := rauther.New(deps)
+			rauth.InitHandlers()
 			Convey("And router with connected auth middleware", func() {
 				r.GET("/mw", rauth.AuthMiddleware(), func(c *gin.Context) {
-					if session, ok := c.Get(rauth.ContextNames.Session); ok {
+					if session, ok := c.Get(rauth.Config.ContextNames.Session); ok {
 						c.JSON(http.StatusOK, gin.H{
 							"result":  true,
 							"session": session.(*Session),
@@ -327,13 +319,10 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
-			_ = rauther.New(deps)
+			rauth := rauther.New(deps)
+			rauth.InitHandlers()
 
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
@@ -394,15 +383,11 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
-			rauth.Config.AuthType = rauther.AuthByUsername
 
+			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
 			Convey("When we send request to /sign-up with some correct value", func() {
@@ -475,13 +460,10 @@ func TestDefaultSignInRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
-			_ = rauther.New(deps)
+			rauth := rauther.New(deps)
+			rauth.InitHandlers()
 
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
@@ -552,15 +534,11 @@ func TestSignInByUsernameRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := rauther.Deps{
-				R:             r,
-				SessionStorer: &sessioner,
-				UserStorer:    &useoner,
-			}
+			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
-			rauth.Config.AuthType = rauther.AuthByUsername
 
+			rauth.InitHandlers()
 			// r.POST("sign-up", rauth.AuthMiddleware(), rauth.SignUpHandler())
 
 			Convey("When we send request to /sign-in with some correct value", func() {

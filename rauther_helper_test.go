@@ -3,7 +3,8 @@ package rauther_test
 import (
 	"errors"
 
-	"github.com/rosberry/rauther"
+	"github.com/rosberry/rauther/session"
+	"github.com/rosberry/rauther/user"
 )
 
 // sessionStorer
@@ -12,7 +13,7 @@ type sessionStorer struct {
 	Sessions map[string]*Session
 }
 
-func (s *sessionStorer) LoadByID(id string) rauther.Session {
+func (s *sessionStorer) LoadByID(id string) session.Session {
 	if id == "nil" {
 		return nil
 	}
@@ -28,7 +29,7 @@ func (s *sessionStorer) LoadByID(id string) rauther.Session {
 	return s.Sessions[id]
 }
 
-func (s *sessionStorer) FindByToken(token string) rauther.Session {
+func (s *sessionStorer) FindByToken(token string) session.Session {
 	for _, sess := range s.Sessions {
 		if sess.Token == token {
 			return sess
@@ -38,7 +39,7 @@ func (s *sessionStorer) FindByToken(token string) rauther.Session {
 	return nil
 }
 
-func (s *sessionStorer) Save(session rauther.Session) error {
+func (s *sessionStorer) Save(session session.Session) error {
 	if session.GetID() == "error_session" {
 		return errors.New("some error")
 	}
@@ -69,21 +70,25 @@ type userStorer struct {
 	Users map[string]*User
 }
 
-func (s *userStorer) LoadByPID(pid string) (user rauther.User, exist bool) {
+func (s *userStorer) Load(pid string) (user user.User, err error) {
 	if user, ok := s.Users[pid]; ok {
-		return user, true
+		return user, nil
 	}
 
+	return nil, errors.New("User not found")
+}
+
+func (s *userStorer) Create(pid string) (user user.User) {
 	u := &User{
 		PID: pid,
 	}
 
 	s.Users[pid] = u
 
-	return u, false
+	return u
 }
 
-func (s *userStorer) Save(user rauther.User) error {
+func (s *userStorer) Save(user user.User) error {
 	s.Users[user.GetPID()] = user.(*User)
 
 	return nil
