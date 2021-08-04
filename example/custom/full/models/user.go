@@ -39,7 +39,7 @@ func (s *UserStorer) Create(pid string) (user user.User) {
 }
 
 func (s *UserStorer) Save(user user.User) error {
-	s.Users[user.GetPID()] = user.(*User)
+	s.Users[user.GetPID()] = user.(*User) // nolint
 
 	return nil
 }
@@ -77,9 +77,9 @@ func (u *User) SetRecoveryCode(code string)    { u.RecoveryCode = code }
 func (u *User) GetRecoveryCode() (code string) { return u.RecoveryCode }
 
 func (u *User) GetField(key string) (field interface{}, err error) {
-	return user.GetField(u, key)
+	return user.GetField(u, key) // nolint
 }
 
 func (u *User) SetField(key string, value interface{}) error {
-	return user.SetFields(u, key, value)
+	return user.SetFields(u, key, value) // nolint
 }

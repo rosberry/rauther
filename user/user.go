@@ -40,6 +40,8 @@ type RecoverableUser interface {
 
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")
 
+const notFoundFieldErrText = "field %s does not exist within the provided item"
+
 func SetFields(obj interface{}, key string, value interface{}) error {
 	v := reflect.ValueOf(obj).Elem()
 	if !v.CanAddr() {
@@ -65,7 +67,7 @@ func SetFields(obj interface{}, key string, value interface{}) error {
 
 	fieldNum, ok := fieldNames[key]
 	if !ok {
-		return fmt.Errorf("field %s does not exist within the provided item", key)
+		return fmt.Errorf(notFoundFieldErrText, key) // nolint:goerr113
 	}
 
 	fieldVal := v.Field(fieldNum)
@@ -99,7 +101,7 @@ func GetField(obj interface{}, key string) (value interface{}, err error) {
 
 	fieldNum, ok := fieldNames[key]
 	if !ok {
-		return nil, fmt.Errorf("field %s does not exist within the provided item", key)
+		return nil, fmt.Errorf(notFoundFieldErrText, key) // nolint:goerr113
 	}
 
 	fieldVal := v.Field(fieldNum)

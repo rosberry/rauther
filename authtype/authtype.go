@@ -21,11 +21,11 @@ type (
 	}
 
 	// List of AuthType by key
-	List map[string]AuthType // TODO: Public?
+	list map[string]AuthType // TODO: Public?
 
 	// AuthTypes is list of AuthType by key and selector for select AuthType
 	AuthTypes struct {
-		list     List
+		list     list
 		Selector Selector
 	}
 
@@ -50,7 +50,7 @@ type (
 // If selector is nil - used default selector
 func New(selector Selector) *AuthTypes {
 	authTypes := &AuthTypes{
-		list:     make(List),
+		list:     make(list),
 		Selector: DefaultSelector,
 	}
 
@@ -118,7 +118,7 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 }
 
 // CheckFieldsDefine checks whether all fields required for queries defined in models
-func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) {
+func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) { // nolint:cyclop
 	checkFields := func(fields map[string]string) []string {
 		notFoundFields := make([]string, 0)
 

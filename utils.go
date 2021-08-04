@@ -1,11 +1,14 @@
 package rauther
 
 import (
+	"fmt"
+	"log"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rosberry/rauther/common"
+	"github.com/rosberry/rauther/sender"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -45,4 +48,26 @@ func parseAuthToken(c *gin.Context) (token string) {
 func generateSessionID() string {
 	// TODO: Implement me!
 	return uuid.NewString()
+}
+
+func sendConfirmCode(s sender.Sender, recipient, code string) error {
+	log.Printf("Confirm code for %s: %s", recipient, code)
+
+	err := s.Send(sender.ConfirmationEvent, recipient, code)
+	if err != nil {
+		err = fmt.Errorf("sendConfirmCode error: %w", err)
+	}
+
+	return err
+}
+
+func sendRecoveryCode(s sender.Sender, recipient, code string) error {
+	log.Printf("Recovery code for %s: %s", recipient, code)
+
+	err := s.Send(sender.PasswordRecoveryEvent, recipient, code)
+	if err != nil {
+		err = fmt.Errorf("sendRecoveryCode error: %w", err)
+	}
+
+	return err
 }

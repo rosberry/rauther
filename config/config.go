@@ -41,21 +41,6 @@ type Config struct {
 		Session string
 	}
 
-	// QueryNames is group for setup requests query params
-	QueryNames struct {
-		// EmailConfirm params group
-		EmailConfirm struct {
-			// PID is name of query param for user PID. Default: "pid"
-			PID string
-
-			// Code is name of query param for email confirmation code. Default: "code"
-			Code string
-		}
-
-		// Session is name of query param for session identificator. Default: "session"
-		Session string
-	}
-
 	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
 	CreateGuestUser bool
 }
@@ -63,14 +48,13 @@ type Config struct {
 // Default set default values to configuration
 func (c *Config) Default() {
 	c.Routes.Auth = "auth"
-	c.QueryNames.Session = "session"
 	c.ContextNames.Session = "session"
 
 	c.ContextNames.User = "user"
 
-	c.Routes.SignUp = "sign-up"
-	c.Routes.SignIn = "sign-in"
-	c.Routes.SignOut = "sign-out"
+	c.Routes.SignUp = "register"
+	c.Routes.SignIn = "login"
+	c.Routes.SignOut = "logout"
 
 	c.Routes.ConfirmCode = "confirm"
 	c.Routes.ConfirmResend = "confirm/resend"
@@ -78,7 +62,4 @@ func (c *Config) Default() {
 	c.Routes.RecoveryRequest = "recovery/request"
 	c.Routes.RecoveryValidateCode = "recovery/validate"
 	c.Routes.RecoveryCode = "recovery"
-
-	c.QueryNames.EmailConfirm.PID = "pid"
-	c.QueryNames.EmailConfirm.Code = "code"
 }

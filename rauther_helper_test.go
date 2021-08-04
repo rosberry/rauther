@@ -40,11 +40,12 @@ func (s *sessionStorer) FindByToken(token string) session.Session {
 }
 
 func (s *sessionStorer) Save(session session.Session) error {
-	if session.GetID() == "error_session" {
+	sess := session.(*Session)
+	if sess.SessionID == "error_session" {
 		return errors.New("some error")
 	}
 
-	s.Sessions[session.GetID()] = session.(*Session)
+	s.Sessions[sess.SessionID] = session.(*Session)
 
 	return nil
 }
@@ -55,13 +56,15 @@ type Session struct {
 	UserPID   string
 }
 
-func (s *Session) GetID() (id string)       { return s.SessionID }
+// func (s *Session) GetID() (id string)       { return s.SessionID }
 func (s *Session) GetToken() (token string) { return s.Token }
 func (s *Session) GetUserPID() (pid string) { return s.UserPID }
 
-func (s *Session) SetID(id string)       { s.SessionID = id }
+// func (s *Session) SetID(id string)       { s.SessionID = id }
 func (s *Session) SetToken(token string) { s.Token = token }
-func (s *Session) SetUserPID(pid string) { s.UserPID = pid }
+
+func (s *Session) BindUser(u user.User)   { s.UserPID = u.GetPID() }
+func (s *Session) UnbindUser(u user.User) { s.UserPID = "" }
 
 // userStorer
 // Helper for test

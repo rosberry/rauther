@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,10 +19,13 @@ func Profile(c *gin.Context) {
 		return
 	}
 
-	sess := s.(*models.User)
+	sess, ok := s.(*models.User)
+	if !ok {
+		log.Print("failed session type assertion")
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"result":  "true",
-		"session": sess,
+		"result": true,
+		"user":   sess,
 	})
 }

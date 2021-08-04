@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -34,13 +35,13 @@ func (r *SignUpRequest) Fields() map[string]string {
 		"first_name": r.FirstName,
 		"last_name":  r.LastName,
 		"gender":     r.Gender,
-		"age":        strconv.Itoa(r.Age), // TODO: we should return map[string]iterface{}, but ...
+		"age":        strconv.Itoa(r.Age), // we should return map[string]iterface{}, but ...
 	}
 }
 
 func (r *SignInRequest) GetPID() (pid string)           { return r.Username }
 func (r *SignInRequest) GetPassword() (password string) { return r.Password }
-func (r *SignInRequest) Fields() map[string]string { // TODO: interface with Fields() should not be required
+func (r *SignInRequest) Fields() map[string]string {
 	return map[string]string{}
 }
 
@@ -55,7 +56,10 @@ func Profile(c *gin.Context) {
 		return
 	}
 
-	user := u.(*models.User)
+	user, ok := u.(*models.User)
+	if !ok {
+		log.Print("failed user type assertion")
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"result":  "true",

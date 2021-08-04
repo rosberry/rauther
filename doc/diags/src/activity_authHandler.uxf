@@ -309,6 +309,7 @@ ErrSessionLoad</panel_attributes>
       <h>110</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
+Modules.AuthableUser
 Config.CreateGuestUser()
 session.UserPID is empty</panel_attributes>
     <additional_attributes>10.0;90.0;10.0;10.0;200.0;10.0</additional_attributes>
@@ -435,8 +436,7 @@ ErrUserSave</panel_attributes>
       <w>150</w>
       <h>40</h>
     </coordinates>
-    <panel_attributes>set 
-session.UserPID</panel_attributes>
+    <panel_attributes>session bind user</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -445,16 +445,16 @@ session.UserPID</panel_attributes>
       <x>490</x>
       <y>470</y>
       <w>70</w>
-      <h>110</h>
+      <h>60</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>50.0;90.0;10.0;90.0;10.0;10.0</additional_attributes>
+    <additional_attributes>50.0;40.0;10.0;40.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLSyncBarVertical</id>
     <coordinates>
       <x>530</x>
-      <y>540</y>
+      <y>490</y>
       <w>20</w>
       <h>70</h>
     </coordinates>
@@ -467,18 +467,18 @@ bg=red</panel_attributes>
     <id>Relation</id>
     <coordinates>
       <x>360</x>
-      <y>580</y>
+      <y>530</y>
       <w>200</w>
-      <h>260</h>
+      <h>310</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>180.0;10.0;140.0;10.0;140.0;240.0;10.0;240.0</additional_attributes>
+    <additional_attributes>180.0;10.0;140.0;10.0;140.0;290.0;10.0;290.0</additional_attributes>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
       <x>530</x>
-      <y>560</y>
+      <y>510</y>
       <w>80</w>
       <h>30</h>
     </coordinates>
@@ -489,7 +489,7 @@ bg=red</panel_attributes>
     <id>UMLState</id>
     <coordinates>
       <x>590</x>
-      <y>550</y>
+      <y>500</y>
       <w>100</w>
       <h>40</h>
     </coordinates>
@@ -500,7 +500,7 @@ bg=red</panel_attributes>
     <id>Relation</id>
     <coordinates>
       <x>630</x>
-      <y>580</y>
+      <y>530</y>
       <w>30</w>
       <h>60</h>
     </coordinates>
@@ -511,7 +511,7 @@ bg=red</panel_attributes>
     <id>UMLState</id>
     <coordinates>
       <x>590</x>
-      <y>620</y>
+      <y>570</y>
       <w>100</w>
       <h>40</h>
     </coordinates>
@@ -523,7 +523,7 @@ session</panel_attributes>
     <id>UMLSpecialState</id>
     <coordinates>
       <x>620</x>
-      <y>690</y>
+      <y>640</y>
       <w>40</w>
       <h>40</h>
     </coordinates>
@@ -534,7 +534,7 @@ session</panel_attributes>
     <id>Relation</id>
     <coordinates>
       <x>630</x>
-      <y>650</y>
+      <y>600</y>
       <w>30</w>
       <h>60</h>
     </coordinates>
@@ -544,8 +544,8 @@ session</panel_attributes>
   <element>
     <id>UMLObject</id>
     <coordinates>
-      <x>780</x>
-      <y>690</y>
+      <x>770</x>
+      <y>640</y>
       <w>200</w>
       <h>40</h>
     </coordinates>
@@ -557,20 +557,20 @@ ErrSessionSave</panel_attributes>
     <id>Relation</id>
     <coordinates>
       <x>650</x>
-      <y>690</y>
-      <w>150</w>
+      <y>640</y>
+      <w>140</w>
       <h>50</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 save session
 error</panel_attributes>
-    <additional_attributes>130.0;20.0;10.0;20.0</additional_attributes>
+    <additional_attributes>120.0;20.0;10.0;20.0</additional_attributes>
   </element>
   <element>
     <id>UMLSpecialState</id>
     <coordinates>
-      <x>870</x>
-      <y>760</y>
+      <x>1010</x>
+      <y>650</y>
       <w>20</w>
       <h>20</h>
     </coordinates>
@@ -580,34 +580,35 @@ error</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>870</x>
-      <y>720</y>
-      <w>30</w>
-      <h>60</h>
+      <x>960</x>
+      <y>650</y>
+      <w>70</w>
+      <h>30</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
+    <additional_attributes>50.0;10.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
       <x>630</x>
-      <y>720</y>
+      <y>670</y>
       <w>30</w>
-      <h>60</h>
+      <h>110</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;90.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLObject</id>
     <coordinates>
-      <x>540</x>
-      <y>760</y>
+      <x>770</x>
+      <y>750</y>
       <w>200</w>
-      <h>60</h>
+      <h>70</h>
     </coordinates>
-    <panel_attributes>StatusResultOk
+    <panel_attributes>StatusOk
+
 "device_id"
 "token"</panel_attributes>
     <additional_attributes/>
@@ -615,8 +616,8 @@ error</panel_attributes>
   <element>
     <id>UMLSpecialState</id>
     <coordinates>
-      <x>630</x>
-      <y>850</y>
+      <x>1010</x>
+      <y>770</y>
       <w>20</w>
       <h>20</h>
     </coordinates>
@@ -626,13 +627,13 @@ error</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>630</x>
-      <y>810</y>
-      <w>30</w>
-      <h>60</h>
+      <x>960</x>
+      <y>770</y>
+      <w>70</w>
+      <h>30</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
+    <additional_attributes>50.0;10.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLObject</id>
@@ -659,5 +660,28 @@ valign=top</panel_attributes>
 lt=.
 valign=top</panel_attributes>
     <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>590</x>
+      <y>760</y>
+      <w>100</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>run hook
+AfterAuth</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>680</x>
+      <y>770</y>
+      <w>110</w>
+      <h>30</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>90.0;10.0;10.0;10.0</additional_attributes>
   </element>
 </diagram>

@@ -26,8 +26,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - public
-            
-  /sign-up:
+
+  /register:
     post:
       consumes:
       - application/json
@@ -53,8 +53,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-      
-  /sign-in:
+
+  /login:
     post:
       consumes:
       - application/json
@@ -80,7 +80,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-  /sign-out:
+
+  /logout:
     post:
       consumes:
       - application/json
@@ -96,7 +97,7 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-      
+
   /confirm:
     post:
       consumes:
@@ -119,9 +120,9 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-      
+
   /confirm/resend:
-    get:
+    post:
       consumes:
       - application/json
       description: Resend confirmation code
@@ -140,7 +141,7 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-      
+
   /recovery/request:
     post:
       consumes:
@@ -163,7 +164,7 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-      
+
   /recovery/validate:
     post:
       consumes:
@@ -186,7 +187,7 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-      
+
   /recovery:
     post:
       consumes:
@@ -209,7 +210,7 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-  
+
   /profile:
     get:
       consumes:
@@ -226,7 +227,7 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
-        
+
 definitions:
   Error:
     properties:
@@ -243,7 +244,7 @@ definitions:
         example: false
         type: boolean
     type: object
-    
+
   AuthRequest:
     properties:
       device_id:
@@ -261,8 +262,8 @@ definitions:
         example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
         type: string
     type: object
-    
-  SignUpRequest: 
+
+  SignUpRequest:
     properties:
       email:
         example: example@mailer.com
@@ -281,8 +282,8 @@ definitions:
         example: example@mailer.com
         type: string
     type: object
-        
-  SignInRequest: 
+
+  SignInRequest:
     properties:
       email:
         example: example@mailer.com
@@ -308,7 +309,7 @@ definitions:
         example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
         type: string
     type: object
-  
+
   ConfirmRequest:
     properties:
       pid:
@@ -332,7 +333,7 @@ definitions:
         example: true
         type: boolean
     type: object
-        
+
   CodeRecoveryRequest:
     properties:
       pid:
@@ -346,7 +347,7 @@ definitions:
         example: true
         type: boolean
     type: object
-    
+
   ValidateRecoveryCodeRequest:
     properties:
       pid:
@@ -376,7 +377,7 @@ definitions:
         example: true
         type: boolean
     type: object
-        
+
   ProfileResponse:
     type: object
     properties:
@@ -386,23 +387,9 @@ definitions:
       user:
         type: object
         properties:
-          PID:
+          email:
             type: string
             example: example@mailer.com
-          Password:
-            type: string
-            example: mypass333example
-          Email:
-            type: string
-            example: example@mailer.com
-          ConfirmCode:
-            type: string
-            example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
-          Confirmed:
+          confirmed:
             type: boolean
             example: true
-          RecoveryCode:
-            type: string
-            example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
-  
-  

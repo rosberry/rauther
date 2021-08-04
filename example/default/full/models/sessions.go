@@ -1,6 +1,9 @@
 package models
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/user"
 )
@@ -32,7 +35,11 @@ func (s *Sessioner) FindByToken(token string) session.Session {
 }
 
 func (s *Sessioner) Save(sess session.Session) error {
-	session := sess.(*Session)
+	session, ok := sess.(*Session)
+	if !ok {
+		return fmt.Errorf("failed session type assertion") // nolint:goerr113
+	}
+
 	s.Sessions[session.GetID()] = session
 
 	return nil
@@ -51,7 +58,11 @@ func (s *Session) GetUserPID() (pid string) { return s.UserPID }
 func (s *Session) SetID(id string)       { s.SessionID = id }
 func (s *Session) SetToken(token string) { s.Token = token }
 func (s *Session) BindUser(u user.User) {
-	user := u.(*User)
+	user, ok := u.(*User)
+	if !ok {
+		log.Print("failed user type assertion")
+	}
+
 	s.UserPID = user.PID
 }
 

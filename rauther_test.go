@@ -22,7 +22,7 @@ func TestNewRauther(t *testing.T) {
 			sessioner := sessionStorer{}
 			r := gin.Default()
 
-			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
+			deps := deps.New(r.Group(""), deps.Storage{SessionStorer: &sessioner})
 			Convey("When we create new instance of Rauther", func() {
 				// create Rauther
 				rauth := rauther.New(deps)
@@ -30,7 +30,6 @@ func TestNewRauther(t *testing.T) {
 					So(rauth, ShouldNotBeNil)
 					Convey("And config contain default values", func() {
 						So(rauth.Config.Routes.Auth, ShouldEqual, "auth")
-						So(rauth.Config.QueryNames.Session, ShouldEqual, "session")
 						So(rauth.Config.ContextNames.Session, ShouldEqual, "session")
 					})
 				})
@@ -47,7 +46,7 @@ func TestDefaultAuthRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
+			deps := deps.New(r.Group(""), deps.Storage{SessionStorer: &sessioner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
@@ -170,7 +169,7 @@ func TestAuthMiddleware(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner})
+			deps := deps.New(r.Group(""), deps.Storage{SessionStorer: &sessioner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
@@ -319,7 +318,7 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
+			deps := deps.New(r.Group(""), deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
@@ -383,7 +382,7 @@ func TestDefaultSignUpRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
+			deps := deps.New(r.Group(""), deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
 
@@ -460,7 +459,7 @@ func TestDefaultSignInRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
+			deps := deps.New(r.Group(""), deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
 			rauth.InitHandlers()
@@ -534,7 +533,7 @@ func TestSignInByUsernameRouter(t *testing.T) {
 			}
 			r := gin.Default()
 
-			deps := deps.New(r, deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
+			deps := deps.New(r.Group(""), deps.Storage{SessionStorer: &sessioner, UserStorer: &useoner})
 
 			rauth := rauther.New(deps)
 

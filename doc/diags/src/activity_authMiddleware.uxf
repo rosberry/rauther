@@ -308,7 +308,7 @@ ErrAuthFailed</panel_attributes>
       <h>50</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
-"User" module
+"AuthableUser" 
 is active</panel_attributes>
     <additional_attributes>150.0;20.0;10.0;20.0</additional_attributes>
   </element>

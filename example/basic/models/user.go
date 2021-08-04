@@ -9,17 +9,17 @@ import (
 
 // User model
 type User struct {
-	PID      string
-	Username string `auth:"username"`
-	Password string
-	Email    string `auth:"email"`
-	Phone    string `auth:"phone"`
+	PID      string `json:"-"`
+	Username string `auth:"username" json:"username"`
+	Password string `json:"-"`
+	Email    string `auth:"email" json:"email"`
+	Phone    string `auth:"phone" json:"phone"`
 
-	FirstName string `auth:"fname"`
-	LastName  string `auth:"lname"`
+	FirstName string `auth:"fname" json:"first_name"`
+	LastName  string `auth:"lname" json:"last_name"`
 
-	ConfirmCode string
-	Confirmed   bool
+	ConfirmCode string `json:"-"`
+	Confirmed   bool   `json:"confirmed"`
 }
 
 func (u *User) GetPID() (pid string) { return u.PID }
@@ -41,11 +41,11 @@ func (u *User) SetRecoveryCode(code string)    { u.ConfirmCode = code }
 func (u *User) GetRecoveryCode() (code string) { return u.ConfirmCode }
 
 func (u *User) GetField(key string) (field interface{}, err error) {
-	return user.GetField(u, key)
+	return user.GetField(u, key) // nolint
 }
 
 func (u *User) SetField(key string, value interface{}) error {
-	return user.SetFields(u, key, value)
+	return user.SetFields(u, key, value) // nolint
 }
 
 type UserStorer struct {
@@ -61,6 +61,7 @@ func (s *UserStorer) Load(pid string) (user user.User, err error) {
 		for k, v := range s.Users {
 			log.Printf("%v: %+v", k, v)
 		}
+
 		return user, nil
 	}
 
@@ -78,7 +79,7 @@ func (s *UserStorer) Create(pid string) (user user.User) {
 }
 
 func (s *UserStorer) Save(user user.User) error {
-	s.Users[user.GetPID()] = user.(*User)
+	s.Users[user.GetPID()] = user.(*User) // nolint
 
 	return nil
 }
