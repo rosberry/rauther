@@ -27,11 +27,11 @@ type Rauther struct {
 // New make new instance of Rauther with default configuration
 func New(deps deps.Deps) *Rauther {
 	if deps.SessionStorer == nil {
-		log.Fatal(common.ErrSessionStorerDependency)
+		log.Fatal(common.Errors[common.ErrSessionStorerDependency])
 	}
 
 	if deps.R == nil {
-		log.Fatal(common.ErrGinDependency)
+		log.Fatal(common.Errors[common.ErrGinDependency])
 	}
 
 	cfg := config.Config{}
@@ -97,7 +97,7 @@ func (r *Rauther) includeSession() {
 
 func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if !r.deps.Checker().Authable {
-		log.Fatal(common.ErrAuthableUserNotImplement)
+		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
@@ -114,11 +114,11 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 	if !r.deps.Checker().Confirmable {
-		log.Fatal(common.ErrConfirmableUserNotImplement)
+		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
 	}
 
 	if !r.checkSender() {
-		log.Fatal(common.ErrSenderRequired)
+		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
 	router.GET(r.Config.Routes.ConfirmCode, r.confirmEmailHandler())
@@ -127,11 +127,11 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 	if !r.deps.Checker().Recoverable {
-		log.Fatal(common.ErrRecoverableUserNotImplement)
+		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
 	}
 
 	if !r.checkSender() {
-		log.Fatal(common.ErrSenderRequired)
+		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
 	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
