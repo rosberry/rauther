@@ -25,6 +25,9 @@ type Config struct {
 		// RecoveryRequest is gin route path for request send a password recovery code. Default: "recovery/request"
 		RecoveryRequest string
 
+		// RecoveryValidateCode is gin route path for check recovery code. Default: "recovery/validate"
+		RecoveryValidateCode string
+
 		// RecoveryCode is gin route path for confirm the password recovery and set a new password. Default "recovery"
 		RecoveryCode string
 	}
@@ -73,6 +76,7 @@ func (c *Config) Default() {
 	c.Routes.ConfirmResend = "confirm/resend"
 
 	c.Routes.RecoveryRequest = "recovery/request"
+	c.Routes.RecoveryValidateCode = "recovery/validate"
 	c.Routes.RecoveryCode = "recovery"
 
 	c.QueryNames.EmailConfirm.PID = "pid"
