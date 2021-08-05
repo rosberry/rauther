@@ -35,7 +35,7 @@ type (
 
 type (
 	AuthRequest interface {
-		GetPID() (pid string)
+		GetUID() (uid string)
 		GetPassword() (password string)
 	}
 

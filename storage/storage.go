@@ -23,15 +23,18 @@ type SessionStorer interface {
 // UserStorer interface
 type UserStorer interface {
 	// Load return User by PID or return error if not found.
-	Load(pid string) (user user.User, err error)
+	LoadByUID(authType, uid string) (user user.User, err error)
+
+	LoadByID(id interface{}) (user user.User, err error)
 
 	// Create create new User and set PID to him
-	Create(pid string) (user user.User)
+	Create(authType, uid string) (user user.User)
 
 	// Save User
 	Save(user user.User) error
 }
 
 type RemovableUserStorer interface {
-	Remove(pid string) error
+	RemoveByUID(authType, uid interface{}) error
+	RemoveByID(id interface{}) error
 }

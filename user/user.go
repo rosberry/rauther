@@ -10,8 +10,8 @@ import (
 // Definition of user interfaces
 
 type User interface {
-	GetPID() (pid string)
-	SetPID(pid string)
+	GetUID() (authType, uid string)
+	SetUID(authType, uid string)
 }
 
 type AuthableUser interface {

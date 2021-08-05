@@ -6,7 +6,7 @@ import "github.com/rosberry/rauther/user"
 // Session interface
 type Session interface {
 	GetToken() (token string)
-	GetUserPID() (pid string)
+	GetUserID() (userID interface{})
 
 	SetToken(token string)
 	BindUser(u user.User)

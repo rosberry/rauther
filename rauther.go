@@ -43,7 +43,7 @@ func New(deps deps.Deps) *Rauther {
 
 	var u user.User
 	if deps.Storage.UserStorer != nil {
-		u = deps.Storage.UserStorer.Create("")
+		u = deps.Storage.UserStorer.Create("temp", "")
 	}
 
 	if deps.EmptyAuthTypes() {
@@ -179,7 +179,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		// Create new guest user if it enabled in config
-		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserPID() == "" {
+		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserID() == "" {
 			user, errType := r.createGuestUser()
 			if errType != 0 {
 				errorResponse(c, http.StatusInternalServerError, errType)
@@ -240,7 +240,7 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 			}
 
 			if r.Modules.AuthableUser {
-				if u, err := r.deps.UserStorer.Load(session.GetUserPID()); err == nil && u != nil {
+				if u, err := r.deps.UserStorer.LoadByID(session.GetUserID()); err == nil && u != nil {
 					c.Set(r.Config.ContextNames.User, u)
 				}
 			}
@@ -273,9 +273,9 @@ func (r *Rauther) authUserMiddleware() gin.HandlerFunc {
 			log.Fatal("[authUserMiddleware] failed 'user' type assertion to user.User")
 		}
 
-		pid := user.GetPID()
+		_, uid := user.GetUID()
 
-		if r.Config.CreateGuestUser && IsGuest(pid) {
+		if r.Config.CreateGuestUser && IsGuest(uid) {
 			errorResponse(c, http.StatusUnauthorized, common.ErrNotSignIn)
 			c.Abort()
 
@@ -342,7 +342,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		pid, password := request.GetPID(), request.GetPassword()
+		uid, password := request.GetUID(), request.GetPassword()
 
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
@@ -355,23 +355,23 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			log.Fatal("[signUpHandler] failed 'sess' type assertion to session.Session")
 		}
 
-		oldPID := sess.GetUserPID()
-		if oldPID != "" && !IsGuest(oldPID) {
+		currentUserID := sess.GetUserID()
+		if currentUserID != "" && !IsGuest(currentUserID) {
 			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}
 
-		u, err := r.deps.UserStorer.Load(pid)
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err == nil && u != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			return
 		}
 
-		if r.Config.CreateGuestUser && IsGuest(oldPID) {
-			u, _ = r.deps.UserStorer.Load(oldPID)
-			u.SetPID(pid)
+		if r.Config.CreateGuestUser && IsGuest(currentUserID) {
+			u, _ = r.deps.UserStorer.LoadByID(currentUserID)
+			u.SetUID(at.Key, uid)
 		} else {
-			u = r.deps.UserStorer.Create(pid)
+			u = r.deps.UserStorer.Create(at.Key, uid)
 		}
 
 		encryptedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -422,7 +422,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
-			"pid":    u.GetPID(),
+			"uid":    uid,
 		})
 	}
 }
@@ -452,9 +452,9 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		pid, password := request.GetPID(), request.GetPassword()
+		uid, password := request.GetUID(), request.GetPassword()
 
-		u, err := r.deps.UserStorer.Load(pid)
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
@@ -478,7 +478,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			log.Fatal("[signInHandler] failed 'sess' type assertion to session.Session")
 		}
 
-		oldPID := sess.GetUserPID()
+		currentUserID := sess.GetUserID()
 		sess.BindUser(u)
 
 		if err = r.deps.SessionStorer.Save(sess); err != nil {
@@ -491,15 +491,15 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Config.CreateGuestUser && IsGuest(oldPID) {
+		if r.Config.CreateGuestUser && IsGuest(currentUserID) {
 			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 			if !ok {
 				log.Printf("[signInHandler] failed 'UserStorer' type assertion to storage.RemovableUserStorer")
 			}
 
-			err := rmStorer.Remove(oldPID)
+			err := rmStorer.RemoveByID(currentUserID)
 			if err != nil {
-				log.Printf("Failed delete guest user %v: %v", oldPID, err)
+				log.Printf("Failed delete guest user %v: %v", currentUserID, err)
 			}
 		}
 
@@ -547,16 +547,16 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 		session.UnbindUser(user)
 
 		if r.Modules.AuthableUser && r.Config.CreateGuestUser { // nolint:nestif
-			pid := user.GetPID()
-			if IsGuest(pid) {
+			at, uid := user.GetUID()
+			if IsGuest(uid) {
 				rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 				if !ok {
 					log.Print("[signOutHandler] failed 'UserStorer' type assertion to RemovableUserStorer")
 				}
 
-				err := rmStorer.Remove(pid)
+				err := rmStorer.RemoveByUID(at, uid)
 				if err != nil {
-					log.Printf("Failed delete guest user %v: %v", pid, err)
+					log.Printf("Failed delete guest user %v: %v", uid, err)
 				}
 			}
 
@@ -585,8 +585,16 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 func (r *Rauther) confirmHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type confirmRequest struct {
-			PID  string `json:"pid"`
+			UID  string `json:"uid"`
 			Code string `json:"code"`
+		}
+
+		at := r.deps.Types().Select(c)
+		if at == nil {
+			log.Print("sign in handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
 		}
 
 		var request confirmRequest
@@ -596,7 +604,7 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 			return
 		}
 
-		u, err := r.deps.UserStorer.Load(request.PID)
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
@@ -634,13 +642,13 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			log.Fatal("[resendCodeHandler] failed 's' type assertion to Session")
 		}
 
-		pid := sess.GetUserPID()
-		if pid == "" {
+		userID := sess.GetUserID()
+		if userID == "" {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
 
-		u, err := r.deps.UserStorer.Load(pid)
+		u, err := r.deps.UserStorer.LoadByID(userID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
@@ -674,7 +682,15 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryRequest struct {
-			PID string `json:"pid"`
+			UID string `json:"uid"`
+		}
+
+		at := r.deps.Types().Select(c)
+		if at == nil {
+			log.Print("sign in handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
 		}
 
 		var request recoveryRequest
@@ -683,7 +699,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		u, err := r.deps.Storage.UserStorer.Load(request.PID)
+		u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
@@ -703,7 +719,6 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		at := r.deps.Types().Select(c)
 		contact, _ := user.GetField(u, at.Sender.RecipientKey())
 
 		err = sendRecoveryCode(at.Sender, contact.(string), code)
@@ -721,8 +736,16 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryValidationRequest struct {
-			PID  string `json:"pid"`
+			UID  string `json:"uid"`
 			Code string `json:"code"`
+		}
+
+		at := r.deps.Types().Select(c)
+		if at == nil {
+			log.Print("sign in handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
 		}
 
 		var request recoveryValidationRequest
@@ -731,7 +754,7 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		u, err := r.deps.Storage.UserStorer.Load(request.PID)
+		u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
@@ -750,9 +773,17 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryRequest struct {
-			PID      string `json:"pid"`
+			UID      string `json:"uid"`
 			Code     string `json:"code"`
 			Password string `json:"password"`
+		}
+
+		at := r.deps.Types().Select(c)
+		if at == nil {
+			log.Print("sign in handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
 		}
 
 		var request recoveryRequest
@@ -761,7 +792,7 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		u, err := r.deps.Storage.UserStorer.Load(request.PID)
+		u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
@@ -798,14 +829,15 @@ func (r *Rauther) checkSender() (ok bool) {
 }
 
 func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
-	tempUserPID := "guest:" + uuid.New().String()
+	const guestType = "guest"
+	tempUserUID := "guest:" + uuid.New().String()
 
-	u, _ := r.deps.UserStorer.Load(tempUserPID)
+	u, _ := r.deps.UserStorer.LoadByUID(guestType, tempUserUID)
 	if u != nil {
 		return nil, common.ErrUserExist
 	}
 
-	usr := r.deps.UserStorer.Create(tempUserPID)
+	usr := r.deps.UserStorer.Create(guestType, tempUserUID)
 
 	err := r.deps.UserStorer.Save(usr)
 	if err != nil {
@@ -815,6 +847,6 @@ func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
 	return usr, common.ErrTypes(0)
 }
 
-func IsGuest(pid string) bool {
-	return strings.HasPrefix(pid, "guest:")
+func IsGuest(uid interface{}) bool {
+	return strings.HasPrefix(uid.(string), "guest:")
 }
