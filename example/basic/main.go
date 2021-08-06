@@ -22,35 +22,49 @@ func main() {
 		})
 	})
 
-	group := r.Group("")
+	ss := &models.Sessioner{
+		Sessions: make(map[string]*models.Session),
+	}
+	us := &models.UserStorer{
+		Users: make(map[uint]*models.User),
+	}
+
+	debugLog := func(c *gin.Context) {
+		log.Printf("\n\n--------\nSessions:")
+		for k, v := range ss.Sessions {
+			log.Printf("%v: %+v", k, v)
+		}
+
+		log.Printf("\n\n--------\nUsers:")
+		for k, v := range us.Users {
+			log.Printf("%v: %+v", k, v)
+		}
+
+		c.Next()
+	}
+
+	group := r.Group("", debugLog)
 
 	d := deps.New(
 		group,
 		deps.Storage{
-			SessionStorer: &models.Sessioner{
-				Sessions: make(map[string]*models.Session),
-			},
-			UserStorer: &models.UserStorer{
-				Users: make(map[string]*models.User),
-			},
+			SessionStorer: ss,
+			UserStorer:    us,
 		},
 	)
 
 	d.DefaultSender(&fakeEmailSender{})
 
-	/*
-		d.Types = authtype.New(nil).
-			Add("pochta", &fakeEmailSender{}, &customReqEmail{}, &customReqEmail{}).
-			Add("email", &fakeEmailSender{}, nil, nil).
-			Add("username", &fakeEmailSender{}, &authtype.SignUpRequestByUsername{}, &authtype.SignUpRequestByUsername{}).
-			Add("custom", &fakeSmsSender{}, &customReq2{}, &customReq2{})
-	*/
+	d.AddAuthType("email", &fakeEmailSender{}, nil, nil).
+		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
 
 	rauth := rauther.New(d)
+	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
 
-	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
+	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
+	r.POST("/profile", rauth.AuthMiddleware(), controllers.UpdateProfile)
 
 	err := rauth.InitHandlers()
 	if err != nil {
@@ -70,6 +84,31 @@ func (s *fakeEmailSender) Send(event sender.Event, recipient string, message str
 	return nil
 }
 
-func (s *fakeEmailSender) RecipientKey() string {
-	return "email"
+type fakeSmsSender struct{}
+
+func (s *fakeSmsSender) Send(event sender.Event, recipient string, message string) error {
+	log.Printf("Send '%s' to %v by sms", message, recipient)
+	return nil
 }
+
+type phoneSignUp struct {
+	Phone    string `json:"phone" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+}
+
+func (r *phoneSignUp) GetUID() (uid string)           { return r.Phone }
+func (r *phoneSignUp) GetPassword() (password string) { return r.Password }
+func (r *phoneSignUp) Fields() map[string]string {
+	return map[string]string{
+		"username": r.Name,
+	}
+}
+
+type phoneSignIn struct {
+	Phone    string `json:"phone" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+func (r *phoneSignIn) GetUID() (uid string)           { return r.Phone }
+func (r *phoneSignIn) GetPassword() (password string) { return r.Password }

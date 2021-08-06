@@ -48,12 +48,18 @@ func (s *Sessioner) Save(sess session.Session) error {
 type Session struct {
 	SessionID string
 	Token     string
-	UserPID   string
+	UserID    uint
 }
 
 func (s *Session) GetID() (id string)       { return s.SessionID }
 func (s *Session) GetToken() (token string) { return s.Token }
-func (s *Session) GetUserPID() (pid string) { return s.UserPID }
+func (s *Session) GetUserID() (userID interface{}) {
+	if s.UserID == 0 {
+		return nil
+	}
+
+	return s.UserID
+}
 
 func (s *Session) SetID(id string)       { s.SessionID = id }
 func (s *Session) SetToken(token string) { s.Token = token }
@@ -63,9 +69,14 @@ func (s *Session) BindUser(u user.User) {
 		log.Printf("failed user type assertion")
 	}
 
-	s.UserPID = user.PID
+	s.UserID = user.ID
 }
 
 func (s *Session) UnbindUser(u user.User) {
-	s.UserPID = ""
+	user, ok := u.(*User)
+	if !ok {
+		log.Printf("failed user type assertion")
+	}
+
+	s.UserID = user.ID
 }
