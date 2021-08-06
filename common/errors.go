@@ -46,7 +46,7 @@ var Errors = map[ErrTypes]Err{
 	ErrAuthFailed:                  {"auth_failed", "Invalid token"},
 	ErrNotSessionID:                {"not_session", "Session ID required"},
 	ErrInvalidRequest:              {"req_invalid", "The request is not valid"},
-	ErrUserExist:                   {"already_signUp", "User already exist"},
+	ErrUserExist:                   {"user_exist", "User already exist"},
 	ErrUserNotFound:                {"user_not_found", "User not found"},
 	ErrIncorrectPassword:           {"incorrect_password", "Incorrect password"},
 	ErrUserLoad:                    {"failed_load_user", "Failed load user"},

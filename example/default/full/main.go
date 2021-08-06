@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// add other routes with auth middleware
-	r.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
+	r.GET("/profile", rauth.AuthMiddleware(), rauth.AuthUserMiddleware(), controllers.Profile)
 
 	// run gin
 	err = r.Run()

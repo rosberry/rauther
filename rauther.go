@@ -452,21 +452,6 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		pid, password := request.GetPID(), request.GetPassword()
-
-		u, err := r.deps.UserStorer.Load(pid)
-		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
-			return
-		}
-
-		userPassword := u.(user.AuthableUser).GetPassword()
-
-		if !passwordCompare(userPassword, password) {
-			errorResponse(c, http.StatusBadRequest, common.ErrIncorrectPassword)
-			return
-		}
-
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
 			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
@@ -479,6 +464,26 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		oldPID := sess.GetUserPID()
+		if oldPID != "" && !IsGuest(oldPID) {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		pid, password := request.GetPID(), request.GetPassword()
+
+		u, err := r.deps.UserStorer.Load(pid)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			return
+		}
+
+		userPassword := u.(user.AuthableUser).GetPassword()
+
+		if !passwordCompare(password, userPassword) {
+			errorResponse(c, http.StatusForbidden, common.ErrIncorrectPassword)
+			return
+		}
+
 		sess.BindUser(u)
 
 		if err = r.deps.SessionStorer.Save(sess); err != nil {
