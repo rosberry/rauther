@@ -159,18 +159,6 @@ func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[strin
 				failFields[key] = append(failFields[key], f...)
 			}
 		}
-
-		_, err := user.GetField(u, at.Sender.RecipientKey())
-		if err != nil {
-			// log.Printf("failed check '%v' field in user model", at.Sender.RecipientKey())
-			// return false
-			key := "sender " + at.Key
-			if _, ok := failFields[key]; !ok {
-				failFields[key] = make([]string, 0)
-			}
-
-			failFields[key] = append(failFields[key], at.Sender.RecipientKey())
-		}
 	}
 
 	if len(failFields) > 0 {

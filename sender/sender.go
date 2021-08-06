@@ -21,7 +21,6 @@ type (
 
 	Sender interface {
 		Send(event Event, recipient string, message string) error
-		RecipientKey() string
 	}
 
 	EmailCredentials struct {

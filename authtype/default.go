@@ -1,6 +1,8 @@
 package authtype
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 )
@@ -10,24 +12,21 @@ type SignUpRequestByEmail struct {
 	Password string `json:"password" form:"password" binding:"required"`
 }
 
-func (r SignUpRequestByEmail) GetPID() (pid string)           { return r.Email } // trim spaces, toLower
+func (r SignUpRequestByEmail) GetUID() (uid string)           { return r.Email } // trim spaces, toLower
 func (r SignUpRequestByEmail) GetPassword() (password string) { return r.Password }
 
-func (r SignUpRequestByEmail) Fields() map[string]string {
-	return map[string]string{"email": r.Email}
-}
-
+// TODO: It's not working: uid = username -> send code to uid
 type SignUpRequestByUsername struct {
 	Username string `json:"username" form:"username" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
 	Email    string `json:"email" form:"email"`
 }
 
-func (r SignUpRequestByUsername) GetPID() (pid string)           { return r.Username } // trim spaces
+func (r SignUpRequestByUsername) GetUID() (uid string)           { return r.Username } // trim spaces
 func (r SignUpRequestByUsername) GetPassword() (password string) { return r.Password }
 
 func (r SignUpRequestByUsername) Fields() map[string]string {
-	return map[string]string{"email": r.Email, "username": r.Username}
+	return map[string]string{"email": r.Email}
 }
 
 func DefaultSelector(c *gin.Context) string {
@@ -39,6 +38,7 @@ func DefaultSelector(c *gin.Context) string {
 
 	var r Request
 	if err := c.ShouldBindBodyWith(&r, binding.JSON); err != nil {
+		log.Print("[DefaultSelector] bind err:", err)
 		return defaultKey
 	}
 

@@ -3,7 +3,6 @@ package rauther
 import (
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -43,7 +42,7 @@ func New(deps deps.Deps) *Rauther {
 
 	var u user.User
 	if deps.Storage.UserStorer != nil {
-		u = deps.Storage.UserStorer.Create("temp", "")
+		u = deps.Storage.UserStorer.Create()
 	}
 
 	if deps.EmptyAuthTypes() {
@@ -167,7 +166,6 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		sessionID := request.DeviceID
-
 		if sessionID == "" {
 			sessionID = generateSessionID()
 		}
@@ -179,7 +177,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		// Create new guest user if it enabled in config
-		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserID() == "" {
+		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserID() == nil {
 			user, errType := r.createGuestUser()
 			if errType != 0 {
 				errorResponse(c, http.StatusInternalServerError, errType)
@@ -268,14 +266,12 @@ func (r *Rauther) authUserMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		user, ok := u.(user.User)
+		usr, ok := u.(user.User)
 		if !ok {
 			log.Fatal("[authUserMiddleware] failed 'user' type assertion to user.User")
 		}
 
-		_, uid := user.GetUID()
-
-		if r.Config.CreateGuestUser && IsGuest(uid) {
+		if r.Config.CreateGuestUser && usr.(user.GuestUser).IsGuest() {
 			errorResponse(c, http.StatusUnauthorized, common.ErrNotSignIn)
 			c.Abort()
 
@@ -306,7 +302,7 @@ func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
 			log.Fatal("[authUserConfirmedMiddleware] failed 'user' type assertion to user.ConfirmableUser")
 		}
 
-		if !user.GetConfirmed() {
+		if !user.Confirmed() {
 			errorResponse(c, http.StatusUnauthorized, common.ErrNotConfirmed)
 			c.Abort()
 
@@ -356,7 +352,10 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		currentUserID := sess.GetUserID()
-		if currentUserID != "" && !IsGuest(currentUserID) {
+		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
+		currentUserIsGuest := currentUser.(user.GuestUser).IsGuest()
+
+		if currentUserID != "" && !currentUserIsGuest {
 			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}
@@ -367,14 +366,20 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Config.CreateGuestUser && IsGuest(currentUserID) {
+		if r.Config.CreateGuestUser && currentUserIsGuest {
 			u, _ = r.deps.UserStorer.LoadByID(currentUserID)
 			u.SetUID(at.Key, uid)
+			u.(user.GuestUser).SetGuest(false)
 		} else {
-			u = r.deps.UserStorer.Create(at.Key, uid)
+			u = r.deps.UserStorer.Create()
+			u.SetUID(at.Key, uid)
 		}
 
-		encryptedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Print("encrypt password error:", err)
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+		}
 
 		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
 
@@ -401,13 +406,11 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			if r.Modules.ConfirmableUser {
 				confirmCode := generateConfirmCode()
 
-				u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
+				u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
-				contact, _ := user.GetField(u, at.Sender.RecipientKey())
-
-				err := sendConfirmCode(at.Sender, contact.(string), confirmCode)
+				err := sendConfirmCode(at.Sender, uid, confirmCode)
 				if err != nil {
-					log.Printf("failed send confirm code %v: %v", contact.(string), err)
+					log.Printf("failed send confirm code %v: %v", uid, err)
 				}
 			}
 		}
@@ -462,7 +465,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		userPassword := u.(user.AuthableUser).GetPassword()
 
-		if !passwordCompare(userPassword, password) {
+		if !passwordCompare(password, userPassword) {
 			errorResponse(c, http.StatusBadRequest, common.ErrIncorrectPassword)
 			return
 		}
@@ -479,6 +482,9 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		currentUserID := sess.GetUserID()
+		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
+		currentUserIsGuest := currentUser.(user.GuestUser).IsGuest()
+
 		sess.BindUser(u)
 
 		if err = r.deps.SessionStorer.Save(sess); err != nil {
@@ -491,7 +497,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Config.CreateGuestUser && IsGuest(currentUserID) {
+		if r.Config.CreateGuestUser && currentUserIsGuest {
 			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 			if !ok {
 				log.Printf("[signInHandler] failed 'UserStorer' type assertion to storage.RemovableUserStorer")
@@ -536,38 +542,38 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 			return
 		}
 
-		user, ok := u.(user.User)
+		usr, ok := u.(user.User)
 		if !ok {
 			log.Fatal("[signOutHandler] failed 'user' type assertion to User")
 		}
 
-		newToken := uuid.New().String()
-		session.SetToken(newToken)
-
-		session.UnbindUser(user)
-
 		if r.Modules.AuthableUser && r.Config.CreateGuestUser { // nolint:nestif
-			at, uid := user.GetUID()
-			if IsGuest(uid) {
+
+			if usr.(user.GuestUser).IsGuest() {
 				rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 				if !ok {
 					log.Print("[signOutHandler] failed 'UserStorer' type assertion to RemovableUserStorer")
 				}
 
-				err := rmStorer.RemoveByUID(at, uid)
+				err := rmStorer.RemoveByID(session.GetUserID())
 				if err != nil {
-					log.Printf("Failed delete guest user %v: %v", uid, err)
+					log.Printf("Failed delete guest user %v: %v", session.GetUserID(), err)
 				}
 			}
 
-			user, errType := r.createGuestUser()
+			us, errType := r.createGuestUser()
 			if errType != 0 {
 				errorResponse(c, http.StatusInternalServerError, errType)
 				return
 			}
 
-			session.BindUser(user)
+			session.BindUser(us)
+		} else {
+			session.UnbindUser(usr)
 		}
+
+		newToken := uuid.New().String()
+		session.SetToken(newToken)
 
 		err := r.deps.SessionStorer.Save(session)
 		if err != nil {
@@ -610,12 +616,12 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 			return
 		}
 
-		if request.Code != u.(user.ConfirmableUser).GetConfirmCode() {
+		if request.Code != u.(user.ConfirmableUser).GetConfirmCode(at.Key) {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
 			return
 		}
 
-		u.(user.ConfirmableUser).SetConfirmed(true)
+		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
 		err = r.deps.UserStorer.Save(u)
 		if err != nil {
@@ -654,18 +660,19 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
+		at := r.deps.Types().Select(c)
+
 		confirmCode := generateConfirmCode()
-		u.(user.ConfirmableUser).SetConfirmCode(confirmCode)
+		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 			return
 		}
 
-		at := r.deps.Types().Select(c)
-		contact, _ := user.GetField(u, at.Sender.RecipientKey())
+		uid := u.GetUID(at.Key)
 
-		err = sendConfirmCode(at.Sender, contact.(string), confirmCode)
+		err = sendConfirmCode(at.Sender, uid, confirmCode)
 		if err != nil {
 			log.Print(err)
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
@@ -705,7 +712,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed() {
+		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed(at.Key) {
 			errorResponse(c, http.StatusBadRequest, common.ErrNotConfirmed)
 			return
 		}
@@ -719,9 +726,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		contact, _ := user.GetField(u, at.Sender.RecipientKey())
-
-		err = sendRecoveryCode(at.Sender, contact.(string), code)
+		err = sendRecoveryCode(at.Sender, request.UID, code)
 		if err != nil {
 			log.Print(err)
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
@@ -830,6 +835,7 @@ func (r *Rauther) checkSender() (ok bool) {
 
 func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
 	const guestType = "guest"
+
 	tempUserUID := "guest:" + uuid.New().String()
 
 	u, _ := r.deps.UserStorer.LoadByUID(guestType, tempUserUID)
@@ -837,7 +843,8 @@ func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
 		return nil, common.ErrUserExist
 	}
 
-	usr := r.deps.UserStorer.Create(guestType, tempUserUID)
+	usr := r.deps.UserStorer.Create()
+	usr.(user.GuestUser).SetGuest(true)
 
 	err := r.deps.UserStorer.Save(usr)
 	if err != nil {
@@ -845,8 +852,4 @@ func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
 	}
 
 	return usr, common.ErrTypes(0)
-}
-
-func IsGuest(uid interface{}) bool {
-	return strings.HasPrefix(uid.(string), "guest:")
 }

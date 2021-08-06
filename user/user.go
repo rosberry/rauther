@@ -10,8 +10,14 @@ import (
 // Definition of user interfaces
 
 type User interface {
-	GetUID() (authType, uid string)
+	GetUID(authType string) (uid string)
 	SetUID(authType, uid string)
+}
+
+// TODO: Add check implementation
+type GuestUser interface {
+	IsGuest() bool
+	SetGuest(guest bool)
 }
 
 type AuthableUser interface {
@@ -24,11 +30,12 @@ type AuthableUser interface {
 type ConfirmableUser interface {
 	User
 
-	GetConfirmed() (ok bool)
-	GetConfirmCode() (code string)
+	Confirmed() (ok bool)
+	GetConfirmed(authType string) (ok bool)
+	GetConfirmCode(authType string) (code string)
 
-	SetConfirmed(ok bool)
-	SetConfirmCode(code string)
+	SetConfirmed(authType string, ok bool)
+	SetConfirmCode(authType, code string)
 }
 
 type RecoverableUser interface {

@@ -28,13 +28,12 @@ type UserStorer interface {
 	LoadByID(id interface{}) (user user.User, err error)
 
 	// Create create new User and set PID to him
-	Create(authType, uid string) (user user.User)
+	Create() (user user.User)
 
 	// Save User
 	Save(user user.User) error
 }
 
 type RemovableUserStorer interface {
-	RemoveByUID(authType, uid interface{}) error
 	RemoveByID(id interface{}) error
 }

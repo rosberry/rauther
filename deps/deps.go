@@ -40,7 +40,7 @@ type Storage struct {
 func New(r *gin.RouterGroup, storage Storage) Deps {
 	var u user.User
 	if storage.UserStorer != nil {
-		u = storage.UserStorer.Create("")
+		u = storage.UserStorer.Create()
 	}
 
 	return Deps{
