@@ -52,24 +52,9 @@ func New(deps deps.Deps) *Rauther {
 	cfg := config.Config{}
 	cfg.Default()
 
-	var u user.User
-	if deps.Storage.UserStorer != nil {
-		u = deps.Storage.UserStorer.Create("")
-	}
-
 	r := &Rauther{
-		Config:  cfg,
-		deps:    deps,
-		Modules: modules.New(u),
-		checker: checker.New(u),
-	}
-
-	if r.emptyAuthTypes() {
-		r.AddAuthType("email", nil, nil, nil)
-	}
-
-	if ok := r.checkAuthTypes(u); !ok {
-		log.Fatal("failed auth types")
+		Config: cfg,
+		deps:   deps,
 	}
 
 	return r
@@ -80,7 +65,13 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 		return false
 	}
 
-	ok, badFields := r.types.CheckFieldsDefine(user)
+	isConfirmable := false
+
+	if r.Modules.ConfirmableUser || r.Modules.RecoverableUser {
+		isConfirmable = true
+	}
+
+	ok, badFields := r.types.CheckFieldsDefine(user, isConfirmable)
 	if !ok {
 		log.Print("Please, check `auth` tags in user model:")
 
@@ -93,6 +84,26 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 }
 
 func (r *Rauther) InitHandlers() error {
+	var u user.User
+	if r.deps.Storage.UserStorer != nil {
+		u = r.deps.Storage.UserStorer.Create("")
+	}
+
+	r.Modules = modules.New(u)
+	r.checker = checker.New(u)
+
+	if r.types == nil {
+		r.types = authtype.New(nil)
+	}
+
+	if r.emptyAuthTypes() {
+		r.AddAuthType("email", nil, nil, nil)
+	}
+
+	if ok := r.checkAuthTypes(u); !ok {
+		log.Fatal("failed auth types")
+	}
+
 	log.Printf("\nEnabled auth modules:\n%v", r.Modules)
 
 	if r.Modules.Session {
@@ -804,8 +815,13 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 
 func (r *Rauther) checkSender() (ok bool) {
 	if r.types != nil && !r.types.IsEmpty() {
-		if !r.types.CheckSenders() {
-			return false
+		for _, t := range r.types.List {
+			if t.Sender == nil {
+				if r.defaultSender == nil {
+					log.Fatalf("If you not define auth sender - first define default sender\nDefaultSender(s sender.Sender)")
+				}
+				t.Sender = r.defaultSender
+			}
 		}
 	} else if r.defaultSender == nil {
 		return false
@@ -841,14 +857,6 @@ func (r *Rauther) AddAuthType(key string, sender sender.Sender,
 	signUpRequest, signInRequest authtype.AuthRequest) *Rauther {
 	if r.types == nil {
 		r.types = authtype.New(nil)
-	}
-
-	if sender == nil {
-		if r.defaultSender == nil {
-			log.Fatalf("If you not define auth sender - first define default sender\nDefaultSender(s sender.Sender)")
-		}
-
-		sender = r.defaultSender
 	}
 
 	r.types.Add(key, sender, signUpRequest, signInRequest)
