@@ -24,7 +24,7 @@ func main() {
 
 	group := r.Group("")
 
-	d := deps.New(
+	rauth := rauther.New(deps.New(
 		group,
 		deps.Storage{
 			SessionStorer: &models.Sessioner{
@@ -34,9 +34,9 @@ func main() {
 				Users: make(map[string]*models.User),
 			},
 		},
-	)
+	))
 
-	d.DefaultSender(&fakeEmailSender{})
+	rauth.DefaultSender(&fakeEmailSender{})
 
 	/*
 		d.Types = authtype.New(nil).
@@ -46,7 +46,6 @@ func main() {
 			Add("custom", &fakeSmsSender{}, &customReq2{}, &customReq2{})
 	*/
 
-	rauth := rauther.New(d)
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
 
