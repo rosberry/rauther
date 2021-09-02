@@ -378,14 +378,6 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
 
-		sess.BindUser(u)
-
-		err = r.deps.SessionStorer.Save(sess)
-		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
-			return
-		}
-
 		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
 			contacts := request.(authtype.AuhtRequestFieldable).Fields()
 			for contactType, contact := range contacts {
@@ -414,6 +406,14 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
+
+		sess.BindUser(u)
+
+		err = r.deps.SessionStorer.Save(sess)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
 
