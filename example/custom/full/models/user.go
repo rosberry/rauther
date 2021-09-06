@@ -33,8 +33,6 @@ func (s *UserStorer) Create(pid string) (user user.User) {
 		PID: pid,
 	}
 
-	s.Users[pid] = u
-
 	return u
 }
 
