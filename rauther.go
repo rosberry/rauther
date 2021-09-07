@@ -290,6 +290,8 @@ func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !r.Modules.ConfirmableUser {
 			c.Next()
+
+			return
 		}
 
 		u, ok := c.Get(r.Config.ContextNames.User)
