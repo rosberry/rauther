@@ -41,6 +41,11 @@ type Rauther struct {
 
 // New make new instance of Rauther with default configuration
 func New(deps deps.Deps) *Rauther {
+	var u user.User
+	if deps.Storage.UserStorer != nil {
+		u = deps.Storage.UserStorer.Create("")
+	}
+
 	if deps.SessionStorer == nil {
 		log.Fatal(common.Errors[common.ErrSessionStorerDependency])
 	}
@@ -52,9 +57,13 @@ func New(deps deps.Deps) *Rauther {
 	cfg := config.Config{}
 	cfg.Default()
 
+	checker := checker.New(u)
+
 	r := &Rauther{
-		Config: cfg,
-		deps:   deps,
+		Config:  cfg,
+		deps:    deps,
+		Modules: modules.New(checker),
+		checker: checker,
 	}
 
 	return r
@@ -88,9 +97,6 @@ func (r *Rauther) InitHandlers() error {
 	if r.deps.Storage.UserStorer != nil {
 		u = r.deps.Storage.UserStorer.Create("")
 	}
-
-	r.Modules = modules.New(u)
-	r.checker = checker.New(u)
 
 	if r.types == nil {
 		r.types = authtype.New(nil)
