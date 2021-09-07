@@ -16,8 +16,8 @@ func main() {
 	r := gin.Default()
 	group := r.Group("")
 
-	// create Rauther deps
-	d := deps.New(
+	// init Rauther
+	rauth := rauther.New(deps.New(
 		group,
 		deps.Storage{
 			SessionStorer: &models.Sessioner{
@@ -27,14 +27,11 @@ func main() {
 				Users: make(map[string]*models.User),
 			},
 		},
-	)
+	))
 
 	// set Rauther auth types
 	// we use &defaultEmailSender{} in this example, becaus lib default email sender in draft
-	d.AddAuthType("email", &defaultEmailSender{}, nil, nil)
-
-	// create Rauther instance
-	rauth := rauther.New(d)
+	rauth.AddAuthType("email", &defaultEmailSender{}, nil, nil)
 
 	// init Rauther handlers with routes
 	err := rauth.InitHandlers()

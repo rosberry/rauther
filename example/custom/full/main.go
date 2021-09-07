@@ -16,8 +16,8 @@ func main() {
 	r := gin.Default()
 	group := r.Group("")
 
-	// create Rauther deps
-	d := deps.New(
+	// init Rauther
+	rauth := rauther.New(deps.New(
 		group,
 		deps.Storage{
 			SessionStorer: &models.Sessioner{
@@ -27,11 +27,11 @@ func main() {
 				Users: make(map[string]*models.User),
 			},
 		},
-	)
+	))
 
 	// set Rauther auth types
 	// we use &defaultEmailSender{} in this example, becaus lib default email sender in draft
-	d.AuthSelector(func(c *gin.Context) string {
+	rauth.AuthSelector(func(c *gin.Context) string {
 		authtype := c.Request.Header.Get("authtype")
 		if authtype == "" {
 			log.Print("not found header")
@@ -43,10 +43,9 @@ func main() {
 		"phone",
 		&customPhoneSMSSender{},
 		&controllers.SignUpRequest{},
-		&controllers.SignInRequest{})
+		&controllers.SignInRequest{},
+	)
 
-	// create Rauther instance
-	rauth := rauther.New(d)
 	rauth.Config.Routes.Auth = "/token"
 	rauth.Config.Routes.SignUp = "/registration"
 	rauth.Config.Routes.SignIn = "/login"
