@@ -455,21 +455,6 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		uid, password := request.GetUID(), request.GetPassword()
-
-		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
-		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
-			return
-		}
-
-		userPassword := u.(user.AuthableUser).GetPassword()
-
-		if !passwordCompare(password, userPassword) {
-			errorResponse(c, http.StatusBadRequest, common.ErrIncorrectPassword)
-			return
-		}
-
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
 			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
@@ -484,6 +469,26 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		currentUserID := sess.GetUserID()
 		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
 		currentUserIsGuest := currentUser.(user.GuestUser).IsGuest()
+
+		if currentUserID != "" && !currentUserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		uid, password := request.GetUID(), request.GetPassword()
+
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			return
+		}
+
+		userPassword := u.(user.AuthableUser).GetPassword()
+
+		if !passwordCompare(password, userPassword) {
+			errorResponse(c, http.StatusForbidden, common.ErrIncorrectPassword)
+			return
+		}
 
 		sess.BindUser(u)
 
@@ -548,7 +553,6 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 		}
 
 		if r.Modules.AuthableUser && r.Config.CreateGuestUser { // nolint:nestif
-
 			if usr.(user.GuestUser).IsGuest() {
 				rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 				if !ok {
