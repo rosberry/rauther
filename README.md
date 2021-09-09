@@ -26,14 +26,22 @@ type SessionStorer interface {
 
 // UserStorer interface
 type UserStorer interface {
-	// Load return User by PID or return error if not found.
-	Load(pid string) (user user.User, err error)
+	// Load return User by uid and auth type or return error if not found.
+	LoadByUID(authType, uid string) (user user.User, err error)
+
+	// Load return User by ID or return error if not found.
+	LoadByID(id interface{}) (user user.User, err error)
 
 	// Create create new User and set PID to him
-	Create(pid string) (user user.User)
+	Create() (user user.User)
 
 	// Save User
 	Save(user user.User) error
+}
+
+// RemovableUserStorer interface (optional, for guest user)
+type RemovableUserStorer interface {
+	RemoveByID(id interface{}) error
 }
 ```
 
@@ -42,13 +50,12 @@ type UserStorer interface {
 ```go
 // Session interface
 type Session interface {
-	GetID() (id string)
 	GetToken() (token string)
-	GetUserPID() (pid string)
+	GetUserID() (userID interface{})
 
-	SetID(id string)
 	SetToken(token string)
-	SetUserPID(pid string)
+	BindUser(u user.User)
+	UnbindUser(u user.User)
 }
 ```
 
@@ -56,8 +63,13 @@ type Session interface {
 
 ```go
 type User interface {
-	GetPID() (pid string)
-	SetPID(pid string)
+	GetUID(authType string) (uid string)
+	SetUID(authType, uid string)
+}
+
+type GuestUser interface {
+	IsGuest() bool
+	SetGuest(guest bool)
 }
 
 type AuthableUser interface {
@@ -70,11 +82,12 @@ type AuthableUser interface {
 type ConfirmableUser interface {
 	User
 
-	GetConfirmed() (ok bool)
-	GetConfirmCode() (code string)
+	Confirmed() (ok bool)
+	GetConfirmed(authType string) (ok bool)
+	GetConfirmCode(authType string) (code string)
 
-	SetConfirmed(ok bool)
-	SetConfirmCode(code string)
+	SetConfirmed(authType string, ok bool)
+	SetConfirmCode(authType, code string)
 }
 
 type RecoverableUser interface {
@@ -87,12 +100,25 @@ type RecoverableUser interface {
 
 4. Use the 'auth' tag to match the fields in the model and fields returned in the Fields() request method
 
-5. Implement sender
+```go
+type User struct {
+	ID uint `json:"id"`
+
+	Username string `auth:"username" json:"username"`
+	Password string `json:"password"`
+
+	FirstName string `auth:"fname" json:"first_name"`
+	LastName  string `auth:"lname" json:"last_name"`
+
+	RecoveryCode string
+}
+```
+
+5. Implement sender for confirm/recovery
 
 ```go
 type Sender interface {
 	Send(event int, recipient string, message string) error
-	RecipientKey() string
 }
 ```
 
@@ -105,11 +131,13 @@ type DefaultEmailSender struct{} // TODO
 6. Implement sign-up/sign-in request types
 
 ```go
+	// AuthRequest is basic sign-up/sign-in interface
     type AuthRequest interface {
-		GetPID() (pid string)
+		GetUID() (uid string)
 		GetPassword() (password string)
 	}
 
+	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
 	type AuhtRequestFieldable interface {
 		AuthRequest
 
@@ -124,62 +152,71 @@ type SignUpRequestByEmail struct {
 	Email    string `json:"email" form:"email" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
 }
-//Fields: `auth:"email"`
-
-type SignUpRequestByUsername struct {
-	Username string `json:"username" form:"username" binding:"required"`
-	Password string `json:"password" form:"password" binding:"required"`
-	Email    string `json:"email" form:"email"`
-}
-//Fields: `auth:"email"`, `auth:"username"`
 ```
 
 7. Init gin engine
 8. Create new deps
 
 ```go
-    d := deps.New(r, deps.Storage{
-			SessionStorer: &models.Sessioner{},
-			UserStorer: &models.UserStorer{},
-		})
+    d := deps.New(
+		group,
+		deps.Storage{
+			SessionStorer: sessionStorer,
+			UserStorer:    userStorer,
+		},
+	)
 ```
 
 9. Determine one or more auth types (you can not transmit signUp/signIn request types, then will be use default )
 
 ```go
-	d.Types = authtype.New(selector).
-        Add("email", &fakeEmailSender{}, &signUpByEmail{}, &signInByEmail{}).
-		Add("default-email", &fakeEmailSender{}, nil, nil).
-		Add("username", &fakeSmsSender{}, &authtype.SignUpRequestByUsername{}, &authtype.SignUpRequestByUsername{})
+	d.AddAuthType("email", &fakeEmailSender{}, nil, nil).
+		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
 ```
 
-- `selector` - function with type `func(c *gin.Context) (senderKey string)` for "how select right auth type"
-- `Add(key, sender, signUpRequest, signInRequest)`
+OR add default sender, if you want not set sender for auth types
+
+```go
+	d.DefaultSender(&fakeEmailSender{})
+	d.AddAuthType("email", nil, nil, nil).
+		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
+
+```
+
+- `AddAuthType(key, sender, signUpRequest, signInRequest)`
   - `key` - key for ident auth type
   - `sender` - sender is object, that can send confirm/recovery code to user. Should implement interface `Sender`
   - `signUpRequest` - signUpRequest is object, that will use for sign up request. Should implement `SignUpRequest` interface or extendable
   - `signInRequest` - signInRequest is object, that will use for sign in request. Should implement `SignUpRequest` interface or extendable
 
-10. Create new rauther usage deps
+10. Set custom selector for auth types [optional]
+
+```go
+	d.AuthSelector(selector)
+```
+
+- `selector` - function with type `func(c *gin.Context) (senderKey string)` for "how select right auth type"
+
+11. Create new rauther usage deps
 
 ```go
 rauth := rauther.New(d)
 ```
 
-11. Configure rauther usage Modules and Config
+12. Configure rauther usage Modules and Config
 
 ```go
 rauth.Modules.ConfirmableUser = false
 rauth.Config.Routes.SignUp = "registration"
 ```
 
-12. Init rauther handlers
+13. Init rauther handlers
 
 ```go
 err := rauth.InitHandlers()
 ```
 
-13. Run your gin
+14. Run your gin
 
 ```go
 r.Run()
@@ -201,24 +238,6 @@ Library have some modules for differend work types. modules turn on automaticall
 You can..
 
 [Default Example](./example/default/full/README.md)
-
-#### Code example
-
-Code...
-
-#### Client-Server iteraction
-
-Requests-Responses...
-
-### Max custom usage
-
-If you need..
-
-[Custom Example](./example/custom/full/README.md)
-
-#### Code example
-
-Code...
 
 #### Client-Server iteraction
 

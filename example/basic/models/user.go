@@ -26,7 +26,7 @@ type (
 		FirstName string `auth:"fname" json:"first_name"`
 		LastName  string `auth:"lname" json:"last_name"`
 
-		RecoveryCode string
+		RecoveryCode string `json:"recovery_code"`
 	}
 
 	AuthIdentities struct {
@@ -114,10 +114,15 @@ type UserStorer struct {
 }
 
 func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error) {
+	log.Printf("[LoadByUID] type: %s uid: %s", authType, uid)
 	for _, u := range s.Users {
 		if at, ok := u.Auths[authType]; ok {
+			log.Printf("[LoadByUID] Found authtype. UID is '%v'", at.UID)
 			if at.UID == uid {
+				log.Printf("[LoadByUID] at.UID == uid")
 				return u, nil
+			} else {
+				log.Printf("[LoadByUID] at.UID != uid")
 			}
 		}
 	}

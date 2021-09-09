@@ -34,11 +34,13 @@ type (
 )
 
 type (
+	// AuthRequest is basic sign-up/sign-in interface
 	AuthRequest interface {
 		GetUID() (uid string)
 		GetPassword() (password string)
 	}
 
+	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
 	AuhtRequestFieldable interface {
 		AuthRequest
 

@@ -14,7 +14,6 @@ type User interface {
 	SetUID(authType, uid string)
 }
 
-// TODO: Add check implementation
 type GuestUser interface {
 	IsGuest() bool
 	SetGuest(guest bool)

@@ -22,9 +22,10 @@ type SessionStorer interface {
 
 // UserStorer interface
 type UserStorer interface {
-	// Load return User by PID or return error if not found.
+	// Load return User by uid and auth type or return error if not found.
 	LoadByUID(authType, uid string) (user user.User, err error)
 
+	// Load return User by ID or return error if not found.
 	LoadByID(id interface{}) (user user.User, err error)
 
 	// Create create new User and set PID to him

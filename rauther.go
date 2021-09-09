@@ -391,26 +391,26 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
+		if r.Modules.ConfirmableUser {
+			confirmCode := generateConfirmCode()
+
+			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+
+			err := sendConfirmCode(at.Sender, uid, confirmCode)
+			if err != nil {
+				log.Printf("failed send confirm code %v: %v", uid, err)
+			}
+		}
+
 		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
-			contacts := request.(authtype.AuhtRequestFieldable).Fields()
-			for contactType, contact := range contacts {
-				err := user.SetFields(u, contactType, contact)
+			fields := request.(authtype.AuhtRequestFieldable).Fields()
+			for fieldKey, fieldValue := range fields {
+				err := user.SetFields(u, fieldKey, fieldValue)
 				if err != nil {
-					log.Printf("sign up: set fields %v: %v", contactType, err)
+					log.Printf("sign up: set fields %v: %v", fieldKey, err)
 					errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 					return
-				}
-			}
-
-			if r.Modules.ConfirmableUser {
-				confirmCode := generateConfirmCode()
-
-				u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
-
-				err := sendConfirmCode(at.Sender, uid, confirmCode)
-				if err != nil {
-					log.Printf("failed send confirm code %v: %v", uid, err)
 				}
 			}
 		}
@@ -597,7 +597,7 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		if at == nil {
-			log.Print("sign in handler: not found auth type")
+			log.Print("confirm handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -616,7 +616,8 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 			return
 		}
 
-		if request.Code != u.(user.ConfirmableUser).GetConfirmCode(at.Key) {
+		code := u.(user.ConfirmableUser).GetConfirmCode(at.Key)
+		if request.Code != code || code == "" {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
 			return
 		}
@@ -661,6 +662,12 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 		}
 
 		at := r.deps.Types().Select(c)
+		if at == nil {
+			log.Print("resend confirm code handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
 
 		confirmCode := generateConfirmCode()
 		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
@@ -694,7 +701,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		if at == nil {
-			log.Print("sign in handler: not found auth type")
+			log.Print("recovery request handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -709,11 +716,6 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 		u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
-			return
-		}
-
-		if r.Modules.ConfirmableUser && !u.(user.ConfirmableUser).GetConfirmed(at.Key) {
-			errorResponse(c, http.StatusBadRequest, common.ErrNotConfirmed)
 			return
 		}
 
@@ -747,7 +749,7 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		if at == nil {
-			log.Print("sign in handler: not found auth type")
+			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -785,7 +787,7 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 
 		at := r.deps.Types().Select(c)
 		if at == nil {
-			log.Print("sign in handler: not found auth type")
+			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -804,12 +806,13 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 		}
 
 		code := u.(user.RecoverableUser).GetRecoveryCode()
-		if code != request.Code {
+		if code != request.Code || code == "" {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
 			return
 		}
 
 		u.(user.AuthableUser).SetPassword(request.Password)
+		u.(user.RecoverableUser).SetRecoveryCode("")
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {
