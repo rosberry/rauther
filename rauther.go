@@ -809,7 +809,13 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		u.(user.AuthableUser).SetPassword(request.Password)
+		encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Print("encrypt password error:", err)
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+		}
+
+		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {
