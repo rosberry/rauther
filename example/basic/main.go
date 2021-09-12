@@ -53,6 +53,8 @@ func main() {
 		},
 	))
 
+	rauth.DefaultSender(&fakeEmailSender{})
+
 	rauth.AddAuthType("email", &fakeEmailSender{}, nil, nil).
 		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
 
