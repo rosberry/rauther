@@ -45,20 +45,17 @@ func main() {
 
 	group := r.Group("", debugLog)
 
-	d := deps.New(
+	rauth := rauther.New(deps.New(
 		group,
 		deps.Storage{
 			SessionStorer: ss,
 			UserStorer:    us,
 		},
-	)
+	))
 
-	d.DefaultSender(&fakeEmailSender{})
-
-	d.AddAuthType("email", &fakeEmailSender{}, nil, nil).
+	rauth.AddAuthType("email", &fakeEmailSender{}, nil, nil).
 		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
 
-	rauth := rauther.New(d)
 	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true

@@ -25,7 +25,7 @@ type (
 
 	// AuthTypes is list of AuthType by key and selector for select AuthType
 	AuthTypes struct {
-		list     list
+		List     list
 		Selector Selector
 	}
 
@@ -52,7 +52,7 @@ type (
 // If selector is nil - used default selector
 func New(selector Selector) *AuthTypes {
 	authTypes := &AuthTypes{
-		list:     make(list),
+		List:     make(list),
 		Selector: DefaultSelector,
 	}
 
@@ -84,13 +84,13 @@ func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInR
 		SignInRequest: signInRequest,
 	}
 
-	a.list[key] = t
+	a.List[key] = t
 
 	return a
 }
 
 func (a *AuthTypes) IsEmpty() bool {
-	return len(a.list) == 0
+	return len(a.List) == 0
 }
 
 // Select uses the selector and returns the found type of authorization
@@ -107,11 +107,11 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 	key := a.Selector(c)
 
 	if key != "" {
-		if at, ok := a.list[key]; ok {
+		if at, ok := a.List[key]; ok {
 			return &at
 		}
-	} else if len(a.list) == 1 {
-		for _, at := range a.list {
+	} else if len(a.List) == 1 {
+		for _, at := range a.List {
 			return &at
 		}
 	}
@@ -120,7 +120,7 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 }
 
 // CheckFieldsDefine checks whether all fields required for queries defined in models
-func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) { // nolint:cyclop
+func (a *AuthTypes) CheckFieldsDefine(u user.User, confirmable bool) (ok bool, badFields map[string][]string) { // nolint:cyclop
 	checkFields := func(fields map[string]string) []string {
 		notFoundFields := make([]string, 0)
 
@@ -137,7 +137,7 @@ func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[strin
 
 	failFields := make(map[string][]string)
 
-	for _, at := range a.list {
+	for _, at := range a.List {
 		if r, ok := at.SignUpRequest.(AuhtRequestFieldable); ok {
 			fields := r.Fields()
 			if f := checkFields(fields); len(f) > 0 {
@@ -168,16 +168,4 @@ func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[strin
 	}
 
 	return true, nil
-}
-
-// CheckSenders checks that all types of authorization are set by the sender
-func (a *AuthTypes) CheckSenders() bool {
-	for k, at := range a.list {
-		if at.Sender == nil {
-			log.Printf("Nil sender in %v auth type", k)
-			return false
-		}
-	}
-
-	return true
 }

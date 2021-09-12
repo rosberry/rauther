@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
 	"github.com/rosberry/rauther/authtype"
+	"github.com/rosberry/rauther/checker"
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/config"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/hooks"
 	"github.com/rosberry/rauther/modules"
+	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
@@ -25,10 +27,24 @@ type Rauther struct {
 	Modules *modules.Modules
 	deps    deps.Deps
 	hooks   hooks.HookOptions
+
+	// checker for check implement user interfaces
+	checker *checker.Checker
+
+	// types is list of auth types - default or custom sign-up/sign-ip structs and code sender
+	types *authtype.AuthTypes
+
+	// defaultSender usage if we not define auth types with senders
+	defaultSender sender.Sender
 }
 
 // New make new instance of Rauther with default configuration
 func New(deps deps.Deps) *Rauther {
+	var u user.User
+	if deps.Storage.UserStorer != nil {
+		u = deps.Storage.UserStorer.Create()
+	}
+
 	if deps.SessionStorer == nil {
 		log.Fatal(common.Errors[common.ErrSessionStorerDependency])
 	}
@@ -40,34 +56,30 @@ func New(deps deps.Deps) *Rauther {
 	cfg := config.Config{}
 	cfg.Default()
 
-	var u user.User
-	if deps.Storage.UserStorer != nil {
-		u = deps.Storage.UserStorer.Create()
-	}
-
-	if deps.EmptyAuthTypes() {
-		deps.AddAuthType("email", nil, nil, nil)
-	}
+	checker := checker.New(u)
 
 	r := &Rauther{
 		Config:  cfg,
 		deps:    deps,
-		Modules: modules.New(u),
-	}
-
-	if ok := r.checkAuthTypes(u); !ok {
-		log.Fatal("failed auth types")
+		Modules: modules.New(checker),
+		checker: checker,
 	}
 
 	return r
 }
 
 func (r *Rauther) checkAuthTypes(user user.User) bool {
-	if r.deps.Types() == nil {
+	if r.types == nil {
 		return false
 	}
 
-	ok, badFields := r.deps.Types().CheckFieldsDefine(user)
+	isConfirmable := false
+
+	if r.Modules.ConfirmableUser || r.Modules.RecoverableUser {
+		isConfirmable = true
+	}
+
+	ok, badFields := r.types.CheckFieldsDefine(user, isConfirmable)
 	if !ok {
 		log.Print("Please, check `auth` tags in user model:")
 
@@ -80,6 +92,23 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 }
 
 func (r *Rauther) InitHandlers() error {
+	var u user.User
+	if r.deps.Storage.UserStorer != nil {
+		u = r.deps.Storage.UserStorer.Create()
+	}
+
+	if r.types == nil {
+		r.types = authtype.New(nil)
+	}
+
+	if r.emptyAuthTypes() {
+		r.AddAuthType("email", nil, nil, nil)
+	}
+
+	if ok := r.checkAuthTypes(u); !ok {
+		log.Fatal("failed auth types")
+	}
+
 	log.Printf("\nEnabled auth modules:\n%v", r.Modules)
 
 	if r.Modules.Session {
@@ -101,7 +130,7 @@ func (r *Rauther) includeSession() {
 }
 
 func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
-	if !r.deps.Checker().Authable {
+	if !r.checker.Authable {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
@@ -125,7 +154,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
-	if !r.deps.Checker().Confirmable {
+	if !r.checker.Confirmable {
 		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
 	}
 
@@ -138,7 +167,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 }
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
-	if !r.deps.Checker().Recoverable {
+	if !r.checker.Recoverable {
 		log.Fatal(common.Errors[common.ErrRecoverableUserNotImplement])
 	}
 
@@ -286,6 +315,8 @@ func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !r.Modules.ConfirmableUser {
 			c.Next()
+
+			return
 		}
 
 		u, ok := c.Get(r.Config.ContextNames.User)
@@ -314,13 +345,13 @@ func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
 }
 
 func (r *Rauther) signUpHandler() gin.HandlerFunc {
-	if !r.deps.Checker().Authable {
+	if !r.checker.Authable {
 		log.Print("Not implement AuthableUser interface")
 		return nil
 	}
 
 	return func(c *gin.Context) {
-		at := r.deps.Types().Select(c)
+		at := r.types.Select(c)
 		if at == nil {
 			log.Print("sign up handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -383,6 +414,24 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
 
+		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
+			fields := request.(authtype.AuhtRequestFieldable).Fields()
+			for fieldKey, fieldValue := range fields {
+				err := user.SetFields(u, fieldKey, fieldValue)
+				if err != nil {
+					log.Printf("sign up: set fields %v: %v", fieldKey, err)
+					errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+					return
+				}
+			}
+		}
+
+		if err = r.deps.UserStorer.Save(u); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
+
 		sess.BindUser(u)
 
 		err = r.deps.SessionStorer.Save(sess)
@@ -402,24 +451,6 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			}
 		}
 
-		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
-			fields := request.(authtype.AuhtRequestFieldable).Fields()
-			for fieldKey, fieldValue := range fields {
-				err := user.SetFields(u, fieldKey, fieldValue)
-				if err != nil {
-					log.Printf("sign up: set fields %v: %v", fieldKey, err)
-					errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-
-					return
-				}
-			}
-		}
-
-		if err = r.deps.UserStorer.Save(u); err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
-			return
-		}
-
 		c.Set(r.Config.ContextNames.Session, sess)
 		c.Set(r.Config.ContextNames.User, u)
 
@@ -431,13 +462,13 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 }
 
 func (r *Rauther) signInHandler() gin.HandlerFunc {
-	if !r.deps.Checker().Authable {
+	if !r.checker.Authable {
 		log.Print("Not implement AuthableUser interface")
 		return nil
 	}
 
 	return func(c *gin.Context) {
-		at := r.deps.Types().Select(c)
+		at := r.types.Select(c)
 		if at == nil {
 			log.Print("sign in handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -524,7 +555,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 }
 
 func (r *Rauther) signOutHandler() gin.HandlerFunc {
-	if !r.deps.Checker().Authable {
+	if !r.checker.Authable {
 		log.Print("Not implement AuthableUser interface")
 		return nil
 	}
@@ -599,7 +630,7 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 			Code string `json:"code"`
 		}
 
-		at := r.deps.Types().Select(c)
+		at := r.types.Select(c)
 		if at == nil {
 			log.Print("confirm handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -665,7 +696,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		at := r.deps.Types().Select(c)
+		at := r.types.Select(c)
 		if at == nil {
 			log.Print("resend confirm code handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -703,7 +734,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			UID string `json:"uid"`
 		}
 
-		at := r.deps.Types().Select(c)
+		at := r.types.Select(c)
 		if at == nil {
 			log.Print("recovery request handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -733,6 +764,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 		}
 
 		err = sendRecoveryCode(at.Sender, request.UID, code)
+
 		if err != nil {
 			log.Print(err)
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
@@ -751,7 +783,7 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 			Code string `json:"code"`
 		}
 
-		at := r.deps.Types().Select(c)
+		at := r.types.Select(c)
 		if at == nil {
 			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -789,7 +821,7 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			Password string `json:"password"`
 		}
 
-		at := r.deps.Types().Select(c)
+		at := r.types.Select(c)
 		if at == nil {
 			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -815,7 +847,13 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		u.(user.AuthableUser).SetPassword(request.Password)
+		encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Print("encrypt password error:", err)
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+		}
+
+		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
 		u.(user.RecoverableUser).SetRecoveryCode("")
 
 		err = r.deps.Storage.UserStorer.Save(u)
@@ -829,11 +867,16 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 }
 
 func (r *Rauther) checkSender() (ok bool) {
-	if r.deps.Types() != nil && !r.deps.Types().IsEmpty() {
-		if !r.deps.Types().CheckSenders() {
-			return false
+	if r.types != nil && !r.types.IsEmpty() {
+		for _, t := range r.types.List {
+			if t.Sender == nil {
+				if r.defaultSender == nil {
+					log.Fatalf("If you not define auth sender - first define default sender\nDefaultSender(s sender.Sender)")
+				}
+				t.Sender = r.defaultSender
+			}
 		}
-	} else if !r.deps.CheckDefaultSender() {
+	} else if r.defaultSender == nil {
 		return false
 	}
 
@@ -859,4 +902,55 @@ func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
 	}
 
 	return usr, common.ErrTypes(0)
+}
+
+// AddAuthType adds a new type of authorization and uses a default sender, if not transmitted another
+func (r *Rauther) AddAuthType(key string, sender sender.Sender,
+	signUpRequest, signInRequest authtype.AuthRequest) *Rauther {
+	if r.types == nil {
+		r.types = authtype.New(nil)
+	}
+
+	r.types.Add(key, sender, signUpRequest, signInRequest)
+
+	return r
+}
+
+// AuthSelector specifies the selector with which the type of authorization will be selected
+func (r *Rauther) AuthSelector(selector authtype.Selector) *Rauther {
+	if r.types == nil {
+		r.types = authtype.New(selector)
+	}
+
+	r.types.Selector = selector
+
+	return r
+}
+
+// emptyAuthTypes check auth types nil or empty
+func (r *Rauther) emptyAuthTypes() (ok bool) {
+	return r.types == nil || r.types.IsEmpty()
+}
+
+// Types getter
+func (r *Rauther) Types() *authtype.AuthTypes {
+	if r == nil {
+		log.Fatal("Types(): deps Auth types is nil")
+	}
+
+	if r.types == nil {
+		r.types = authtype.New(nil)
+	}
+
+	return r.types
+}
+
+func (r *Rauther) DefaultSender(s sender.Sender) *Rauther {
+	if r == nil {
+		log.Fatal("Deps is nil")
+	}
+
+	r.defaultSender = s
+
+	return r
 }

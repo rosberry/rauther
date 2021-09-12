@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rosberry/rauther/checker"
-	"github.com/rosberry/rauther/user"
 )
 
 type Modules struct {
@@ -22,9 +21,7 @@ func (m Modules) String() string {
 		m.RecoverableUser)
 }
 
-func New(user user.User) *Modules {
-	checker := checker.New(user)
-
+func New(checker *checker.Checker) *Modules {
 	return &Modules{
 		Session:         true,
 		AuthableUser:    checker.Authable,
