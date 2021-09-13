@@ -120,7 +120,7 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 }
 
 // CheckFieldsDefine checks whether all fields required for queries defined in models
-func (a *AuthTypes) CheckFieldsDefine(u user.User, confirmable bool) (ok bool, badFields map[string][]string) { // nolint:cyclop
+func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) { // nolint:cyclop
 	checkFields := func(fields map[string]string) []string {
 		notFoundFields := make([]string, 0)
 

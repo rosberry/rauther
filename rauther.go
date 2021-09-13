@@ -73,13 +73,7 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 		return false
 	}
 
-	isConfirmable := false
-
-	if r.Modules.ConfirmableUser || r.Modules.RecoverableUser {
-		isConfirmable = true
-	}
-
-	ok, badFields := r.types.CheckFieldsDefine(user, isConfirmable)
+	ok, badFields := r.types.CheckFieldsDefine(user)
 	if !ok {
 		log.Print("Please, check `auth` tags in user model:")
 
