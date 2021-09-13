@@ -893,15 +893,6 @@ func (r *Rauther) checkSender() (ok bool) {
 }
 
 func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
-	const guestType = "guest"
-
-	tempUserUID := "guest:" + uuid.New().String()
-
-	u, _ := r.deps.UserStorer.LoadByUID(guestType, tempUserUID)
-	if u != nil {
-		return nil, common.ErrUserExist
-	}
-
 	usr := r.deps.UserStorer.Create()
 	usr.(user.GuestUser).SetGuest(true)
 
