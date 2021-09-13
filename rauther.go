@@ -377,12 +377,20 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		currentUserID := sess.GetUserID()
-		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
-		currentUserIsGuest := currentUser.(user.GuestUser).IsGuest()
 
-		if currentUserID != "" && !currentUserIsGuest {
-			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-			return
+		var currentUserIsGuest bool
+
+		if currentUserID != nil {
+			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
+
+			if currentUser != nil && err == nil {
+				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
+			}
+
+			if !currentUserIsGuest {
+				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				return
+			}
 		}
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
@@ -421,6 +429,17 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			}
 		}
 
+		if r.Modules.ConfirmableUser {
+			confirmCode := generateConfirmCode()
+
+			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+
+			err := sendConfirmCode(at.Sender, uid, confirmCode)
+			if err != nil {
+				log.Printf("failed send confirm code %v: %v", uid, err)
+			}
+		}
+
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 			return
@@ -432,17 +451,6 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
-		}
-
-		if r.Modules.ConfirmableUser {
-			confirmCode := generateConfirmCode()
-
-			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
-
-			err := sendConfirmCode(at.Sender, uid, confirmCode)
-			if err != nil {
-				log.Printf("failed send confirm code %v: %v", uid, err)
-			}
 		}
 
 		c.Set(r.Config.ContextNames.Session, sess)
@@ -492,12 +500,20 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		currentUserID := sess.GetUserID()
-		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
-		currentUserIsGuest := currentUser.(user.GuestUser).IsGuest()
 
-		if currentUserID != "" && !currentUserIsGuest {
-			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-			return
+		var currentUserIsGuest bool
+
+		if currentUserID != nil {
+			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
+
+			if currentUser != nil && err == nil {
+				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
+			}
+
+			if !currentUserIsGuest {
+				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				return
+			}
 		}
 
 		uid, password := request.GetUID(), request.GetPassword()
@@ -758,7 +774,6 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 		}
 
 		err = sendRecoveryCode(at.Sender, request.UID, code)
-
 		if err != nil {
 			log.Print(err)
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
