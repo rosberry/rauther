@@ -932,19 +932,6 @@ func (r *Rauther) emptyAuthTypes() (ok bool) {
 	return r.types == nil || r.types.IsEmpty()
 }
 
-// Types getter
-func (r *Rauther) Types() *authtype.AuthTypes {
-	if r == nil {
-		log.Fatal("Types(): deps Auth types is nil")
-	}
-
-	if r.types == nil {
-		r.types = authtype.New(nil)
-	}
-
-	return r.types
-}
-
 func (r *Rauther) DefaultSender(s sender.Sender) *Rauther {
 	if r == nil {
 		log.Fatal("Deps is nil")
