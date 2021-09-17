@@ -28,7 +28,7 @@ type UserStorer interface {
 	// Load return User by ID or return error if not found.
 	LoadByID(id interface{}) (user user.User, err error)
 
-	// Create create new User and set PID to him
+	// Create new User
 	Create() (user user.User)
 
 	// Save User

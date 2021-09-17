@@ -18,8 +18,9 @@ type (
 
 		Auths map[string]AuthIdentities `json:"auths"`
 
-		Username string `auth:"username" json:"username"`
-		Password string `json:"password"`
+		Username  string    `auth:"username" json:"username"`
+		Password  string    `json:"password"`
+		ExpiredIn time.Time `json:"expired"`
 
 		Guest bool   `json:"guest"`
 		Email string `auth:"email"`
@@ -87,7 +88,7 @@ func (u *User) SetConfirmCode(authType, code string) {
 	u.Auths[authType] = at
 }
 
-func (u *User) SetConfirmationCodeSentTime(authType string, t *time.Time) {
+func (u *User) SetCodeSentTime(authType string, t *time.Time) {
 	if t != nil {
 		u.LastConfirmationTime.Time = *t
 		u.LastConfirmationTime.Valid = true
@@ -96,7 +97,7 @@ func (u *User) SetConfirmationCodeSentTime(authType string, t *time.Time) {
 	}
 }
 
-func (u *User) GetConfirmationCodeSentTime(authType string) *time.Time {
+func (u *User) GetCodeSentTime(authType string) *time.Time {
 	if !u.LastConfirmationTime.Valid {
 		return nil
 	}
@@ -126,6 +127,15 @@ func (u *User) IsGuest() bool {
 
 func (u *User) SetGuest(guest bool) {
 	u.Guest = guest
+}
+
+func (u *User) GetOTP() (code string, expiredIn time.Time) {
+	return u.Password, u.ExpiredIn
+}
+
+func (u *User) SetOTP(code string, expiredIn time.Time) error {
+	u.Password, u.ExpiredIn = code, expiredIn
+	return nil
 }
 
 type UserStorer struct {

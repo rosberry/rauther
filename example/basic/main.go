@@ -71,12 +71,18 @@ func main() {
 			SignInRequest:          &phoneSignIn{},
 			CheckUserExistsRequest: &CheckPhoneRequest{},
 		},
+		{
+			AuthKey:       "otp",
+			Sender:        &fakeSmsSender{},
+			SignUpRequest: &otpRequest{},
+			SignInRequest: &otpRequest{},
+		},
 	})
 
 	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
-	rauth.Modules.ConfirmableSentTimeUser = true
+	rauth.Modules.CodeSentTimeUser = true
 	rauth.Config.ValidConfirmationInterval = 15 * time.Second // nolint:gomnd
 
 	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
@@ -134,3 +140,11 @@ type CheckPhoneRequest struct {
 }
 
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
+
+type otpRequest struct {
+	Phone string `json:"phone" binding:"required"`
+	Code  string `json:"code"`
+}
+
+func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
+func (r *otpRequest) GetPassword() (password string) { return r.Code }

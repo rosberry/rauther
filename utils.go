@@ -1,7 +1,9 @@
 package rauther
 
 import (
+	"crypto/rand"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"reflect"
@@ -22,7 +24,7 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	})
 }
 
-func errorConfirmationTimeoutResponse(c *gin.Context, timeOffset, curTime time.Time) {
+func errorCodeTimeoutResponse(c *gin.Context, timeOffset, curTime time.Time) {
 	interval := timeOffset.Sub(curTime) / time.Second
 	startAtStr := timeOffset.Format(time.RFC3339)
 
@@ -91,4 +93,18 @@ func sendRecoveryCode(s sender.Sender, recipient, code string) error {
 
 func clone(obj interface{}) interface{} {
 	return reflect.New(reflect.TypeOf(obj).Elem()).Interface()
+}
+
+func generateNumericCode(length int) string {
+	table := [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
+
+	b := make([]byte, length)
+	n, err := io.ReadAtLeast(rand.Reader, b, length)
+	if n != length {
+		panic(err)
+	}
+	for i := 0; i < len(b); i++ {
+		b[i] = table[int(b[i])%len(table)]
+	}
+	return string(b)
 }

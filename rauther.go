@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -149,6 +150,19 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if r.Modules.RecoverableUser {
 		r.includeRecoverable(router)
 	}
+
+	if r.Modules.OTP {
+		r.includeOTP(router)
+	}
+}
+
+func (r *Rauther) includeOTP(router *gin.RouterGroup) {
+	if !r.checker.OTPAuth {
+		log.Fatal(common.Errors[common.ErrOTPNotImplement])
+	}
+
+	router.POST(r.Config.Routes.OTPRequestCode, r.otpGetCodeHandler())
+	router.POST(r.Config.Routes.OTPCheckCode, r.otpAuthHandler())
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
@@ -445,9 +459,9 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
-			if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 				curTime := time.Now()
-				u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+				u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 			}
 
 			err := sendConfirmCode(at.Sender, uid, confirmCode)
@@ -738,8 +752,8 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 
 		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
-		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
-			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, nil)
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
 		}
 
 		err = r.deps.UserStorer.Save(u)
@@ -789,15 +803,15 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 		confirmCode := generateConfirmCode()
 
-		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 			curTime := time.Now()
-			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+			lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 
 			if lastConfirmationTime != nil {
 				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
 
 				if !curTime.After(timeOffset) {
-					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+					errorCodeTimeoutResponse(c, timeOffset, curTime)
 
 					return
 				}
@@ -805,7 +819,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
-			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 		} else {
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 		}
@@ -860,15 +874,15 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		code := generateConfirmCode()
 
-		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
-			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 			curTime := time.Now()
 
 			if lastConfirmationTime != nil {
 				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
 
 				if !curTime.After(timeOffset) {
-					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+					errorCodeTimeoutResponse(c, timeOffset, curTime)
 
 					return
 				}
@@ -876,7 +890,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 			u.(user.RecoverableUser).SetRecoveryCode(code)
 
-			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 		} else {
 			u.(user.RecoverableUser).SetRecoveryCode(code)
 		}
@@ -1067,3 +1081,296 @@ func (r *Rauther) DefaultSender(s sender.Sender) *Rauther {
 
 	return r
 }
+
+func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
+	if !r.checker.OTPAuth {
+		log.Print("Not implement OTPAuth interface")
+		return nil
+	}
+	return func(c *gin.Context) {
+		at := r.types.Select(c)
+		if at == nil {
+			log.Print("OTP auth handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		request := clone(at.SignUpRequest).(authtype.AuthRequest)
+
+		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		if err != nil {
+			log.Print("OTP auth handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		s, ok := c.Get(r.Config.ContextNames.Session)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			return
+		}
+
+		sess, ok := s.(session.Session)
+		if !ok {
+			log.Fatal("[signInHandler] failed 'sess' type assertion to session.Session")
+		}
+
+		currentUserID := sess.GetUserID()
+
+		var currentUserIsGuest bool
+
+		if currentUserID != nil {
+			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
+
+			if currentUser != nil && err == nil {
+				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
+			}
+
+			if !currentUserIsGuest {
+				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				return
+			}
+		}
+
+		uid := request.GetUID()
+
+		if uid == "" {
+			log.Print("otp request handler: empty uid")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		// Find user by UID
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err != nil {
+			log.Print(err)
+		}
+
+		// User not found
+		if u == nil {
+			u = r.deps.UserStorer.Create()
+			u.SetUID(at.Key, uid)
+		}
+
+		// Check last send time
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+			curTime := time.Now()
+
+			if lastCodeSentTime != nil {
+				timeOffset := lastCodeSentTime.Add(r.Config.ValidConfirmationInterval)
+
+				if !curTime.After(timeOffset) {
+					errorCodeTimeoutResponse(c, timeOffset, curTime)
+
+					return
+				}
+			}
+
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime) // FIXME: А если дальше чет зафейлится?
+		}
+
+		var code string
+
+		if uCodeGenerator, ok := u.(user.OTPAuthCustomCodeGenerator); ok {
+			code = uCodeGenerator.GenerateCode()
+		} else {
+			code = generateNumericCode(r.Config.OTP.CodeLength)
+		}
+
+		u.(user.OTPAuth).SetOTP(code, time.Now().Add(r.Config.OTP.CodeLifeTime))
+
+		err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
+		if err != nil {
+			err = fmt.Errorf("send OTP code error: %w", err)
+		}
+
+		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
+			fields := request.(authtype.AuhtRequestFieldable).Fields()
+			for fieldKey, fieldValue := range fields {
+				err := user.SetFields(u, fieldKey, fieldValue)
+				if err != nil {
+					log.Printf("sign up: set fields %v: %v", fieldKey, err)
+					errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+					return
+				}
+			}
+		}
+
+		if err = r.deps.UserStorer.Save(u); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+			"uid":    uid,
+			"code":   code,
+		})
+	}
+}
+
+func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
+	if !r.checker.OTPAuth {
+		log.Print("Not implement OTPAuth interface")
+		return nil
+	}
+	return func(c *gin.Context) {
+		at := r.types.Select(c)
+		if at == nil {
+			log.Print("OTP auth handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		request := clone(at.SignInRequest).(authtype.AuthRequest)
+
+		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		if err != nil {
+			log.Print("OTP auth handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		s, ok := c.Get(r.Config.ContextNames.Session)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			return
+		}
+
+		sess, ok := s.(session.Session)
+		if !ok {
+			log.Fatal("[signInHandler] failed 'sess' type assertion to session.Session")
+		}
+
+		currentUserID := sess.GetUserID()
+
+		var currentUserIsGuest bool
+
+		if currentUserID != nil {
+			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
+
+			if currentUser != nil && err == nil {
+				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
+			}
+
+			if !currentUserIsGuest {
+				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				return
+			}
+		}
+
+		uid, code := request.GetUID(), request.GetPassword()
+
+		if uid == "" || code == "" {
+			log.Print("otp handler: empty uid or code")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		// Find user by UID
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err != nil {
+			log.Print(err)
+		}
+		if u == nil {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+		}
+
+		userCode, expiredAt := u.(user.OTPAuth).GetOTP()
+		if expiredAt.Before(time.Now()) {
+			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+			return
+		}
+
+		if code != userCode {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidCode)
+			return
+		}
+
+		sess.BindUser(u)
+
+		err = r.deps.SessionStorer.Save(sess)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
+			return
+		}
+
+		u.(user.OTPAuth).SetOTP("", expiredAt)
+
+		c.Set(r.Config.ContextNames.Session, sess)
+		c.Set(r.Config.ContextNames.User, u)
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+			"uid":    uid,
+			"u":      u,
+		})
+	}
+}
+
+// Check user in current session
+func (r *Rauther) checkSessionUser(c *gin.Context) (u user.User, isGuest bool) {
+	s, ok := c.Get(r.Config.ContextNames.Session)
+	if !ok {
+		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		return
+	}
+
+	sess, ok := s.(session.Session)
+	if !ok {
+		log.Fatal("failed 'sess' type assertion to session.Session")
+	}
+
+	var currentUserIsGuest bool
+
+	currentUserID := sess.GetUserID()
+	if currentUserID != nil {
+		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
+
+		if currentUser != nil {
+			currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
+
+			if !currentUserIsGuest {
+				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				return
+			}
+
+			return currentUser, currentUserIsGuest
+		}
+
+		return nil, false
+	}
+
+	return nil, false
+}
+
+/*
+	Добавить модуль OTP
+	Хендлер для запроса кода:
+		- Запрос:
+			тип авторизации
+			uid (contact)
+		- Флоу:
+			поиск пользователя по типу и uid
+				создание, если нет
+			отправка кода через сендер
+			сохранение кода в БД (? куда)
+
+	Хендлер для проверки кода
+		- Запрос:
+			тип авторизации
+			uid (contact)
+			код
+		- Флоу:
+			поиск пользователя по типу и uid
+			проверка кода
+			привязка пользователя (удаление гостя) [переиспользовать]
+*/
