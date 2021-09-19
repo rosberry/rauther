@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 // Config contain all configurations for Rauther and modules
 type Config struct {
 	// Routes is group for gin route paths
@@ -43,6 +45,9 @@ type Config struct {
 
 	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
 	CreateGuestUser bool
+
+	// ValidConfirmationInterval is the allowed interval between the last confirmation and the present time.
+	ValidConfirmationInterval time.Duration
 }
 
 // Default set default values to configuration
@@ -62,4 +67,6 @@ func (c *Config) Default() {
 	c.Routes.RecoveryRequest = "recovery/request"
 	c.Routes.RecoveryValidateCode = "recovery/validate"
 	c.Routes.RecoveryCode = "recovery"
+
+	c.ValidConfirmationInterval = 1 * time.Minute
 }

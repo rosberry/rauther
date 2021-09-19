@@ -23,16 +23,17 @@ type (
 		Guest bool   `json:"guest"`
 		Email string `auth:"email"`
 
-		FirstName string `auth:"fname" json:"first_name"`
-		LastName  string `auth:"lname" json:"last_name"`
+		FirstName string `auth:"fname" json:"firstName"`
+		LastName  string `auth:"lname" json:"lastName"`
 
-		RecoveryCode string `json:"recovery_code"`
+		RecoveryCode         string    `json:"recoveryCode"`
+		LastConfirmationTime time.Time `json:"lastConfirmationTime"`
 	}
 
 	AuthIdentities struct {
 		Type        string `json:"type"`
 		UID         string `json:"uid"`
-		ConfirmCode string `json:"confirm_code"`
+		ConfirmCode string `json:"confirmCode"`
 		Confirmed   bool   `json:"confirmed"`
 	}
 )
@@ -85,6 +86,14 @@ func (u *User) SetConfirmCode(authType, code string) {
 	u.Auths[authType] = at
 }
 
+func (u *User) SetConfirmationTime(t time.Time) {
+	u.LastConfirmationTime = t
+}
+
+func (u *User) GetLastConfirmationTime() time.Time {
+	return u.LastConfirmationTime
+}
+
 func (u *User) SetRecoveryCode(code string) {
 	u.RecoveryCode = code
 }
@@ -115,9 +124,11 @@ type UserStorer struct {
 
 func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error) {
 	log.Printf("[LoadByUID] type: %s uid: %s", authType, uid)
+
 	for _, u := range s.Users {
 		if at, ok := u.Auths[authType]; ok {
 			log.Printf("[LoadByUID] Found authtype. UID is '%v'", at.UID)
+
 			if at.UID == uid {
 				log.Printf("[LoadByUID] at.UID == uid")
 				return u, nil

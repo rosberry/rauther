@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 // Definition of user interfaces
@@ -35,6 +36,9 @@ type ConfirmableUser interface {
 
 	SetConfirmed(authType string, ok bool)
 	SetConfirmCode(authType, code string)
+
+	GetLastConfirmationTime() time.Time
+	SetConfirmationTime(t time.Time)
 }
 
 type RecoverableUser interface {
@@ -42,6 +46,9 @@ type RecoverableUser interface {
 
 	GetRecoveryCode() (code string)
 	SetRecoveryCode(code string)
+
+	GetLastConfirmationTime() time.Time
+	SetConfirmationTime(t time.Time)
 }
 
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")

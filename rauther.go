@@ -3,6 +3,7 @@ package rauther
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -431,8 +432,10 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		if r.Modules.ConfirmableUser {
 			confirmCode := generateConfirmCode()
+			t := time.Now()
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+			u.(user.ConfirmableUser).SetConfirmationTime(t)
 
 			err := sendConfirmCode(at.Sender, uid, confirmCode)
 			if err != nil {
@@ -714,11 +717,24 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
+		lastConfirmationTime := u.(user.ConfirmableUser).GetLastConfirmationTime()
+		curTime := time.Now()
+		timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
+
+		if !curTime.After(timeOffset) {
+			errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+
+			return
+		}
+
 		confirmCode := generateConfirmCode()
+
 		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+		u.(user.ConfirmableUser).SetConfirmationTime(curTime)
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+
 			return
 		}
 
@@ -765,7 +781,20 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 		}
 
 		code := generateConfirmCode()
+		t := time.Now()
+
+		lastConfirmationTime := u.(user.RecoverableUser).GetLastConfirmationTime()
+		curTime := time.Now()
+		timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
+
+		if !curTime.After(timeOffset) {
+			errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+
+			return
+		}
+
 		u.(user.RecoverableUser).SetRecoveryCode(code)
+		u.(user.RecoverableUser).SetConfirmationTime(t)
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {
