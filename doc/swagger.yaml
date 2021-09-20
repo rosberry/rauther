@@ -50,9 +50,35 @@ paths:
         "401":
           description: Not auth. Auth token required
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
+
+  /register/check:
+    post:
+      consumes:
+        - application/json
+      parameters:
+        - description: Check login field
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/CheckLoginFieldRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/CheckLoginFieldResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - auth
 
   /login:
     post:
@@ -300,6 +326,20 @@ definitions:
     type: object
 
   SignInResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+    type: object
+
+  CheckLoginFieldRequest:
+    properties:
+      email:
+        example: example@mailer.com
+        type: string
+    type: object
+
+  CheckLoginFieldResponse:
     properties:
       result:
         example: true

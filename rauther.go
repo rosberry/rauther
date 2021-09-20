@@ -96,7 +96,7 @@ func (r *Rauther) InitHandlers() error {
 	}
 
 	if r.emptyAuthTypes() {
-		r.AddAuthType("email", nil, nil, nil)
+		r.AddAuthType("email", nil, nil, nil, nil)
 	}
 
 	if ok := r.checkAuthTypes(u); !ok {
@@ -137,6 +137,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
 	router.POST(r.Config.Routes.SignIn, r.signInHandler())
 	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
+	router.POST(r.Config.Routes.ValidateLoginField, r.ValidateLoginField())
 
 	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
@@ -633,6 +634,46 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 	}
 }
 
+func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
+	if !r.checker.Authable {
+		log.Print("Not implement AuthableUser interface")
+		return nil
+	}
+
+	return func(c *gin.Context) {
+		at := r.types.Select(c)
+		if at == nil {
+			log.Print("validate login field handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		request := at.CheckLoginFieldRequest
+
+		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		if err != nil {
+			log.Print("validate login field handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		uid := request.GetUID()
+
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err == nil && u != nil {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+		})
+	}
+}
+
 func (r *Rauther) confirmHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type confirmRequest struct {
@@ -906,12 +947,12 @@ func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
 
 // AddAuthType adds a new type of authorization and uses a default sender, if not transmitted another
 func (r *Rauther) AddAuthType(key string, sender sender.Sender,
-	signUpRequest, signInRequest authtype.AuthRequest) *Rauther {
+	signUpRequest, signInRequest authtype.AuthRequest, checkLogin authtype.CheckLoginFieldRequest) *Rauther {
 	if r.types == nil {
 		r.types = authtype.New(nil)
 	}
 
-	r.types.Add(key, sender, signUpRequest, signInRequest)
+	r.types.Add(key, sender, signUpRequest, signInRequest, checkLogin)
 
 	return r
 }
