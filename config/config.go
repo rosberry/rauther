@@ -10,13 +10,13 @@ type Config struct {
 		// SignUp is gin route path for sign-up handler. Default: "sign-up"
 		SignUp string
 
-		// ValidateLoginField is gin route path for check login field handler. Default: "register/validate-login-field"
+		// ValidateLoginField is gin route path for check login field handler. Default: "register/check"
 		ValidateLoginField string
 
-		// SignIn is gin route path for sign-in handler. Default: "sign-in"
+		// SignIn is gin route path for sign-in handler. Default: "login"
 		SignIn string
 
-		// SignOut is gin route path for sign-out handler. Default: "sign-out"
+		// SignOut is gin route path for sign-out handler. Default: "logout"
 		SignOut string
 
 		// ConfirmCode is gin route path for email confirmation handler. Default: "confirm"
@@ -56,7 +56,7 @@ func (c *Config) Default() {
 	c.ContextNames.User = "user"
 
 	c.Routes.SignUp = "register"
-	c.Routes.ValidateLoginField = "register/validate-login-field"
+	c.Routes.ValidateLoginField = "register/check"
 	c.Routes.SignIn = "login"
 	c.Routes.SignOut = "logout"
 

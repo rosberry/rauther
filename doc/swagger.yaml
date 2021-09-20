@@ -54,7 +54,7 @@ paths:
       tags:
         - auth
 
-  /register/validate-login-field:
+  /register/check:
     post:
       consumes:
         - application/json
