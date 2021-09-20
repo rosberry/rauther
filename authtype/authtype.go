@@ -18,6 +18,7 @@ type (
 
 		SignUpRequest AuthRequest
 		SignInRequest AuthRequest
+		CheckLoginFieldRequest
 	}
 
 	// List of AuthType by key
@@ -38,6 +39,10 @@ type (
 	AuthRequest interface {
 		GetUID() (uid string)
 		GetPassword() (password string)
+	}
+
+	CheckLoginFieldRequest interface {
+		GetUID() (uid string)
 	}
 
 	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
@@ -64,7 +69,7 @@ func New(selector Selector) *AuthTypes {
 }
 
 // Add new AuthType in AuthTypes list
-func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInRequest AuthRequest) *AuthTypes {
+func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInRequest AuthRequest, checkLogin CheckLoginFieldRequest) *AuthTypes {
 	if a == nil {
 		log.Fatal("auth types is nil")
 	}
@@ -77,11 +82,16 @@ func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInR
 		signInRequest = &SignUpRequestByEmail{}
 	}
 
+	if checkLogin == nil {
+		checkLogin = &CheckLoginFieldRequestByEmail{}
+	}
+
 	t := AuthType{
-		Key:           key,
-		Sender:        sender,
-		SignUpRequest: signUpRequest,
-		SignInRequest: signInRequest,
+		Key:                    key,
+		Sender:                 sender,
+		SignUpRequest:          signUpRequest,
+		SignInRequest:          signInRequest,
+		CheckLoginFieldRequest: checkLogin,
 	}
 
 	a.List[key] = t

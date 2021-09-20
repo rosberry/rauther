@@ -29,6 +29,12 @@ func (r SignUpRequestByUsername) Fields() map[string]string {
 	return map[string]string{"email": r.Email}
 }
 
+type CheckLoginFieldRequestByEmail struct {
+	Email string `json:"email" form:"email"`
+}
+
+func (r CheckLoginFieldRequestByEmail) GetUID() (uid string) { return r.Email }
+
 func DefaultSelector(c *gin.Context) string {
 	const defaultKey = ""
 

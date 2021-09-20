@@ -55,8 +55,8 @@ func main() {
 
 	rauth.DefaultSender(&fakeEmailSender{})
 
-	rauth.AddAuthType("email", &fakeEmailSender{}, nil, nil).
-		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
+	rauth.AddAuthType("email", &fakeEmailSender{}, nil, nil, nil).
+		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{}, &CheckPhoneRequest{})
 
 	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
@@ -111,3 +111,9 @@ type phoneSignIn struct {
 
 func (r *phoneSignIn) GetUID() (uid string)           { return r.Phone }
 func (r *phoneSignIn) GetPassword() (password string) { return r.Password }
+
+type CheckPhoneRequest struct {
+	Phone string `json:"phone" binding:"required"`
+}
+
+func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
