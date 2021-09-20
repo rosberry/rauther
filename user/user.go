@@ -36,9 +36,6 @@ type ConfirmableUser interface {
 
 	SetConfirmed(authType string, ok bool)
 	SetConfirmCode(authType, code string)
-
-	GetLastConfirmationTime() time.Time
-	SetConfirmationTime(t time.Time)
 }
 
 type RecoverableUser interface {
@@ -46,9 +43,14 @@ type RecoverableUser interface {
 
 	GetRecoveryCode() (code string)
 	SetRecoveryCode(code string)
+}
 
-	GetLastConfirmationTime() time.Time
-	SetConfirmationTime(t time.Time)
+// interface for checking the interval during which confirmation codes cannot be sent
+type ConfirmationSentTimeUser interface {
+	User
+
+	GetConfirmationCodeSentTime(authType string) *time.Time
+	SetConfirmationCodeSentTime(authType string, t *time.Time)
 }
 
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")

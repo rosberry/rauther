@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -26,8 +27,8 @@ type (
 		FirstName string `auth:"fname" json:"firstName"`
 		LastName  string `auth:"lname" json:"lastName"`
 
-		RecoveryCode         string    `json:"recoveryCode"`
-		LastConfirmationTime time.Time `json:"lastConfirmationTime"`
+		RecoveryCode         string       `json:"recoveryCode"`
+		LastConfirmationTime sql.NullTime `json:"lastConfirmationTime"`
 	}
 
 	AuthIdentities struct {
@@ -86,12 +87,21 @@ func (u *User) SetConfirmCode(authType, code string) {
 	u.Auths[authType] = at
 }
 
-func (u *User) SetConfirmationTime(t time.Time) {
-	u.LastConfirmationTime = t
+func (u *User) SetConfirmationCodeSentTime(authType string, t *time.Time) {
+	if t != nil {
+		u.LastConfirmationTime.Time = *t
+		u.LastConfirmationTime.Valid = true
+	} else {
+		u.LastConfirmationTime.Valid = false
+	}
 }
 
-func (u *User) GetLastConfirmationTime() time.Time {
-	return u.LastConfirmationTime
+func (u *User) GetConfirmationCodeSentTime(authType string) *time.Time {
+	if !u.LastConfirmationTime.Valid {
+		return nil
+	}
+
+	return &u.LastConfirmationTime.Time
 }
 
 func (u *User) SetRecoveryCode(code string) {

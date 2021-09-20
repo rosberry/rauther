@@ -64,6 +64,7 @@ func main() {
 	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
+	rauth.Modules.ConfirmableSentTimeUser = true
 	rauth.Config.ValidConfirmationInterval = 15 * time.Second // nolint:gomnd
 
 	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)

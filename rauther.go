@@ -432,10 +432,13 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		if r.Modules.ConfirmableUser {
 			confirmCode := generateConfirmCode()
-			t := time.Now()
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
-			u.(user.ConfirmableUser).SetConfirmationTime(t)
+
+			if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+				curTime := time.Now()
+				u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+			}
 
 			err := sendConfirmCode(at.Sender, uid, confirmCode)
 			if err != nil {
@@ -672,6 +675,10 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 
 		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
+		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, nil)
+		}
+
 		err = r.deps.UserStorer.Save(u)
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
@@ -717,20 +724,28 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		lastConfirmationTime := u.(user.ConfirmableUser).GetLastConfirmationTime()
-		curTime := time.Now()
-		timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
-
-		if !curTime.After(timeOffset) {
-			errorConfirmationTimeoutResponse(c, timeOffset, curTime)
-
-			return
-		}
-
 		confirmCode := generateConfirmCode()
 
-		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
-		u.(user.ConfirmableUser).SetConfirmationTime(curTime)
+		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			curTime := time.Now()
+			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+
+			if lastConfirmationTime != nil {
+				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
+
+				if !curTime.After(timeOffset) {
+					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+
+					return
+				}
+			}
+
+			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+
+			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+		} else {
+			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+		}
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
@@ -781,20 +796,27 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 		}
 
 		code := generateConfirmCode()
-		t := time.Now()
 
-		lastConfirmationTime := u.(user.RecoverableUser).GetLastConfirmationTime()
-		curTime := time.Now()
-		timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
+		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+			curTime := time.Now()
 
-		if !curTime.After(timeOffset) {
-			errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+			if lastConfirmationTime != nil {
+				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
 
-			return
+				if !curTime.After(timeOffset) {
+					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+
+					return
+				}
+			}
+
+			u.(user.RecoverableUser).SetRecoveryCode(code)
+
+			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+		} else {
+			u.(user.RecoverableUser).SetRecoveryCode(code)
 		}
-
-		u.(user.RecoverableUser).SetRecoveryCode(code)
-		u.(user.RecoverableUser).SetConfirmationTime(t)
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {
