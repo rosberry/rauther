@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -23,16 +24,17 @@ type (
 		Guest bool   `json:"guest"`
 		Email string `auth:"email"`
 
-		FirstName string `auth:"fname" json:"first_name"`
-		LastName  string `auth:"lname" json:"last_name"`
+		FirstName string `auth:"fname" json:"firstName"`
+		LastName  string `auth:"lname" json:"lastName"`
 
-		RecoveryCode string `json:"recovery_code"`
+		RecoveryCode         string       `json:"recoveryCode"`
+		LastConfirmationTime sql.NullTime `json:"lastConfirmationTime"`
 	}
 
 	AuthIdentities struct {
 		Type        string `json:"type"`
 		UID         string `json:"uid"`
-		ConfirmCode string `json:"confirm_code"`
+		ConfirmCode string `json:"confirmCode"`
 		Confirmed   bool   `json:"confirmed"`
 	}
 )
@@ -85,6 +87,23 @@ func (u *User) SetConfirmCode(authType, code string) {
 	u.Auths[authType] = at
 }
 
+func (u *User) SetConfirmationCodeSentTime(authType string, t *time.Time) {
+	if t != nil {
+		u.LastConfirmationTime.Time = *t
+		u.LastConfirmationTime.Valid = true
+	} else {
+		u.LastConfirmationTime.Valid = false
+	}
+}
+
+func (u *User) GetConfirmationCodeSentTime(authType string) *time.Time {
+	if !u.LastConfirmationTime.Valid {
+		return nil
+	}
+
+	return &u.LastConfirmationTime.Time
+}
+
 func (u *User) SetRecoveryCode(code string) {
 	u.RecoveryCode = code
 }
@@ -115,9 +134,11 @@ type UserStorer struct {
 
 func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error) {
 	log.Printf("[LoadByUID] type: %s uid: %s", authType, uid)
+
 	for _, u := range s.Users {
 		if at, ok := u.Auths[authType]; ok {
 			log.Printf("[LoadByUID] Found authtype. UID is '%v'", at.UID)
+
 			if at.UID == uid {
 				log.Printf("[LoadByUID] at.UID == uid")
 				return u, nil

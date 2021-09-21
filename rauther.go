@@ -3,6 +3,7 @@ package rauther
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -435,6 +436,11 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
+			if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+				curTime := time.Now()
+				u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+			}
+
 			err := sendConfirmCode(at.Sender, uid, confirmCode)
 			if err != nil {
 				log.Printf("failed send confirm code %v: %v", uid, err)
@@ -710,6 +716,10 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 
 		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
+		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, nil)
+		}
+
 		err = r.deps.UserStorer.Save(u)
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
@@ -756,10 +766,31 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 		}
 
 		confirmCode := generateConfirmCode()
-		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+
+		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			curTime := time.Now()
+			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+
+			if lastConfirmationTime != nil {
+				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
+
+				if !curTime.After(timeOffset) {
+					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+
+					return
+				}
+			}
+
+			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+
+			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+		} else {
+			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+		}
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+
 			return
 		}
 
@@ -806,7 +837,27 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 		}
 
 		code := generateConfirmCode()
-		u.(user.RecoverableUser).SetRecoveryCode(code)
+
+		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+			curTime := time.Now()
+
+			if lastConfirmationTime != nil {
+				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
+
+				if !curTime.After(timeOffset) {
+					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+
+					return
+				}
+			}
+
+			u.(user.RecoverableUser).SetRecoveryCode(code)
+
+			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+		} else {
+			u.(user.RecoverableUser).SetRecoveryCode(code)
+		}
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {

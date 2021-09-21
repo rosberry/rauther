@@ -1,9 +1,16 @@
 package common
 
+import "time"
+
 // Contain common errors
 type Err struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+}
+
+type ConfirmationTimeErrInfo struct {
+	ValidInterval time.Duration `json:"validInterval"`
+	ValidTime     string        `json:"validTime"`
 }
 
 func (e Err) Error() string {
@@ -36,6 +43,7 @@ const (
 	ErrInvalidRecoveryCode
 	ErrAlreadyAuth
 	ErrNotSignIn
+	ErrConfirmationTimeInterval
 )
 
 var Errors = map[ErrTypes]Err{
@@ -62,4 +70,5 @@ var Errors = map[ErrTypes]Err{
 	ErrRecoverableUserNotImplement: {"recoverable_user_not_implement", "Please implement RecoverableUser interface"},
 	ErrInvalidRecoveryCode:         {"invalid_code", "Invalid recovery code"},
 	ErrAlreadyAuth:                 {"already_auth", "User already authorised"},
+	ErrConfirmationTimeInterval:    {"invalid_confirmation_time", "invalid confirmation time"},
 }

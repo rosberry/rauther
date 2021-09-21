@@ -3,7 +3,9 @@ package rauther
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -16,6 +18,20 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	c.JSON(status, gin.H{
 		"result": false,
 		"error":  common.Errors[err],
+	})
+}
+
+func errorConfirmationTimeoutResponse(c *gin.Context, timeOffset, curTime time.Time) {
+	interval := timeOffset.Sub(curTime) / time.Second
+	startAtStr := timeOffset.Format(time.RFC3339)
+
+	c.JSON(http.StatusBadRequest, gin.H{
+		"result": false,
+		"error":  common.Errors[common.ErrConfirmationTimeInterval],
+		"info": common.ConfirmationTimeErrInfo{
+			ValidInterval: interval,
+			ValidTime:     startAtStr,
+		},
 	})
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
@@ -31,11 +32,13 @@ func main() {
 
 	debugLog := func(c *gin.Context) {
 		log.Printf("\n\n--------\nSessions:")
+
 		for k, v := range ss.Sessions {
 			log.Printf("%v: %+v", k, v)
 		}
 
 		log.Printf("\n\n--------\nUsers:")
+
 		for k, v := range us.Users {
 			log.Printf("%v: %+v", k, v)
 		}
@@ -61,6 +64,8 @@ func main() {
 	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
+	rauth.Modules.ConfirmableSentTimeUser = true
+	rauth.Config.ValidConfirmationInterval = 15 * time.Second // nolint:gomnd
 
 	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 	r.POST("/profile", rauth.AuthMiddleware(), controllers.UpdateProfile)
