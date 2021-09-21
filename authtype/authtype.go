@@ -11,14 +11,26 @@ import (
 )
 
 type (
+	Config struct {
+		AuthType int
+		AuthKey  string
+		Sender   sender.Sender
+
+		SignUpRequest AuthRequest
+		SignInRequest AuthRequest
+		CheckUserExistsRequest
+	}
+	Configs []Config
+
 	// AuthType stores request structures, key and sender that use to send confirmation/recovery codes.
 	AuthType struct {
+		Type   int
 		Key    string
 		Sender sender.Sender
 
 		SignUpRequest AuthRequest
 		SignInRequest AuthRequest
-		CheckLoginFieldRequest
+		CheckUserExistsRequest
 	}
 
 	// List of AuthType by key
@@ -41,7 +53,7 @@ type (
 		GetPassword() (password string)
 	}
 
-	CheckLoginFieldRequest interface {
+	CheckUserExistsRequest interface {
 		GetUID() (uid string)
 	}
 
@@ -51,6 +63,10 @@ type (
 
 		Fields() map[string]string
 	}
+)
+
+const (
+	AuthTypePassword = iota + 1
 )
 
 // New create AuthTypes (list of AuthType).
@@ -69,32 +85,48 @@ func New(selector Selector) *AuthTypes {
 }
 
 // Add new AuthType in AuthTypes list
-func (a *AuthTypes) Add(key string, sender sender.Sender, signUpRequest, signInRequest AuthRequest, checkLogin CheckLoginFieldRequest) *AuthTypes {
+func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 	if a == nil {
 		log.Fatal("auth types is nil")
 	}
 
-	if signUpRequest == nil {
-		signUpRequest = &SignUpRequestByEmail{}
+	authType := 0
+
+	if cfg.AuthType == 0 {
+		authType = AuthTypePassword
+	} else {
+		switch cfg.AuthType {
+		case AuthTypePassword:
+			authType = AuthTypePassword
+		}
 	}
 
-	if signInRequest == nil {
-		signInRequest = &SignUpRequestByEmail{}
+	if authType == 0 {
+		log.Fatal("invalid auth type")
 	}
 
-	if checkLogin == nil {
-		checkLogin = &CheckLoginFieldRequestByEmail{}
+	if cfg.SignUpRequest == nil {
+		cfg.SignUpRequest = &SignUpRequestByEmail{}
+	}
+
+	if cfg.SignInRequest == nil {
+		cfg.SignInRequest = &SignUpRequestByEmail{}
+	}
+
+	if cfg.CheckUserExistsRequest == nil {
+		cfg.CheckUserExistsRequest = &CheckLoginFieldRequestByEmail{}
 	}
 
 	t := AuthType{
-		Key:                    key,
-		Sender:                 sender,
-		SignUpRequest:          signUpRequest,
-		SignInRequest:          signInRequest,
-		CheckLoginFieldRequest: checkLogin,
+		Type:                   cfg.AuthType,
+		Key:                    cfg.AuthKey,
+		Sender:                 cfg.Sender,
+		SignUpRequest:          cfg.SignUpRequest,
+		SignInRequest:          cfg.SignInRequest,
+		CheckUserExistsRequest: cfg.CheckUserExistsRequest,
 	}
 
-	a.List[key] = t
+	a.List[cfg.AuthKey] = t
 
 	return a
 }

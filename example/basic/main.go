@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
+	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
@@ -58,8 +59,19 @@ func main() {
 
 	rauth.DefaultSender(&fakeEmailSender{})
 
-	rauth.AddAuthType("email", &fakeEmailSender{}, nil, nil, nil).
-		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{}, &CheckPhoneRequest{})
+	rauth.AddAuthTypes([]authtype.Config{
+		{
+			AuthKey: "email",
+			Sender:  &fakeEmailSender{},
+		},
+		{
+			AuthKey:                "phone",
+			Sender:                 &fakeSmsSender{},
+			SignUpRequest:          &phoneSignUp{},
+			SignInRequest:          &phoneSignIn{},
+			CheckUserExistsRequest: &CheckPhoneRequest{},
+		},
+	})
 
 	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
