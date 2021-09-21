@@ -23,7 +23,7 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 
 func errorConfirmationTimeoutResponse(c *gin.Context, timeOffset, curTime time.Time) {
 	interval := timeOffset.Sub(curTime) / time.Second
-	startAtStr := timeOffset.Format(common.ValidConfirmationTimeFormat)
+	startAtStr := timeOffset.Format(time.RFC3339)
 
 	c.JSON(http.StatusBadRequest, gin.H{
 		"result": false,
