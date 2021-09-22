@@ -102,7 +102,7 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 	}
 
 	if authType == 0 {
-		log.Fatal("invalid auth type")
+		log.Fatalf("invalid auth type %v for '%s' key", cfg.AuthType, cfg.AuthKey)
 	}
 
 	if cfg.SignUpRequest == nil {
