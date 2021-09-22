@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rosberry/auth"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/user"
 )
@@ -19,6 +20,9 @@ type (
 		SignUpRequest AuthRequest
 		SignInRequest AuthRequest
 		CheckUserExistsRequest
+
+		SocialSignInRequest SocialAuthRequest
+		SocialAuthType      int
 	}
 	Configs []Config
 
@@ -28,9 +32,12 @@ type (
 		Key    string
 		Sender sender.Sender
 
-		SignUpRequest AuthRequest
-		SignInRequest AuthRequest
+		SignUpRequest       AuthRequest
+		SignInRequest       AuthRequest
+		SocialSignInRequest SocialAuthRequest
 		CheckUserExistsRequest
+
+		SocialAuthType int
 	}
 
 	// List of AuthType by key
@@ -57,6 +64,10 @@ type (
 		GetUID() (uid string)
 	}
 
+	SocialAuthRequest interface {
+		GetToken() string
+	}
+
 	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
 	AuhtRequestFieldable interface {
 		AuthRequest
@@ -67,6 +78,14 @@ type (
 
 const (
 	AuthTypePassword = iota + 1
+	AuthTypeSocial
+)
+
+const (
+	SocialAuthTypeGoogle   = auth.AuthTypeGoogle
+	SocialAuthTypeApple    = auth.AuthTypeApple
+	SocialAuthTypeFacebook = auth.AuthTypeFacebook
+	SocialAuthTypeVK       = auth.AuthTypeVK
 )
 
 // New create AuthTypes (list of AuthType).
@@ -98,6 +117,8 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		switch cfg.AuthType {
 		case AuthTypePassword:
 			authType = AuthTypePassword
+		case AuthTypeSocial:
+			authType = AuthTypePassword
 		}
 	}
 
@@ -105,7 +126,7 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		log.Fatalf("invalid auth type %v for '%s' key", cfg.AuthType, cfg.AuthKey)
 	}
 
-	if cfg.SignUpRequest == nil {
+	if cfg.SignUpRequest == nil && authType == AuthTypePassword {
 		cfg.SignUpRequest = &SignUpRequestByEmail{}
 	}
 
