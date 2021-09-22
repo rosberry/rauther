@@ -97,7 +97,9 @@ func (r *Rauther) InitHandlers() error {
 	}
 
 	if r.emptyAuthTypes() {
-		r.AddAuthType("email", nil, nil, nil, nil)
+		r.AddAuthType(authtype.Config{
+			AuthKey: "email",
+		})
 	}
 
 	if ok := r.checkAuthTypes(u); !ok {
@@ -655,7 +657,7 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 			return
 		}
 
-		request := at.CheckLoginFieldRequest
+		request := at.CheckUserExistsRequest
 
 		err := c.ShouldBindBodyWith(&request, binding.JSON)
 		if err != nil {
@@ -997,13 +999,25 @@ func (r *Rauther) createGuestUser() (user.User, common.ErrTypes) {
 }
 
 // AddAuthType adds a new type of authorization and uses a default sender, if not transmitted another
-func (r *Rauther) AddAuthType(key string, sender sender.Sender,
-	signUpRequest, signInRequest authtype.AuthRequest, checkLogin authtype.CheckLoginFieldRequest) *Rauther {
+func (r *Rauther) AddAuthType(at authtype.Config) *Rauther {
 	if r.types == nil {
 		r.types = authtype.New(nil)
 	}
 
-	r.types.Add(key, sender, signUpRequest, signInRequest, checkLogin)
+	r.types.Add(at)
+
+	return r
+}
+
+// AddAuthTypes adds a new types of authorization and uses a default sender, if not transmitted another
+func (r *Rauther) AddAuthTypes(arrTypes authtype.Configs) *Rauther {
+	if r.types == nil {
+		r.types = authtype.New(nil)
+	}
+
+	for _, row := range arrTypes {
+		r.types.Add(row)
+	}
 
 	return r
 }
