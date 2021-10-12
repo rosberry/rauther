@@ -369,6 +369,13 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		uid, password := request.GetUID(), request.GetPassword()
 
+		if uid == "" || password == "" {
+			log.Print("sign up handler: empty uid or password")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
 			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
@@ -527,6 +534,13 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		uid, password := request.GetUID(), request.GetPassword()
 
+		if uid == "" || password == "" {
+			log.Print("sign in handler: empty uid or password")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
@@ -668,6 +682,12 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 		}
 
 		uid := request.GetUID()
+
+		if uid == "" {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err == nil && u != nil {
