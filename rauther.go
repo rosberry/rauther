@@ -529,7 +529,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			errorResponse(c, http.StatusForbidden, common.ErrIncorrectPassword)
 			return
 		}
 
@@ -706,7 +706,7 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
 			return
 		}
 
@@ -834,7 +834,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			c.JSON(http.StatusOK, gin.H{"result": true})
 			return
 		}
 
@@ -902,12 +902,12 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 
 		u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
 			return
 		}
 
 		code := u.(user.RecoverableUser).GetRecoveryCode()
-		if code != request.Code {
+		if code != request.Code || code == "" {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
 			return
 		}
@@ -940,7 +940,7 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 
 		u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
 		if err != nil {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
 			return
 		}
 
