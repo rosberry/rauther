@@ -657,15 +657,17 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 			return
 		}
 
-		request := at.CheckUserExistsRequest
+		var requestData map[string]interface{}
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		err := c.ShouldBindBodyWith(&requestData, binding.JSON)
 		if err != nil {
 			log.Print("validate login field handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
 		}
+
+		request := at.CheckUserExistsRequest.New(requestData)
 
 		uid := request.GetUID()
 

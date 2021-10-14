@@ -34,6 +34,11 @@ type CheckLoginFieldRequestByEmail struct {
 }
 
 func (r CheckLoginFieldRequestByEmail) GetUID() (uid string) { return r.Email }
+func (r CheckLoginFieldRequestByEmail) New(input map[string]interface{}) CheckUserExistsRequest {
+	newRequest := CheckLoginFieldRequestByEmail{}
+	newRequest.Email, _ = input["email"].(string)
+	return &newRequest
+}
 
 func DefaultSelector(c *gin.Context) string {
 	const defaultKey = ""

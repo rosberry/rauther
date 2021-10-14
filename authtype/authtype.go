@@ -16,9 +16,9 @@ type (
 		AuthKey  string
 		Sender   sender.Sender
 
-		SignUpRequest AuthRequest
-		SignInRequest AuthRequest
-		CheckUserExistsRequest
+		SignUpRequest          AuthRequest
+		SignInRequest          AuthRequest
+		CheckUserExistsRequest CheckUserExistsRequest
 	}
 	Configs []Config
 
@@ -28,9 +28,9 @@ type (
 		Key    string
 		Sender sender.Sender
 
-		SignUpRequest AuthRequest
-		SignInRequest AuthRequest
-		CheckUserExistsRequest
+		SignUpRequest          AuthRequest
+		SignInRequest          AuthRequest
+		CheckUserExistsRequest CheckUserExistsRequest
 	}
 
 	// List of AuthType by key
@@ -55,6 +55,7 @@ type (
 
 	CheckUserExistsRequest interface {
 		GetUID() (uid string)
+		New(map[string]interface{}) CheckUserExistsRequest
 	}
 
 	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields

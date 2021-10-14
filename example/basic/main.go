@@ -134,3 +134,8 @@ type CheckPhoneRequest struct {
 }
 
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
+func (r *CheckPhoneRequest) New(input map[string]interface{}) authtype.CheckUserExistsRequest {
+	newRequest := CheckPhoneRequest{}
+	newRequest.Phone, _ = input["phone"].(string)
+	return &newRequest
+}
