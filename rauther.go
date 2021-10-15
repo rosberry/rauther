@@ -705,8 +705,8 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 func (r *Rauther) confirmHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type confirmRequest struct {
-			UID  string `json:"uid"`
-			Code string `json:"code"`
+			UID  string `json:"uid" binding:"required"`
+			Code string `json:"code" binding:"required"`
 		}
 
 		at := r.types.Select(c)
@@ -835,7 +835,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryRequest struct {
-			UID string `json:"uid"`
+			UID string `json:"uid" binding:"required"`
 		}
 
 		at := r.types.Select(c)
@@ -902,8 +902,8 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryValidationRequest struct {
-			UID  string `json:"uid"`
-			Code string `json:"code"`
+			UID  string `json:"uid" binding:"required"`
+			Code string `json:"code" binding:"required"`
 		}
 
 		at := r.types.Select(c)
@@ -939,9 +939,9 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryRequest struct {
-			UID      string `json:"uid"`
-			Code     string `json:"code"`
-			Password string `json:"password"`
+			UID      string `json:"uid" binding:"required"`
+			Code     string `json:"code" binding:"required"`
+			Password string `json:"password" binding:"required"`
 		}
 
 		at := r.types.Select(c)
