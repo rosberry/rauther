@@ -30,13 +30,13 @@ func (r SignUpRequestByUsername) Fields() map[string]string {
 }
 
 type CheckLoginFieldRequestByEmail struct {
-	Email string `json:"email" form:"email"`
+	Email string `json:"email" form:"email" binding:"required"`
 }
 
 func (r CheckLoginFieldRequestByEmail) GetUID() (uid string) { return r.Email }
-func (r CheckLoginFieldRequestByEmail) New(input map[string]interface{}) CheckUserExistsRequest {
+
+func (r *CheckLoginFieldRequestByEmail) New() CheckUserExistsRequest {
 	newRequest := CheckLoginFieldRequestByEmail{}
-	newRequest.Email, _ = input["email"].(string)
 	return &newRequest
 }
 

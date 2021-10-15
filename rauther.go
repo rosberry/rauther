@@ -657,9 +657,9 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 			return
 		}
 
-		var requestData map[string]interface{}
+		request := at.CheckUserExistsRequest.New()
 
-		err := c.ShouldBindBodyWith(&requestData, binding.JSON)
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("validate login field handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -667,9 +667,12 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 			return
 		}
 
-		request := at.CheckUserExistsRequest.New(requestData)
-
 		uid := request.GetUID()
+
+		if uid == "" {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err == nil && u != nil {
