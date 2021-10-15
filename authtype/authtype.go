@@ -55,7 +55,6 @@ type (
 
 	CheckUserExistsRequest interface {
 		GetUID() (uid string)
-		New() CheckUserExistsRequest
 	}
 
 	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields

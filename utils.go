@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -86,4 +87,8 @@ func sendRecoveryCode(s sender.Sender, recipient, code string) error {
 	}
 
 	return err
+}
+
+func clone(obj interface{}) interface{} {
+	return reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 }

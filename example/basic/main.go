@@ -134,8 +134,3 @@ type CheckPhoneRequest struct {
 }
 
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
-
-func (r *CheckPhoneRequest) New() authtype.CheckUserExistsRequest {
-	newRequest := CheckPhoneRequest{}
-	return &newRequest
-}
