@@ -16,9 +16,9 @@ type (
 		AuthKey  string
 		Sender   sender.Sender
 
-		SignUpRequest AuthRequest
-		SignInRequest AuthRequest
-		CheckUserExistsRequest
+		SignUpRequest          AuthRequest
+		SignInRequest          AuthRequest
+		CheckUserExistsRequest CheckUserExistsRequest
 	}
 	Configs []Config
 
@@ -28,9 +28,9 @@ type (
 		Key    string
 		Sender sender.Sender
 
-		SignUpRequest AuthRequest
-		SignInRequest AuthRequest
-		CheckUserExistsRequest
+		SignUpRequest          AuthRequest
+		SignInRequest          AuthRequest
+		CheckUserExistsRequest CheckUserExistsRequest
 	}
 
 	// List of AuthType by key

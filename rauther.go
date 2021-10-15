@@ -357,9 +357,9 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		request := at.SignUpRequest
+		request := clone(at.SignUpRequest).(authtype.AuthRequest)
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("sign up handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -494,9 +494,9 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		request := at.SignInRequest
+		request := clone(at.SignInRequest).(authtype.AuthRequest)
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("sign in handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -671,9 +671,9 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 			return
 		}
 
-		request := at.CheckUserExistsRequest
+		request := clone(at.CheckUserExistsRequest).(authtype.CheckUserExistsRequest)
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("validate login field handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
