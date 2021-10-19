@@ -1,8 +1,16 @@
 swagger: "2.0"
 info:
-  description: "This present an API for default config in Rauther library."
+  description: "This present an API for basic example config in Rauther library."
   version: "1.0.0"
   title: "Rauther default API"
+
+securityDefinitions:
+  authtoken:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: "User authorizes device with `/auth` request, and then adds `Authorization: Bearer <token>` header to every other request."
+
 paths:
   /auth:
     post:
@@ -25,7 +33,7 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       tags:
-      - public
+        - auth
 
   /register:
     post:
@@ -53,11 +61,15 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       tags:
         - auth
+      security:
+      - authtoken: []
 
   /register/check:
     post:
       consumes:
         - application/json
+      summary: Check email/phone
+      description: Check if email/phone is already registered.
       parameters:
         - description: Check login field
           in: body
@@ -79,6 +91,8 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       tags:
         - auth
+      security:
+      - authtoken: []
 
   /login:
     post:
@@ -106,6 +120,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+      security:
+      - authtoken: []
 
   /logout:
     post:
@@ -123,6 +139,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+      security:
+      - authtoken: []
 
   /confirm:
     post:
@@ -146,12 +164,20 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+      security:
+      - authtoken: []
 
   /confirm/resend:
     post:
       consumes:
       - application/json
       description: Resend confirmation code
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/ResendConfirmationRequest'
       responses:
         "200":
           description: OK
@@ -167,6 +193,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+      security:
+      - authtoken: []
 
   /recovery/request:
     post:
@@ -190,6 +218,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+      security:
+      - authtoken: []
 
   /recovery/validate:
     post:
@@ -213,6 +243,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+      security:
+      - authtoken: []
 
   /recovery:
     post:
@@ -236,6 +268,8 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       tags:
       - auth
+      security:
+      - authtoken: []
 
   /profile:
     get:
@@ -256,9 +290,9 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       tags:
-      - auth
+      - profile
       security:
-        - OAuth2: [register user]
+      - authtoken: []
 
 definitions:
   Error:
@@ -282,9 +316,8 @@ definitions:
       device_id:
         example: e01050dc-e834-4a61-826e-8dd592afb8ed
         type: string
-    required:
-    - device_id
     type: object
+
   AuthResponse:
     properties:
       result:
@@ -297,33 +330,62 @@ definitions:
 
   SignUpRequest:
     properties:
+      type:
+        type: string
+        example: email
+        enum:
+        - email
+        - phone
       email:
         example: example@mailer.com
         type: string
+        description: required for type `email`
+      phone:
+        example: 79876543210
+        type: string
+        description: required for type `phone`
       password:
         example: mypass333example
         type: string
+      name:
+        type: string
+        example: Name
     type: object
+    required:
+    - type
+    - password
+    - name
 
   SignUpResponse:
     properties:
       result:
         example: true
         type: boolean
-      pid:
+      uid:
         example: example@mailer.com
         type: string
     type: object
 
   SignInRequest:
     properties:
+      type:
+        type: string
+        example: email
       email:
         example: example@mailer.com
         type: string
+        description: required for type `email`
+      phone:
+        example: 79876543210
+        type: string
+        description: required for type `phone`
       password:
         example: mypass333example
         type: string
     type: object
+    required:
+    - type
+    - password
 
   SignInResponse:
     properties:
@@ -334,10 +396,20 @@ definitions:
 
   CheckLoginFieldRequest:
     properties:
+      type:
+        type: string
+        example: email
       email:
         example: example@mailer.com
         type: string
+        description: required for type `email`
+      phone:
+        example: 79876543210
+        type: string
+        description: required for type `phone`
     type: object
+    required:
+    - type
 
   CheckLoginFieldResponse:
     properties:
@@ -358,13 +430,16 @@ definitions:
 
   ConfirmRequest:
     properties:
-      pid:
+      uid:
         example: example@mailer.com
         type: string
       code:
         example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
         type: string
     type: object
+    required:
+    - uid
+    - code
 
   ConfirmResponse:
     properties:
@@ -372,6 +447,19 @@ definitions:
         example: true
         type: boolean
     type: object
+    
+  ResendConfirmationRequest:
+    properties:
+      type:
+        type: string
+        example: email
+      uid:
+        example: example@mailer.com
+        type: string
+    type: object
+    required:
+    - type
+    - uid
 
   ResendConfirmationResponse:
     properties:
@@ -382,10 +470,16 @@ definitions:
 
   CodeRecoveryRequest:
     properties:
-      pid:
+      type:
+        type: string
+        example: email
+      uid:
         example: example@mailer.com
         type: string
     type: object
+    required:
+    - type
+    - uid
 
   CodeRecoveryResponse:
     properties:
@@ -396,17 +490,27 @@ definitions:
 
   ValidateRecoveryCodeRequest:
     properties:
-      pid:
+      type:
+        type: string
+        example: email
+      uid:
         example: example@mailer.com
         type: string
       code:
         example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
         type: string
     type: object
+    required:
+    - type
+    - uid
+    - code
 
   RecoveryRequest:
     properties:
-      pid:
+      type:
+        type: string
+        example: email
+      uid:
         example: example@mailer.com
         type: string
       code:
@@ -416,6 +520,11 @@ definitions:
         example: my88new88pass
         type: string
     type: object
+    required:
+    - type
+    - uid
+    - code
+    - password
 
   RecoveryResponse:
     properties:
@@ -433,9 +542,33 @@ definitions:
       user:
         type: object
         properties:
-          email:
+          username:
             type: string
-            example: example@mailer.com
-          confirmed:
-            type: boolean
-            example: true
+            example: Name
+          auths:
+            type: object
+            properties:
+              email:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: email
+                  uid:
+                    type: string
+                    example: example@mailer.com
+                  confirmed:
+                    type: boolean
+                    example: false
+              phone:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: phone
+                  uid:
+                    type: string
+                    example: 79876543210
+                  confirmed:
+                    type: boolean
+                    example: false
