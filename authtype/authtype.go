@@ -67,6 +67,7 @@ type (
 
 const (
 	AuthTypePassword = iota + 1
+	AuthTypeOTP
 )
 
 // New create AuthTypes (list of AuthType).

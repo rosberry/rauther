@@ -18,9 +18,9 @@ type (
 
 		Auths map[string]AuthIdentities `json:"auths"`
 
-		Username  string    `auth:"username" json:"username"`
-		Password  string    `json:"password"`
-		ExpiredIn time.Time `json:"expired"`
+		Username  string     `auth:"username" json:"username"`
+		Password  string     `json:"password"`
+		ExpiredIn *time.Time `json:"expired"`
 
 		Guest bool   `json:"guest"`
 		Email string `auth:"email"`
@@ -130,10 +130,13 @@ func (u *User) SetGuest(guest bool) {
 }
 
 func (u *User) GetOTP() (code string, expiredIn time.Time) {
-	return u.Password, u.ExpiredIn
+	if u.ExpiredIn != nil {
+		expiredIn = *u.ExpiredIn
+	}
+	return u.Password, expiredIn
 }
 
-func (u *User) SetOTP(code string, expiredIn time.Time) error {
+func (u *User) SetOTP(code string, expiredIn *time.Time) error {
 	u.Password, u.ExpiredIn = code, expiredIn
 	return nil
 }

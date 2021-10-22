@@ -1098,7 +1098,7 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 
 		request := clone(at.SignUpRequest).(authtype.AuthRequest)
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("OTP auth handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -1106,32 +1106,9 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		s, ok := c.Get(r.Config.ContextNames.Session)
-		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		_, success := r.checkSession(c)
+		if !success {
 			return
-		}
-
-		sess, ok := s.(session.Session)
-		if !ok {
-			log.Fatal("[signInHandler] failed 'sess' type assertion to session.Session")
-		}
-
-		currentUserID := sess.GetUserID()
-
-		var currentUserIsGuest bool
-
-		if currentUserID != nil {
-			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
-
-			if currentUser != nil && err == nil {
-				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
-			}
-
-			if !currentUserIsGuest {
-				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-				return
-			}
 		}
 
 		uid := request.GetUID()
@@ -1181,7 +1158,8 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 			code = generateNumericCode(r.Config.OTP.CodeLength)
 		}
 
-		u.(user.OTPAuth).SetOTP(code, time.Now().Add(r.Config.OTP.CodeLifeTime))
+		expiredAt := time.Now().Add(r.Config.OTP.CodeLifeTime)
+		u.(user.OTPAuth).SetOTP(code, &expiredAt)
 
 		err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
 		if err != nil {
@@ -1208,8 +1186,6 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
-			"uid":    uid,
-			"code":   code,
 		})
 	}
 }
@@ -1221,6 +1197,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 	}
 	return func(c *gin.Context) {
 		at := r.types.Select(c)
+
 		if at == nil {
 			log.Print("OTP auth handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -1230,7 +1207,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 
 		request := clone(at.SignInRequest).(authtype.AuthRequest)
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("OTP auth handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -1238,32 +1215,9 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		s, ok := c.Get(r.Config.ContextNames.Session)
-		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		sessionInfo, success := r.checkSession(c)
+		if !success {
 			return
-		}
-
-		sess, ok := s.(session.Session)
-		if !ok {
-			log.Fatal("[signInHandler] failed 'sess' type assertion to session.Session")
-		}
-
-		currentUserID := sess.GetUserID()
-
-		var currentUserIsGuest bool
-
-		if currentUserID != nil {
-			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
-
-			if currentUser != nil && err == nil {
-				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
-			}
-
-			if !currentUserIsGuest {
-				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-				return
-			}
 		}
 
 		uid, code := request.GetUID(), request.GetPassword()
@@ -1282,6 +1236,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 		}
 		if u == nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			return
 		}
 
 		userCode, expiredAt := u.(user.OTPAuth).GetOTP()
@@ -1295,29 +1250,58 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		sess.BindUser(u)
+		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+			u.SetUID(at.Key, uid)
+			u.(user.GuestUser).SetGuest(false)
 
-		err = r.deps.SessionStorer.Save(sess)
+			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
+			if !ok {
+				log.Printf("[signInHandler] failed 'UserStorer' type assertion to storage.RemovableUserStorer")
+			}
+
+			err := rmStorer.RemoveByID(sessionInfo.UserID)
+			if err != nil {
+				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
+			}
+		}
+
+		if r.Modules.ConfirmableUser {
+			u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+		}
+
+		sessionInfo.Session.BindUser(u)
+
+		err = r.deps.SessionStorer.Save(sessionInfo.Session)
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
 
-		u.(user.OTPAuth).SetOTP("", expiredAt)
+		u.(user.OTPAuth).SetOTP("", nil)
 
-		c.Set(r.Config.ContextNames.Session, sess)
+		if err = r.deps.UserStorer.Save(u); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
+
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 		c.Set(r.Config.ContextNames.User, u)
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
-			"uid":    uid,
-			"u":      u,
 		})
 	}
 }
 
+type sessionInfo struct {
+	Session     session.Session
+	User        user.User
+	UserID      interface{}
+	UserIsGuest bool
+}
+
 // Check user in current session
-func (r *Rauther) checkSessionUser(c *gin.Context) (u user.User, isGuest bool) {
+func (r *Rauther) checkSession(c *gin.Context) (info sessionInfo, success bool) {
 	s, ok := c.Get(r.Config.ContextNames.Session)
 	if !ok {
 		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
@@ -1327,6 +1311,8 @@ func (r *Rauther) checkSessionUser(c *gin.Context) (u user.User, isGuest bool) {
 	sess, ok := s.(session.Session)
 	if !ok {
 		log.Fatal("failed 'sess' type assertion to session.Session")
+		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		return
 	}
 
 	var currentUserIsGuest bool
@@ -1342,35 +1328,20 @@ func (r *Rauther) checkSessionUser(c *gin.Context) (u user.User, isGuest bool) {
 				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 				return
 			}
-
-			return currentUser, currentUserIsGuest
 		}
 
-		return nil, false
+		return sessionInfo{
+			Session:     sess,
+			User:        currentUser,
+			UserID:      currentUserID,
+			UserIsGuest: currentUserIsGuest,
+		}, true
 	}
 
-	return nil, false
+	return sessionInfo{
+		Session:     sess,
+		User:        nil,
+		UserID:      currentUserID,
+		UserIsGuest: currentUserIsGuest,
+	}, true
 }
-
-/*
-	Добавить модуль OTP
-	Хендлер для запроса кода:
-		- Запрос:
-			тип авторизации
-			uid (contact)
-		- Флоу:
-			поиск пользователя по типу и uid
-				создание, если нет
-			отправка кода через сендер
-			сохранение кода в БД (? куда)
-
-	Хендлер для проверки кода
-		- Запрос:
-			тип авторизации
-			uid (contact)
-			код
-		- Флоу:
-			поиск пользователя по типу и uid
-			проверка кода
-			привязка пользователя (удаление гостя) [переиспользовать]
-*/

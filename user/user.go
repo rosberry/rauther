@@ -55,7 +55,7 @@ type CodeSentTimeUser interface {
 
 type OTPAuth interface {
 	GetOTP() (code string, expiredIn time.Time)
-	SetOTP(code string, expiredIn time.Time) error
+	SetOTP(code string, expiredIn *time.Time) error
 }
 
 type OTPAuthCustomCodeGenerator interface {
