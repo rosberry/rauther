@@ -371,6 +371,9 @@ definitions:
       type:
         type: string
         example: email
+        enum:
+        - email
+        - phone
       email:
         example: example@mailer.com
         type: string
@@ -399,6 +402,9 @@ definitions:
       type:
         type: string
         example: email
+        enum:
+        - email
+        - phone
       email:
         example: example@mailer.com
         type: string
@@ -430,6 +436,12 @@ definitions:
 
   ConfirmRequest:
     properties:
+      type:
+        type: string
+        example: email
+        enum:
+        - email
+        - phone
       uid:
         example: example@mailer.com
         type: string
@@ -438,6 +450,7 @@ definitions:
         type: string
     type: object
     required:
+    - type
     - uid
     - code
 
@@ -447,12 +460,15 @@ definitions:
         example: true
         type: boolean
     type: object
-    
+
   ResendConfirmationRequest:
     properties:
       type:
         type: string
         example: email
+        enum:
+        - email
+        - phone
       uid:
         example: example@mailer.com
         type: string
@@ -473,6 +489,9 @@ definitions:
       type:
         type: string
         example: email
+        enum:
+        - email
+        - phone
       uid:
         example: example@mailer.com
         type: string
@@ -493,6 +512,9 @@ definitions:
       type:
         type: string
         example: email
+        enum:
+        - email
+        - phone
       uid:
         example: example@mailer.com
         type: string
@@ -510,6 +532,9 @@ definitions:
       type:
         type: string
         example: email
+        enum:
+        - email
+        - phone
       uid:
         example: example@mailer.com
         type: string
