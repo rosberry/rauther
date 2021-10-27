@@ -132,10 +132,16 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
-	_, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
+	if r.Config.CreateGuestUser {
+		if r.deps.Storage.UserRemover == nil {
+			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
 
-	if r.Config.CreateGuestUser && !isRemovable {
-		log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+			if !isRemovable {
+				log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+			}
+
+			r.deps.Storage.UserRemover = userRemover
+		}
 	}
 
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
@@ -1106,8 +1112,13 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		_, success := r.checkSession(c)
+		sessionInfo, success := r.checkSession(c)
 		if !success {
+			return
+		}
+
+		if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}
 
@@ -1129,6 +1140,11 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 		// User not found
 		if u == nil {
 			u = r.deps.UserStorer.Create()
+
+			if r.Config.CreateGuestUser {
+				u.(user.GuestUser).SetGuest(true)
+			}
+
 			u.SetUID(at.Key, uid)
 		}
 
@@ -1190,6 +1206,7 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 	}
 }
 
+// TODO: Move session from current guest user if "auth" user is guest (or not confirmed)
 func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 	if !r.checker.OTPAuth {
 		log.Print("Not implement OTPAuth interface")
@@ -1217,6 +1234,11 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 
 		sessionInfo, success := r.checkSession(c)
 		if !success {
+			return
+		}
+
+		if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}
 
@@ -1251,15 +1273,20 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 		}
 
 		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
-			u.SetUID(at.Key, uid)
-			u.(user.GuestUser).SetGuest(false)
+			var removeUserID interface{}
 
-			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
-			if !ok {
-				log.Printf("[signInHandler] failed 'UserStorer' type assertion to storage.RemovableUserStorer")
+			if u.(user.GuestUser).IsGuest() {
+				sessionInfo.User.SetUID(at.Key, uid)
+				sessionInfo.User.(user.GuestUser).SetGuest(false)
+
+				removeUserID = u.GetID()
+
+				u = sessionInfo.User
+			} else {
+				removeUserID = sessionInfo.UserID
 			}
 
-			err := rmStorer.RemoveByID(sessionInfo.UserID)
+			err := r.deps.Storage.UserRemover.RemoveByID(removeUserID)
 			if err != nil {
 				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 			}
@@ -1321,13 +1348,8 @@ func (r *Rauther) checkSession(c *gin.Context) (info sessionInfo, success bool) 
 	if currentUserID != nil {
 		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
 
-		if currentUser != nil {
+		if currentUser != nil && r.Config.CreateGuestUser {
 			currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
-
-			if !currentUserIsGuest {
-				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-				return
-			}
 		}
 
 		return sessionInfo{

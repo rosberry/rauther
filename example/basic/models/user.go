@@ -40,6 +40,10 @@ type (
 	}
 )
 
+func (u *User) GetID() interface{} {
+	return u.ID
+}
+
 func (u *User) GetUID(authType string) (uid string) {
 	if at, ok := u.Auths[authType]; ok {
 		return at.UID
@@ -146,17 +150,10 @@ type UserStorer struct {
 }
 
 func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error) {
-	log.Printf("[LoadByUID] type: %s uid: %s", authType, uid)
-
 	for _, u := range s.Users {
 		if at, ok := u.Auths[authType]; ok {
-			log.Printf("[LoadByUID] Found authtype. UID is '%v'", at.UID)
-
 			if at.UID == uid {
-				log.Printf("[LoadByUID] at.UID == uid")
 				return u, nil
-			} else {
-				log.Printf("[LoadByUID] at.UID != uid")
 			}
 		}
 	}
@@ -222,7 +219,10 @@ func (s *UserStorer) RemoveByUID(authType, uid string) error {
 }
 
 func (s *UserStorer) RemoveByID(id interface{}) error {
+	log.Printf("RemoveByID: %v", id)
 	delete(s.Users, id.(uint))
+
+	log.Printf("\n\n-----\nAfter delete: %v\n\n-----\n", s.Users)
 
 	return nil
 }

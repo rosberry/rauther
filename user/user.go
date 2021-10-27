@@ -11,6 +11,7 @@ import (
 // Definition of user interfaces
 
 type User interface {
+	GetID() (id interface{})
 	GetUID(authType string) (uid string)
 	SetUID(authType, uid string)
 }

@@ -44,6 +44,7 @@ func main() {
 			log.Printf("%v: %+v", k, v)
 		}
 
+		log.Printf("\n\n--------\n")
 		c.Next()
 	}
 
