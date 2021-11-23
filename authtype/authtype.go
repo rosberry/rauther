@@ -10,9 +10,12 @@ import (
 	"github.com/rosberry/rauther/user"
 )
 
+//go:generate stringer -type=Type
+type Type int
+
 type (
 	Config struct {
-		AuthType int
+		AuthType Type
 		AuthKey  string
 		Sender   sender.Sender
 
@@ -24,7 +27,7 @@ type (
 
 	// AuthType stores request structures, key and sender that use to send confirmation/recovery codes.
 	AuthType struct {
-		Type   int
+		Type   Type
 		Key    string
 		Sender sender.Sender
 
@@ -43,7 +46,7 @@ type (
 	}
 
 	// Selector defines the key of authorization type using gin context
-	Selector func(c *gin.Context) (senderKey string)
+	Selector func(c *gin.Context, t Type) (senderKey string)
 )
 
 type (
@@ -66,9 +69,14 @@ type (
 )
 
 const (
-	AuthTypePassword = iota + 1
-	AuthTypeOTP
+	Password Type = iota
+	OTP
 )
+
+var typeNames = map[Type]string{
+	Password: "Password",
+	OTP:      "OTP",
+}
 
 // New create AuthTypes (list of AuthType).
 // If selector is nil - used default selector
@@ -91,18 +99,7 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		log.Fatal("auth types is nil")
 	}
 
-	authType := 0
-
-	if cfg.AuthType == 0 {
-		authType = AuthTypePassword
-	} else {
-		switch cfg.AuthType {
-		case AuthTypePassword:
-			authType = AuthTypePassword
-		}
-	}
-
-	if authType == 0 {
+	if _, ok := typeNames[cfg.AuthType]; !ok {
 		log.Fatalf("invalid auth type %v for '%s' key", cfg.AuthType, cfg.AuthKey)
 	}
 
@@ -138,7 +135,7 @@ func (a *AuthTypes) IsEmpty() bool {
 
 // Select uses the selector and returns the found type of authorization
 // if selector returned the empty key and in auth list only one type - use first type as default and return it
-func (a *AuthTypes) Select(c *gin.Context) *AuthType {
+func (a *AuthTypes) Select(c *gin.Context, t Type) *AuthType {
 	if a == nil {
 		log.Fatal("AuthTypes is nil")
 	}
@@ -147,16 +144,40 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 		a.Selector = DefaultSelector
 	}
 
-	key := a.Selector(c)
+	key := a.Selector(c, t)
 
-	if key != "" {
+	var foundedAt *AuthType
+
+	switch {
+	case key != "":
 		if at, ok := a.List[key]; ok {
-			return &at
+			foundedAt = &at
 		}
-	} else if len(a.List) == 1 {
+	case len(a.List) == 1:
 		for _, at := range a.List {
-			return &at
+			foundedAt = &at
 		}
+	default:
+		var key string
+		for k, at := range a.List {
+			if at.Type == t {
+				if key == "" {
+					key = k
+				} else {
+					k = ""
+					break
+				}
+			}
+		}
+
+		if key != "" {
+			at := a.List[key]
+			foundedAt = &at
+		}
+	}
+
+	if foundedAt != nil && foundedAt.Type == t {
+		return foundedAt
 	}
 
 	return nil

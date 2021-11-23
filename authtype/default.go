@@ -35,7 +35,7 @@ type CheckLoginFieldRequestByEmail struct {
 
 func (r CheckLoginFieldRequestByEmail) GetUID() (uid string) { return r.Email }
 
-func DefaultSelector(c *gin.Context) string {
+func DefaultSelector(c *gin.Context, t Type) string {
 	const defaultKey = ""
 
 	type Request struct {
