@@ -369,11 +369,17 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("sign up handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -506,11 +512,17 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("sign in handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -683,11 +695,17 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("validate login field handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -729,11 +747,17 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 			Code string `json:"code" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("confirm handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -799,11 +823,17 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("resend confirm code handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -858,11 +888,17 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			UID string `json:"uid" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("recovery request handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -926,11 +962,17 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 			Code string `json:"code" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -964,11 +1006,17 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			Password string `json:"password" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -1094,9 +1142,17 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 		return nil
 	}
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.OTP
+		at := r.types.Select(c, expectedTypeOfAuthType)
+
 		if at == nil {
 			log.Print("OTP auth handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -1213,10 +1269,17 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 		return nil
 	}
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.OTP
+		at := r.types.Select(c, expectedTypeOfAuthType)
 
 		if at == nil {
 			log.Print("OTP auth handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
