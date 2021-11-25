@@ -25,7 +25,7 @@ type (
 		CheckUserExistsRequest CheckUserExistsRequest
 
 		SocialSignInRequest SocialAuthRequest
-		SocialAuthType      int
+		SocialAuthType      auth.Type
 	}
 	Configs []Config
 
@@ -37,10 +37,10 @@ type (
 
 		SignUpRequest          AuthRequest
 		SignInRequest          AuthRequest
-		SocialSignInRequest    SocialAuthRequest
 		CheckUserExistsRequest CheckUserExistsRequest
 
-		SocialAuthType int
+		SocialSignInRequest SocialAuthRequest
+		SocialAuthType      auth.Type
 	}
 
 	// List of AuthType by key
@@ -92,9 +92,10 @@ const (
 	SocialAuthTypeVK       = auth.AuthTypeVK
 )
 
-var typeNames = map[Type]string{
-	Password: "Password",
-	OTP:      "OTP",
+var ExistingTypes = map[Type]bool{
+	Password: false,
+	Social:   false,
+	OTP:      false,
 }
 
 // New create AuthTypes (list of AuthType).
@@ -118,9 +119,11 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		log.Fatal("auth types is nil")
 	}
 
-	if _, ok := typeNames[cfg.AuthType]; !ok {
+	if _, ok := ExistingTypes[cfg.AuthType]; !ok {
 		log.Fatalf("invalid auth type %v for '%s' key", cfg.AuthType, cfg.AuthKey)
 	}
+
+	ExistingTypes[cfg.AuthType] = true
 
 	if cfg.AuthType == Password {
 		if cfg.SignUpRequest == nil {
@@ -136,6 +139,10 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		}
 	}
 
+	if cfg.AuthType == Social && cfg.SocialSignInRequest == nil {
+		cfg.SocialSignInRequest = &SocialSignInRequest{}
+	}
+
 	t := AuthType{
 		Type:                   cfg.AuthType,
 		Key:                    cfg.AuthKey,
@@ -143,6 +150,9 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		SignUpRequest:          cfg.SignUpRequest,
 		SignInRequest:          cfg.SignInRequest,
 		CheckUserExistsRequest: cfg.CheckUserExistsRequest,
+
+		SocialAuthType:      cfg.SocialAuthType,
+		SocialSignInRequest: cfg.SocialSignInRequest,
 	}
 
 	a.List[cfg.AuthKey] = t

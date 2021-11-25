@@ -7,18 +7,20 @@ import (
 )
 
 type Modules struct {
-	Session          bool
-	AuthableUser     bool
-	ConfirmableUser  bool
-	RecoverableUser  bool
-	CodeSentTimeUser bool
-	OTP              bool
+	Session              bool
+	PasswordAuthableUser bool
+	SocialAuthableUser   bool
+	ConfirmableUser      bool
+	RecoverableUser      bool
+	CodeSentTimeUser     bool
+	OTP                  bool
 }
 
 func (m Modules) String() string {
-	return fmt.Sprintf("- Session: %v\n- AuthableUser: %v\n- ConfirmableUser: %v\n- RecoverableUser: %v\n- CodeSentTimeUser: %v\n- One Time Password: %v",
+	return fmt.Sprintf("- Session: %v\n- AuthableUser: %v\n- SocialAuthableUser: %v\n- ConfirmableUser: %v\n- RecoverableUser: %v\n- CodeSentTimeUser: %v\n- One Time Password: %v",
 		m.Session,
-		m.AuthableUser,
+		m.PasswordAuthableUser,
+		m.SocialAuthableUser,
 		m.ConfirmableUser,
 		m.RecoverableUser,
 		m.CodeSentTimeUser,
@@ -27,11 +29,12 @@ func (m Modules) String() string {
 
 func New(checker *checker.Checker) *Modules {
 	return &Modules{
-		Session:          true,
-		AuthableUser:     checker.Authable,
-		ConfirmableUser:  checker.Confirmable,
-		RecoverableUser:  checker.Recoverable,
-		CodeSentTimeUser: checker.CodeSentTime,
-		OTP:              checker.OTPAuth,
+		Session:              true,
+		PasswordAuthableUser: checker.PasswordAuthable,
+		SocialAuthableUser:   true, // no interfaces required
+		ConfirmableUser:      checker.Confirmable,
+		RecoverableUser:      checker.Recoverable,
+		CodeSentTimeUser:     checker.CodeSentTime,
+		OTP:                  checker.OTPAuth,
 	}
 }

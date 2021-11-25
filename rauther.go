@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
+	"github.com/rosberry/auth"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/checker"
 	"github.com/rosberry/rauther/common"
@@ -107,6 +108,11 @@ func (r *Rauther) InitHandlers() error {
 		log.Fatal("failed auth types")
 	}
 
+	log.Printf("\nEnabled auth types:\n- AuthTypePassword: %v\n- AuthTypeSocial: %v\n- AuthTypeOTP: %v",
+		authtype.ExistingTypes[authtype.Password],
+		authtype.ExistingTypes[authtype.Social],
+		authtype.ExistingTypes[authtype.OTP],
+	)
 	log.Printf("\nEnabled auth modules:\n%v", r.Modules)
 
 	if r.Modules.Session {
@@ -121,28 +127,26 @@ func (r *Rauther) includeSession() {
 
 	withSession := r.deps.R.Group("", r.authMiddleware())
 	{
-		if r.Modules.AuthableUser {
-			r.includeAuthable(withSession)
+		if r.Modules.PasswordAuthableUser && authtype.ExistingTypes[authtype.Password] {
+			r.includePasswordAuthable(withSession)
+		}
+
+		if r.Modules.SocialAuthableUser && authtype.ExistingTypes[authtype.Social] {
+			r.includeSocialAuthable(withSession)
+		}
+
+		if r.Modules.OTP && authtype.ExistingTypes[authtype.OTP] {
+			r.includeOTPAuthable(withSession)
 		}
 	}
 }
 
-func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
-	if !r.checker.Authable {
-		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
+func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup) {
+	if !r.checker.PasswordAuthable {
+		log.Fatal(common.Errors[common.ErrPasswordAuthableUserNotImplement])
 	}
 
-	if r.Config.CreateGuestUser {
-		if r.deps.Storage.UserRemover == nil {
-			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
-
-			if !isRemovable {
-				log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
-			}
-
-			r.deps.Storage.UserRemover = userRemover
-		}
-	}
+	r.checkRemovableUser()
 
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
 	router.POST(r.Config.Routes.SignIn, r.signInHandler())
@@ -156,19 +160,36 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if r.Modules.RecoverableUser {
 		r.includeRecoverable(router)
 	}
-
-	if r.Modules.OTP {
-		r.includeOTP(router)
-	}
 }
 
-func (r *Rauther) includeOTP(router *gin.RouterGroup) {
+func (r *Rauther) includeSocialAuthable(router *gin.RouterGroup) {
+	r.checkRemovableUser()
+
+	router.POST(r.Config.Routes.SocialSignIn, r.socialSignInHandler())
+	router.POST(r.Config.Routes.SocialSignOut, r.signOutHandler())
+}
+
+func (r *Rauther) includeOTPAuthable(router *gin.RouterGroup) {
 	if !r.checker.OTPAuth {
 		log.Fatal(common.Errors[common.ErrOTPNotImplement])
 	}
 
 	router.POST(r.Config.Routes.OTPRequestCode, r.otpGetCodeHandler())
 	router.POST(r.Config.Routes.OTPCheckCode, r.otpAuthHandler())
+}
+
+func (r *Rauther) checkRemovableUser() {
+	if r.Config.CreateGuestUser {
+		if r.deps.Storage.UserRemover == nil {
+			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
+
+			if !isRemovable {
+				log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+			}
+
+			r.deps.Storage.UserRemover = userRemover
+		}
+	}
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
@@ -224,7 +245,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		// Create new guest user if it enabled in config
-		if r.Modules.AuthableUser && r.Config.CreateGuestUser && session.GetUserID() == nil {
+		if r.Modules.PasswordAuthableUser && r.Config.CreateGuestUser && session.GetUserID() == nil {
 			user, errType := r.createGuestUser()
 			if errType != 0 {
 				errorResponse(c, http.StatusInternalServerError, errType)
@@ -284,7 +305,7 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			if r.Modules.AuthableUser {
+			if r.Modules.PasswordAuthableUser {
 				if u, err := r.deps.UserStorer.LoadByID(session.GetUserID()); err == nil && u != nil {
 					c.Set(r.Config.ContextNames.User, u)
 				}
@@ -363,8 +384,8 @@ func (r *Rauther) authUserConfirmedMiddleware() gin.HandlerFunc {
 }
 
 func (r *Rauther) signUpHandler() gin.HandlerFunc {
-	if !r.checker.Authable {
-		log.Print("Not implement AuthableUser interface")
+	if !r.checker.PasswordAuthable {
+		log.Print("Not implement PasswordAuthableUser interface")
 		return nil
 	}
 
@@ -451,7 +472,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
 		}
 
-		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
+		u.(user.PasswordAuthableUser).SetPassword(string(encryptedPassword))
 
 		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
 			fields := request.(authtype.AuhtRequestFieldable).Fields()
@@ -506,8 +527,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 }
 
 func (r *Rauther) signInHandler() gin.HandlerFunc {
-	if !r.checker.Authable {
-		log.Print("Not implement AuthableUser interface")
+	if !r.checker.PasswordAuthable {
+		log.Print("Not implement PasswordAuthableUser interface")
 		return nil
 	}
 
@@ -579,7 +600,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		userPassword := u.(user.AuthableUser).GetPassword()
+		userPassword := u.(user.PasswordAuthableUser).GetPassword()
 
 		if !passwordCompare(password, userPassword) {
 			errorResponse(c, http.StatusForbidden, common.ErrIncorrectPassword)
@@ -619,12 +640,110 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 }
 
-func (r *Rauther) signOutHandler() gin.HandlerFunc {
-	if !r.checker.Authable {
-		log.Print("Not implement AuthableUser interface")
-		return nil
-	}
+func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		expectedTypeOfAuthType := authtype.Social
+		at := r.types.Select(c, expectedTypeOfAuthType)
+		if at == nil {
+			log.Print("social sign in handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		request := clone(at.SocialSignInRequest).(authtype.SocialSignInRequest)
+
+		err := c.ShouldBindBodyWith(request, binding.JSON)
+		if err != nil {
+			log.Print("social sign in handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		s, ok := c.Get(r.Config.ContextNames.Session)
+		if !ok {
+			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+			return
+		}
+
+		sess, ok := s.(session.Session)
+		if !ok {
+			log.Fatal("[socialSignInHandler] failed 'sess' type assertion to session.Session")
+		}
+
+		currentUserID := sess.GetUserID()
+
+		var currentUserIsGuest bool
+
+		if currentUserID != nil {
+			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
+
+			if currentUser != nil && err == nil {
+				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
+			}
+
+			if !currentUserIsGuest {
+				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				return
+			}
+		}
+
+		var u user.User
+
+		token := request.GetToken()
+		if token == "" {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidAuthToken)
+			return
+		}
+
+		userInfo, err := auth.Auth(token, at.SocialAuthType)
+		if err != nil {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidAuthToken)
+			return
+		}
+
+		u, err = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
+		if u == nil {
+			// create user if not exist
+			u = r.deps.UserStorer.Create()
+			u.SetUID(at.Key, userInfo.ID)
+
+			if err = r.deps.UserStorer.Save(u); err != nil {
+				errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+				return
+			}
+		}
+
+		sess.BindUser(u)
+
+		if err = r.deps.SessionStorer.Save(sess); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
+			return
+		}
+
+		if r.Config.CreateGuestUser && currentUserIsGuest {
+			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
+			if !ok {
+				log.Printf("[socialSignInHandler] failed 'UserStorer' type assertion to storage.RemovableUserStorer")
+			}
+
+			err := rmStorer.RemoveByID(currentUserID)
+			if err != nil {
+				log.Printf("Failed delete guest user %v: %v", currentUserID, err)
+			}
+		}
+
+		c.Set(r.Config.ContextNames.Session, sess)
+		c.Set(r.Config.ContextNames.User, u)
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+		})
+	}
+}
+
+func (r *Rauther) signOutHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
@@ -648,8 +767,10 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 			log.Fatal("[signOutHandler] failed 'user' type assertion to User")
 		}
 
-		if r.Modules.AuthableUser && r.Config.CreateGuestUser { // nolint:nestif
-			if usr.(user.GuestUser).IsGuest() {
+		guestUser, isGuestInterface := usr.(user.GuestUser)
+
+		if r.Config.CreateGuestUser && isGuestInterface { // nolint:nestif
+			if guestUser.IsGuest() {
 				rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 				if !ok {
 					log.Print("[signOutHandler] failed 'UserStorer' type assertion to RemovableUserStorer")
@@ -689,8 +810,8 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 }
 
 func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
-	if !r.checker.Authable {
-		log.Print("Not implement AuthableUser interface")
+	if !r.checker.PasswordAuthable {
+		log.Print("Not implement PasswordAuthableUser interface")
 		return nil
 	}
 
@@ -1044,7 +1165,7 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
 		}
 
-		u.(user.AuthableUser).SetPassword(string(encryptedPassword))
+		u.(user.PasswordAuthableUser).SetPassword(string(encryptedPassword))
 		u.(user.RecoverableUser).SetRecoveryCode("")
 
 		err = r.deps.Storage.UserStorer.Save(u)
