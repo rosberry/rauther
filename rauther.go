@@ -651,6 +651,11 @@ func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 			return
 		}
 
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
+
 		request := clone(at.SocialSignInRequest).(authtype.SocialSignInRequest)
 
 		err := c.ShouldBindBodyWith(request, binding.JSON)

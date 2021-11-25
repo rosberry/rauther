@@ -17,7 +17,7 @@ type Modules struct {
 }
 
 func (m Modules) String() string {
-	return fmt.Sprintf("- Session: %v\n- AuthableUser: %v\n- SocialAuthableUser: %v\n- ConfirmableUser: %v\n- RecoverableUser: %v\n- CodeSentTimeUser: %v\n- One Time Password: %v",
+	return fmt.Sprintf("- Session: %v\n- PasswordAuthableUser: %v\n- SocialAuthableUser: %v\n- ConfirmableUser: %v\n- RecoverableUser: %v\n- CodeSentTimeUser: %v\n- One Time Password: %v",
 		m.Session,
 		m.PasswordAuthableUser,
 		m.SocialAuthableUser,

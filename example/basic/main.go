@@ -87,11 +87,15 @@ func main() {
 			SignInRequest: &otpRequest{},
 		},
 		{
-			AuthKey:             "google",
+			AuthKey:        "google",
+			AuthType:       authtype.Social,
+			SocialAuthType: authtype.SocialAuthTypeGoogle,
+		},
+		{
+			AuthKey:             "apple",
 			AuthType:            authtype.Social,
-			Sender:              &fakeEmailSender{},
-			SocialSignInRequest: &SocialSignInRequest{},
-			SocialAuthType:      authtype.SocialAuthTypeGoogle,
+			SocialSignInRequest: &CustomSocialSignInRequest{},
+			SocialAuthType:      authtype.SocialAuthTypeApple,
 		},
 	})
 
@@ -189,10 +193,11 @@ type otpRequest struct {
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
 
-type SocialSignInRequest struct {
+type CustomSocialSignInRequest struct {
+	Name  string `json:"name" binding:"required"`
 	Token string `json:"token" binding:"required"`
 }
 
-func (r *SocialSignInRequest) GetToken() string {
+func (r *CustomSocialSignInRequest) GetToken() string {
 	return r.Token
 }

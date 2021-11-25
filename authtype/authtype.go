@@ -125,18 +125,16 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 
 	ExistingTypes[cfg.AuthType] = true
 
-	if cfg.AuthType == Password {
-		if cfg.SignUpRequest == nil {
-			cfg.SignUpRequest = &SignUpRequestByEmail{}
-		}
+	if cfg.SignUpRequest == nil {
+		cfg.SignUpRequest = &SignUpRequestByEmail{}
+	}
 
-		if cfg.SignInRequest == nil {
-			cfg.SignInRequest = &SignUpRequestByEmail{}
-		}
+	if cfg.SignInRequest == nil {
+		cfg.SignInRequest = &SignUpRequestByEmail{}
+	}
 
-		if cfg.CheckUserExistsRequest == nil {
-			cfg.CheckUserExistsRequest = &CheckLoginFieldRequestByEmail{}
-		}
+	if cfg.CheckUserExistsRequest == nil {
+		cfg.CheckUserExistsRequest = &CheckLoginFieldRequestByEmail{}
 	}
 
 	if cfg.AuthType == Social && cfg.SocialSignInRequest == nil {
