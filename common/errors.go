@@ -44,6 +44,9 @@ const (
 	ErrAlreadyAuth
 	ErrNotSignIn
 	ErrConfirmationTimeInterval
+	ErrOTPNotImplement
+	ErrCodeExpired
+	ErrInvalidCode
 )
 
 var Errors = map[ErrTypes]Err{
@@ -71,4 +74,7 @@ var Errors = map[ErrTypes]Err{
 	ErrInvalidRecoveryCode:         {"invalid_code", "Invalid recovery code"},
 	ErrAlreadyAuth:                 {"already_auth", "User already authorised"},
 	ErrConfirmationTimeInterval:    {"invalid_confirmation_time", "invalid confirmation time"},
+	ErrOTPNotImplement:             {"one_time_password_not_implement", "Please implement OTPUser interface"},
+	ErrCodeExpired:                 {"code_expired", "Code expired"},
+	ErrInvalidCode:                 {"invalid_code", "Invalid code"},
 }

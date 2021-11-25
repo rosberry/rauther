@@ -18,8 +18,9 @@ type (
 
 		Auths map[string]AuthIdentities `json:"auths"`
 
-		Username string `auth:"username" json:"username"`
-		Password string `json:"password"`
+		Username  string     `auth:"username" json:"username"`
+		Password  string     `json:"password"`
+		ExpiredIn *time.Time `json:"expired"`
 
 		Guest bool   `json:"guest"`
 		Email string `auth:"email"`
@@ -38,6 +39,10 @@ type (
 		Confirmed   bool   `json:"confirmed"`
 	}
 )
+
+func (u *User) GetID() interface{} {
+	return u.ID
+}
 
 func (u *User) GetUID(authType string) (uid string) {
 	if at, ok := u.Auths[authType]; ok {
@@ -87,7 +92,7 @@ func (u *User) SetConfirmCode(authType, code string) {
 	u.Auths[authType] = at
 }
 
-func (u *User) SetConfirmationCodeSentTime(authType string, t *time.Time) {
+func (u *User) SetCodeSentTime(authType string, t *time.Time) {
 	if t != nil {
 		u.LastConfirmationTime.Time = *t
 		u.LastConfirmationTime.Valid = true
@@ -96,7 +101,7 @@ func (u *User) SetConfirmationCodeSentTime(authType string, t *time.Time) {
 	}
 }
 
-func (u *User) GetConfirmationCodeSentTime(authType string) *time.Time {
+func (u *User) GetCodeSentTime(authType string) *time.Time {
 	if !u.LastConfirmationTime.Valid {
 		return nil
 	}
@@ -128,22 +133,27 @@ func (u *User) SetGuest(guest bool) {
 	u.Guest = guest
 }
 
+func (u *User) GetOTP() (code string, expiredIn time.Time) {
+	if u.ExpiredIn != nil {
+		expiredIn = *u.ExpiredIn
+	}
+	return u.Password, expiredIn
+}
+
+func (u *User) SetOTP(code string, expiredIn *time.Time) error {
+	u.Password, u.ExpiredIn = code, expiredIn
+	return nil
+}
+
 type UserStorer struct {
 	Users map[uint]*User
 }
 
 func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error) {
-	log.Printf("[LoadByUID] type: %s uid: %s", authType, uid)
-
 	for _, u := range s.Users {
 		if at, ok := u.Auths[authType]; ok {
-			log.Printf("[LoadByUID] Found authtype. UID is '%v'", at.UID)
-
 			if at.UID == uid {
-				log.Printf("[LoadByUID] at.UID == uid")
 				return u, nil
-			} else {
-				log.Printf("[LoadByUID] at.UID != uid")
 			}
 		}
 	}
@@ -209,7 +219,10 @@ func (s *UserStorer) RemoveByUID(authType, uid string) error {
 }
 
 func (s *UserStorer) RemoveByID(id interface{}) error {
+	log.Printf("RemoveByID: %v", id)
 	delete(s.Users, id.(uint))
+
+	log.Printf("\n\n-----\nAfter delete: %v\n\n-----\n", s.Users)
 
 	return nil
 }

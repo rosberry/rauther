@@ -11,6 +11,7 @@ import (
 // Definition of user interfaces
 
 type User interface {
+	GetID() (id interface{})
 	GetUID(authType string) (uid string)
 	SetUID(authType, uid string)
 }
@@ -46,11 +47,20 @@ type RecoverableUser interface {
 }
 
 // interface for checking the interval during which confirmation codes cannot be sent
-type ConfirmationSentTimeUser interface {
+type CodeSentTimeUser interface {
 	User
 
-	GetConfirmationCodeSentTime(authType string) *time.Time
-	SetConfirmationCodeSentTime(authType string, t *time.Time)
+	GetCodeSentTime(authType string) *time.Time
+	SetCodeSentTime(authType string, t *time.Time)
+}
+
+type OTPAuth interface {
+	GetOTP() (code string, expiredIn time.Time)
+	SetOTP(code string, expiredIn *time.Time) error
+}
+
+type OTPAuthCustomCodeGenerator interface {
+	GenerateCode() string
 }
 
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")

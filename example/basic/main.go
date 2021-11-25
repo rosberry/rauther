@@ -44,6 +44,7 @@ func main() {
 			log.Printf("%v: %+v", k, v)
 		}
 
+		log.Printf("\n\n--------\n")
 		c.Next()
 	}
 
@@ -71,13 +72,44 @@ func main() {
 			SignInRequest:          &phoneSignIn{},
 			CheckUserExistsRequest: &CheckPhoneRequest{},
 		},
+		{
+			AuthKey:       "sms",
+			AuthType:      authtype.OTP,
+			Sender:        &fakeSmsSender{},
+			SignUpRequest: &otpRequest{},
+			SignInRequest: &otpRequest{},
+		},
+		{
+			AuthKey:       "telegram",
+			AuthType:      authtype.OTP,
+			Sender:        &fakeTelegramSender{},
+			SignUpRequest: &otpRequest{},
+			SignInRequest: &otpRequest{},
+		},
 	})
+
+	customAuthTypeSelector := func(c *gin.Context, t authtype.Type) (key string) {
+		if t == authtype.OTP {
+			key = c.Param("sendby")
+		}
+
+		if key != "" {
+			return key
+		}
+
+		return authtype.DefaultSelector(c, t)
+	}
+
+	rauth.AuthSelector(customAuthTypeSelector)
 
 	rauth.Config.CreateGuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
-	rauth.Modules.ConfirmableSentTimeUser = true
+	rauth.Modules.CodeSentTimeUser = true
 	rauth.Config.ValidConfirmationInterval = 15 * time.Second // nolint:gomnd
+
+	rauth.Config.Routes.OTPRequestCode = "/otp/:sendby/code"
+	rauth.Config.Routes.OTPCheckCode = "/otp/:sendby/auth"
 
 	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 	r.POST("/profile", rauth.AuthMiddleware(), controllers.UpdateProfile)
@@ -104,6 +136,13 @@ type fakeSmsSender struct{}
 
 func (s *fakeSmsSender) Send(event sender.Event, recipient string, message string) error {
 	log.Printf("Send '%s' to %v by sms", message, recipient)
+	return nil
+}
+
+type fakeTelegramSender struct{}
+
+func (s *fakeTelegramSender) Send(event sender.Event, recipient string, message string) error {
+	log.Printf("Send '%s' to %v by telegram", message, recipient)
 	return nil
 }
 
@@ -134,3 +173,11 @@ type CheckPhoneRequest struct {
 }
 
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
+
+type otpRequest struct {
+	Phone string `json:"phone" binding:"required"`
+	Code  string `json:"code"`
+}
+
+func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
+func (r *otpRequest) GetPassword() (password string) { return r.Code }

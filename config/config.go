@@ -35,6 +35,12 @@ type Config struct {
 
 		// RecoveryCode is gin route path for confirm the password recovery and set a new password. Default "recovery"
 		RecoveryCode string
+
+		// OTPRequestCode is gin route path for One Time Password auth - code request (sign-up)
+		OTPRequestCode string
+
+		// OTPCheckCode is gin route path for One Time Password auth - code validation (sign-in)
+		OTPCheckCode string
 	}
 
 	// Context Names is group for setup how save data in context
@@ -51,6 +57,12 @@ type Config struct {
 
 	// ValidConfirmationInterval is the allowed interval between the last confirmation and the present time.
 	ValidConfirmationInterval time.Duration
+
+	OTP struct {
+		CodeLifeTime time.Duration
+		ResendDelay  time.Duration
+		CodeLength   int
+	}
 }
 
 // Default set default values to configuration
@@ -73,4 +85,10 @@ func (c *Config) Default() {
 	c.Routes.RecoveryCode = "recovery"
 
 	c.ValidConfirmationInterval = 1 * time.Minute
+	c.OTP.CodeLifeTime = time.Minute * 2 // nolint:gomnd
+	c.OTP.ResendDelay = c.OTP.CodeLifeTime
+	c.OTP.CodeLength = 4
+
+	c.Routes.OTPRequestCode = "otp/code"
+	c.Routes.OTPCheckCode = "otp/auth"
 }

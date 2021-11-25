@@ -11,15 +11,18 @@ import (
 	"github.com/rosberry/rauther/user"
 )
 
+//go:generate stringer -type=Type
+type Type int
+
 type (
 	Config struct {
-		AuthType int
+		AuthType Type
 		AuthKey  string
 		Sender   sender.Sender
 
-		SignUpRequest AuthRequest
-		SignInRequest AuthRequest
-		CheckUserExistsRequest
+		SignUpRequest          AuthRequest
+		SignInRequest          AuthRequest
+		CheckUserExistsRequest CheckUserExistsRequest
 
 		SocialSignInRequest SocialAuthRequest
 		SocialAuthType      int
@@ -28,14 +31,14 @@ type (
 
 	// AuthType stores request structures, key and sender that use to send confirmation/recovery codes.
 	AuthType struct {
-		Type   int
+		Type   Type
 		Key    string
 		Sender sender.Sender
 
-		SignUpRequest       AuthRequest
-		SignInRequest       AuthRequest
-		SocialSignInRequest SocialAuthRequest
-		CheckUserExistsRequest
+		SignUpRequest          AuthRequest
+		SignInRequest          AuthRequest
+		SocialSignInRequest    SocialAuthRequest
+		CheckUserExistsRequest CheckUserExistsRequest
 
 		SocialAuthType int
 	}
@@ -50,7 +53,7 @@ type (
 	}
 
 	// Selector defines the key of authorization type using gin context
-	Selector func(c *gin.Context) (senderKey string)
+	Selector func(c *gin.Context, t Type) (senderKey string)
 )
 
 type (
@@ -77,8 +80,9 @@ type (
 )
 
 const (
-	AuthTypePassword = iota + 1
-	AuthTypeSocial
+	Password Type = iota
+	Social
+	OTP
 )
 
 const (
@@ -87,6 +91,11 @@ const (
 	SocialAuthTypeFacebook = auth.AuthTypeFacebook
 	SocialAuthTypeVK       = auth.AuthTypeVK
 )
+
+var typeNames = map[Type]string{
+	Password: "Password",
+	OTP:      "OTP",
+}
 
 // New create AuthTypes (list of AuthType).
 // If selector is nil - used default selector
@@ -109,33 +118,22 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		log.Fatal("auth types is nil")
 	}
 
-	authType := 0
-
-	if cfg.AuthType == 0 {
-		authType = AuthTypePassword
-	} else {
-		switch cfg.AuthType {
-		case AuthTypePassword:
-			authType = AuthTypePassword
-		case AuthTypeSocial:
-			authType = AuthTypePassword
-		}
-	}
-
-	if authType == 0 {
+	if _, ok := typeNames[cfg.AuthType]; !ok {
 		log.Fatalf("invalid auth type %v for '%s' key", cfg.AuthType, cfg.AuthKey)
 	}
 
-	if cfg.SignUpRequest == nil && authType == AuthTypePassword {
-		cfg.SignUpRequest = &SignUpRequestByEmail{}
-	}
+	if cfg.AuthType == Password {
+		if cfg.SignUpRequest == nil {
+			cfg.SignUpRequest = &SignUpRequestByEmail{}
+		}
 
-	if cfg.SignInRequest == nil {
-		cfg.SignInRequest = &SignUpRequestByEmail{}
-	}
+		if cfg.SignInRequest == nil {
+			cfg.SignInRequest = &SignUpRequestByEmail{}
+		}
 
-	if cfg.CheckUserExistsRequest == nil {
-		cfg.CheckUserExistsRequest = &CheckLoginFieldRequestByEmail{}
+		if cfg.CheckUserExistsRequest == nil {
+			cfg.CheckUserExistsRequest = &CheckLoginFieldRequestByEmail{}
+		}
 	}
 
 	t := AuthType{
@@ -158,7 +156,7 @@ func (a *AuthTypes) IsEmpty() bool {
 
 // Select uses the selector and returns the found type of authorization
 // if selector returned the empty key and in auth list only one type - use first type as default and return it
-func (a *AuthTypes) Select(c *gin.Context) *AuthType {
+func (a *AuthTypes) Select(c *gin.Context, t Type) *AuthType {
 	if a == nil {
 		log.Fatal("AuthTypes is nil")
 	}
@@ -167,16 +165,40 @@ func (a *AuthTypes) Select(c *gin.Context) *AuthType {
 		a.Selector = DefaultSelector
 	}
 
-	key := a.Selector(c)
+	key := a.Selector(c, t)
 
-	if key != "" {
+	var foundedAt *AuthType
+
+	switch {
+	case key != "":
 		if at, ok := a.List[key]; ok {
-			return &at
+			foundedAt = &at
 		}
-	} else if len(a.List) == 1 {
+	case len(a.List) == 1:
 		for _, at := range a.List {
-			return &at
+			foundedAt = &at
 		}
+	default:
+		var key string
+		for k, at := range a.List {
+			if at.Type == t {
+				if key == "" {
+					key = k
+				} else {
+					k = ""
+					break
+				}
+			}
+		}
+
+		if key != "" {
+			at := a.List[key]
+			foundedAt = &at
+		}
+	}
+
+	if foundedAt != nil && foundedAt.Type == t {
+		return foundedAt
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -131,10 +132,16 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
-	_, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
+	if r.Config.CreateGuestUser {
+		if r.deps.Storage.UserRemover == nil {
+			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
 
-	if r.Config.CreateGuestUser && !isRemovable {
-		log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+			if !isRemovable {
+				log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+			}
+
+			r.deps.Storage.UserRemover = userRemover
+		}
 	}
 
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
@@ -149,6 +156,19 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if r.Modules.RecoverableUser {
 		r.includeRecoverable(router)
 	}
+
+	if r.Modules.OTP {
+		r.includeOTP(router)
+	}
+}
+
+func (r *Rauther) includeOTP(router *gin.RouterGroup) {
+	if !r.checker.OTPAuth {
+		log.Fatal(common.Errors[common.ErrOTPNotImplement])
+	}
+
+	router.POST(r.Config.Routes.OTPRequestCode, r.otpGetCodeHandler())
+	router.POST(r.Config.Routes.OTPCheckCode, r.otpAuthHandler())
 }
 
 func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
@@ -349,7 +369,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("sign up handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -357,9 +378,14 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		request := at.SignUpRequest
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		request := clone(at.SignUpRequest).(authtype.AuthRequest)
+
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("sign up handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -368,6 +394,13 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		uid, password := request.GetUID(), request.GetPassword()
+
+		if uid == "" || password == "" {
+			log.Print("sign up handler: empty uid or password")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
 
 		s, ok := c.Get(r.Config.ContextNames.Session)
 		if !ok {
@@ -438,9 +471,9 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
-			if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+			if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 				curTime := time.Now()
-				u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+				u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 			}
 
 			err := sendConfirmCode(at.Sender, uid, confirmCode)
@@ -479,7 +512,8 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("sign in handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -487,9 +521,14 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		request := at.SignInRequest
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		request := clone(at.SignInRequest).(authtype.AuthRequest)
+
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("sign in handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -526,6 +565,13 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 		}
 
 		uid, password := request.GetUID(), request.GetPassword()
+
+		if uid == "" || password == "" {
+			log.Print("sign in handler: empty uid or password")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
@@ -649,7 +695,8 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("validate login field handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -657,9 +704,14 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 			return
 		}
 
-		request := at.CheckUserExistsRequest
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
 
-		err := c.ShouldBindBodyWith(&request, binding.JSON)
+		request := clone(at.CheckUserExistsRequest).(authtype.CheckUserExistsRequest)
+
+		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
 			log.Print("validate login field handler:", err)
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -668,6 +720,12 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 		}
 
 		uid := request.GetUID()
+
+		if uid == "" {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err == nil && u != nil {
@@ -685,15 +743,21 @@ func (r *Rauther) ValidateLoginField() gin.HandlerFunc {
 func (r *Rauther) confirmHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type confirmRequest struct {
-			UID  string `json:"uid"`
-			Code string `json:"code"`
+			UID  string `json:"uid" binding:"required"`
+			Code string `json:"code" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("confirm handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -718,8 +782,8 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 
 		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
-		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
-			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, nil)
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
 		}
 
 		err = r.deps.UserStorer.Save(u)
@@ -759,7 +823,8 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("resend confirm code handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -767,17 +832,22 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
+
 		confirmCode := generateConfirmCode()
 
-		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 			curTime := time.Now()
-			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+			lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 
 			if lastConfirmationTime != nil {
 				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
 
 				if !curTime.After(timeOffset) {
-					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+					errorCodeTimeoutResponse(c, timeOffset, curTime)
 
 					return
 				}
@@ -785,7 +855,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
-			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 		} else {
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 		}
@@ -815,14 +885,20 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryRequest struct {
-			UID string `json:"uid"`
+			UID string `json:"uid" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("recovery request handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -840,15 +916,15 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 		code := generateConfirmCode()
 
-		if r.checker.ConfirmableSentTime && r.Modules.ConfirmableSentTimeUser {
-			lastConfirmationTime := u.(user.ConfirmationSentTimeUser).GetConfirmationCodeSentTime(at.Key)
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 			curTime := time.Now()
 
 			if lastConfirmationTime != nil {
 				timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
 
 				if !curTime.After(timeOffset) {
-					errorConfirmationTimeoutResponse(c, timeOffset, curTime)
+					errorCodeTimeoutResponse(c, timeOffset, curTime)
 
 					return
 				}
@@ -856,7 +932,7 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 
 			u.(user.RecoverableUser).SetRecoveryCode(code)
 
-			u.(user.ConfirmationSentTimeUser).SetConfirmationCodeSentTime(at.Key, &curTime)
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 		} else {
 			u.(user.RecoverableUser).SetRecoveryCode(code)
 		}
@@ -882,15 +958,21 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryValidationRequest struct {
-			UID  string `json:"uid"`
-			Code string `json:"code"`
+			UID  string `json:"uid" binding:"required"`
+			Code string `json:"code" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -919,16 +1001,22 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		type recoveryRequest struct {
-			UID      string `json:"uid"`
-			Code     string `json:"code"`
-			Password string `json:"password"`
+			UID      string `json:"uid" binding:"required"`
+			Code     string `json:"code" binding:"required"`
+			Password string `json:"password" binding:"required"`
 		}
 
-		at := r.types.Select(c)
+		expectedTypeOfAuthType := authtype.Password
+		at := r.types.Select(c, expectedTypeOfAuthType)
 		if at == nil {
 			log.Print("recovery handler: not found auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -1046,4 +1134,299 @@ func (r *Rauther) DefaultSender(s sender.Sender) *Rauther {
 	r.defaultSender = s
 
 	return r
+}
+
+func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
+	if !r.checker.OTPAuth {
+		log.Print("Not implement OTPAuth interface")
+		return nil
+	}
+	return func(c *gin.Context) {
+		expectedTypeOfAuthType := authtype.OTP
+		at := r.types.Select(c, expectedTypeOfAuthType)
+
+		if at == nil {
+			log.Print("OTP auth handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		request := clone(at.SignUpRequest).(authtype.AuthRequest)
+
+		err := c.ShouldBindBodyWith(request, binding.JSON)
+		if err != nil {
+			log.Print("OTP auth handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		sessionInfo, success := r.checkSession(c)
+		if !success {
+			return
+		}
+
+		if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		uid := request.GetUID()
+
+		if uid == "" {
+			log.Print("otp request handler: empty uid")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		// Find user by UID
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err != nil {
+			log.Print(err)
+		}
+
+		// User not found
+		if u == nil {
+			u = r.deps.UserStorer.Create()
+
+			if r.Config.CreateGuestUser {
+				u.(user.GuestUser).SetGuest(true)
+			}
+
+			u.SetUID(at.Key, uid)
+		}
+
+		// Check last send time
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+			curTime := time.Now()
+
+			if lastCodeSentTime != nil {
+				timeOffset := lastCodeSentTime.Add(r.Config.ValidConfirmationInterval)
+
+				if !curTime.After(timeOffset) {
+					errorCodeTimeoutResponse(c, timeOffset, curTime)
+
+					return
+				}
+			}
+
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime) // FIXME: А если дальше чет зафейлится?
+		}
+
+		var code string
+
+		if uCodeGenerator, ok := u.(user.OTPAuthCustomCodeGenerator); ok {
+			code = uCodeGenerator.GenerateCode()
+		} else {
+			code = generateNumericCode(r.Config.OTP.CodeLength)
+		}
+
+		expiredAt := time.Now().Add(r.Config.OTP.CodeLifeTime)
+		u.(user.OTPAuth).SetOTP(code, &expiredAt)
+
+		err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
+		if err != nil {
+			err = fmt.Errorf("send OTP code error: %w", err)
+		}
+
+		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
+			fields := request.(authtype.AuhtRequestFieldable).Fields()
+			for fieldKey, fieldValue := range fields {
+				err := user.SetFields(u, fieldKey, fieldValue)
+				if err != nil {
+					log.Printf("sign up: set fields %v: %v", fieldKey, err)
+					errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+					return
+				}
+			}
+		}
+
+		if err = r.deps.UserStorer.Save(u); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+		})
+	}
+}
+
+// TODO: Move session from current guest user if "auth" user is guest (or not confirmed)
+func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
+	if !r.checker.OTPAuth {
+		log.Print("Not implement OTPAuth interface")
+		return nil
+	}
+	return func(c *gin.Context) {
+		expectedTypeOfAuthType := authtype.OTP
+		at := r.types.Select(c, expectedTypeOfAuthType)
+
+		if at == nil {
+			log.Print("OTP auth handler: not found auth type")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		if at.Type != expectedTypeOfAuthType {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		request := clone(at.SignInRequest).(authtype.AuthRequest)
+
+		err := c.ShouldBindBodyWith(request, binding.JSON)
+		if err != nil {
+			log.Print("OTP auth handler:", err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		sessionInfo, success := r.checkSession(c)
+		if !success {
+			return
+		}
+
+		if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		uid, code := request.GetUID(), request.GetPassword()
+
+		if uid == "" || code == "" {
+			log.Print("otp handler: empty uid or code")
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
+		// Find user by UID
+		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err != nil {
+			log.Print(err)
+		}
+		if u == nil {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+			return
+		}
+
+		userCode, expiredAt := u.(user.OTPAuth).GetOTP()
+		if expiredAt.Before(time.Now()) {
+			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+			return
+		}
+
+		if code != userCode {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidCode)
+			return
+		}
+
+		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+			var removeUserID interface{}
+
+			if u.(user.GuestUser).IsGuest() {
+				sessionInfo.User.SetUID(at.Key, uid)
+				sessionInfo.User.(user.GuestUser).SetGuest(false)
+
+				removeUserID = u.GetID()
+
+				u = sessionInfo.User
+			} else {
+				removeUserID = sessionInfo.UserID
+			}
+
+			err := r.deps.Storage.UserRemover.RemoveByID(removeUserID)
+			if err != nil {
+				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
+			}
+		}
+
+		if r.Modules.ConfirmableUser {
+			u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+		}
+
+		sessionInfo.Session.BindUser(u)
+
+		err = r.deps.SessionStorer.Save(sessionInfo.Session)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
+			return
+		}
+
+		u.(user.OTPAuth).SetOTP("", nil)
+
+		if err = r.deps.UserStorer.Save(u); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
+
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
+		c.Set(r.Config.ContextNames.User, u)
+
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+		})
+	}
+}
+
+type sessionInfo struct {
+	Session     session.Session
+	User        user.User
+	UserID      interface{}
+	UserIsGuest bool
+}
+
+// Check user in current session
+func (r *Rauther) checkSession(c *gin.Context) (info sessionInfo, success bool) {
+	s, ok := c.Get(r.Config.ContextNames.Session)
+	if !ok {
+		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		return
+	}
+
+	sess, ok := s.(session.Session)
+	if !ok {
+		log.Fatal("failed 'sess' type assertion to session.Session")
+		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		return
+	}
+
+	var currentUserIsGuest bool
+
+	currentUserID := sess.GetUserID()
+	if currentUserID != nil {
+		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
+
+		if currentUser != nil && r.Config.CreateGuestUser {
+			currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
+		}
+
+		return sessionInfo{
+			Session:     sess,
+			User:        currentUser,
+			UserID:      currentUserID,
+			UserIsGuest: currentUserIsGuest,
+		}, true
+	}
+
+	return sessionInfo{
+		Session:     sess,
+		User:        nil,
+		UserID:      currentUserID,
+		UserIsGuest: currentUserIsGuest,
+	}, true
 }

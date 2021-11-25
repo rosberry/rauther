@@ -20,6 +20,9 @@ type Storage struct {
 
 	// UserStorer for load/save users
 	UserStorer storage.UserStorer
+
+	// UserRemover
+	UserRemover storage.RemovableUserStorer
 }
 
 func New(r *gin.RouterGroup, storage Storage) Deps {
