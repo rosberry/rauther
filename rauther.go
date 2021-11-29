@@ -127,17 +127,31 @@ func (r *Rauther) includeSession() {
 
 	withSession := r.deps.R.Group("", r.authMiddleware())
 	{
-		if r.Modules.PasswordAuthableUser && authtype.ExistingTypes[authtype.Password] {
-			r.includePasswordAuthable(withSession)
+		if r.Modules.AuthableUser {
+			r.includeAuthabe(withSession)
 		}
+	}
+}
 
-		if r.Modules.SocialAuthableUser && authtype.ExistingTypes[authtype.Social] {
-			r.includeSocialAuthable(withSession)
-		}
+func (r *Rauther) includeAuthabe(router *gin.RouterGroup) {
+	if !r.checker.Authable {
+		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
+	}
 
-		if r.Modules.OTP && authtype.ExistingTypes[authtype.OTP] {
-			r.includeOTPAuthable(withSession)
-		}
+	r.checkRemovableUser()
+
+	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
+
+	if r.Modules.PasswordAuthableUser && authtype.ExistingTypes[authtype.Password] {
+		r.includePasswordAuthable(router)
+	}
+
+	if r.Modules.SocialAuthableUser && authtype.ExistingTypes[authtype.Social] {
+		r.includeSocialAuthable(router)
+	}
+
+	if r.Modules.OTP && authtype.ExistingTypes[authtype.OTP] {
+		r.includeOTPAuthable(router)
 	}
 }
 
@@ -146,11 +160,8 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrPasswordAuthableUserNotImplement])
 	}
 
-	r.checkRemovableUser()
-
 	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
 	router.POST(r.Config.Routes.SignIn, r.signInHandler())
-	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
 	router.POST(r.Config.Routes.ValidateLoginField, r.ValidateLoginField())
 
 	if r.Modules.ConfirmableUser {
@@ -166,7 +177,6 @@ func (r *Rauther) includeSocialAuthable(router *gin.RouterGroup) {
 	r.checkRemovableUser()
 
 	router.POST(r.Config.Routes.SocialSignIn, r.socialSignInHandler())
-	router.POST(r.Config.Routes.SocialSignOut, r.signOutHandler())
 }
 
 func (r *Rauther) includeOTPAuthable(router *gin.RouterGroup) {
