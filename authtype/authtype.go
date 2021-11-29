@@ -15,8 +15,8 @@ import (
 type Type int
 
 type (
-	// AuthType stores request structures, key and sender that use to send confirmation/recovery codes.
-	AuthType struct {
+	// AuthMethod stores request structures, key and sender that use to send confirmation/recovery codes.
+	AuthMethod struct {
 		Type   Type
 		Key    string
 		Sender sender.Sender
@@ -29,11 +29,11 @@ type (
 		SocialAuthType      auth.Type
 	}
 
-	// List of AuthType by key
-	list map[string]AuthType // TODO: Public?
+	// list of AuthType by key
+	list map[string]AuthMethod
 
-	// AuthTypes is list of AuthType by key and selector for select AuthType
-	AuthTypes struct {
+	// AuthMethods is list of AuthType by key and selector for select AuthType
+	AuthMethods struct {
 		List          list
 		ExistingTypes map[Type]bool
 		Selector      Selector
@@ -78,10 +78,10 @@ const (
 	SocialAuthTypeVK       = auth.AuthTypeVK
 )
 
-// New create AuthTypes (list of AuthType).
+// New create AuthMethods (list of AuthMethod).
 // If selector is nil - used default selector
-func New(selector Selector) *AuthTypes {
-	authTypes := &AuthTypes{
+func New(selector Selector) *AuthMethods {
+	authMethods := &AuthMethods{
 		List:     make(list),
 		Selector: DefaultSelector,
 		ExistingTypes: map[Type]bool{
@@ -92,14 +92,14 @@ func New(selector Selector) *AuthTypes {
 	}
 
 	if selector != nil {
-		authTypes.Selector = selector
+		authMethods.Selector = selector
 	}
 
-	return authTypes
+	return authMethods
 }
 
 // Add new AuthType in AuthTypes list
-func (a *AuthTypes) Add(cfg AuthType) *AuthTypes {
+func (a *AuthMethods) Add(cfg AuthMethod) *AuthMethods {
 	if a == nil {
 		log.Fatal("auth types is nil")
 	}
@@ -131,15 +131,17 @@ func (a *AuthTypes) Add(cfg AuthType) *AuthTypes {
 	return a
 }
 
-func (a *AuthTypes) IsEmpty() bool {
+func (a *AuthMethods) IsEmpty() bool {
 	return len(a.List) == 0
 }
 
-// Select uses the selector and returns the found type of authorization
-// if selector returned the empty key and in auth list only one type - use first type as default and return it
-func (a *AuthTypes) Select(c *gin.Context, t Type) *AuthType {
+// Select uses the selector and returns the found method of authorization
+//
+// if selector returned the empty key and in auth list only one method - use first method as default and return it
+// if selector returned the empty key and in auth list only one method of t Type - return this method
+func (a *AuthMethods) Select(c *gin.Context, t Type) *AuthMethod {
 	if a == nil {
-		log.Fatal("AuthTypes is nil")
+		log.Fatal("AuthMethods is nil")
 	}
 
 	if a.Selector == nil {
@@ -148,23 +150,23 @@ func (a *AuthTypes) Select(c *gin.Context, t Type) *AuthType {
 
 	key := a.Selector(c, t)
 
-	var foundedAt *AuthType
+	var foundedAuthMethod *AuthMethod
 
 	switch {
 	case key != "":
-		if at, ok := a.List[key]; ok {
-			foundedAt = &at
+		if am, ok := a.List[key]; ok {
+			foundedAuthMethod = &am
 		}
 	case len(a.List) == 1:
 		for i := range a.List {
-			at := a.List[i]
-			foundedAt = &at
+			am := a.List[i]
+			foundedAuthMethod = &am
 		}
 	default:
 		var key string
 
-		for k, at := range a.List {
-			if at.Type == t {
+		for k, am := range a.List {
+			if am.Type == t {
 				if key == "" {
 					key = k
 				} else {
@@ -175,20 +177,20 @@ func (a *AuthTypes) Select(c *gin.Context, t Type) *AuthType {
 		}
 
 		if key != "" {
-			at := a.List[key]
-			foundedAt = &at
+			am := a.List[key]
+			foundedAuthMethod = &am
 		}
 	}
 
-	if foundedAt != nil && foundedAt.Type == t {
-		return foundedAt
+	if foundedAuthMethod != nil && foundedAuthMethod.Type == t {
+		return foundedAuthMethod
 	}
 
 	return nil
 }
 
 // CheckFieldsDefine checks whether all fields required for queries defined in models
-func (a *AuthTypes) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) { // nolint:cyclop
+func (a *AuthMethods) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) { // nolint:cyclop
 	checkFields := func(fields map[string]string) []string {
 		notFoundFields := make([]string, 0)
 

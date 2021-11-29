@@ -29,15 +29,15 @@ func (r *Rauther) includeAuthabe(router *gin.RouterGroup) {
 
 	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
 
-	if r.Modules.PasswordAuthableUser && r.types.ExistingTypes[authtype.Password] {
+	if r.Modules.PasswordAuthableUser && r.methods.ExistingTypes[authtype.Password] {
 		r.includePasswordAuthable(router)
 	}
 
-	if r.Modules.SocialAuthableUser && r.types.ExistingTypes[authtype.Social] {
+	if r.Modules.SocialAuthableUser && r.methods.ExistingTypes[authtype.Social] {
 		r.includeSocialAuthable(router)
 	}
 
-	if r.Modules.OTP && r.types.ExistingTypes[authtype.OTP] {
+	if r.Modules.OTP && r.methods.ExistingTypes[authtype.OTP] {
 		r.includeOTPAuthable(router)
 	}
 }
@@ -117,8 +117,8 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 }
 
 func (r *Rauther) checkSender() (ok bool) {
-	if r.types != nil && !r.types.IsEmpty() {
-		for _, t := range r.types.List {
+	if r.methods != nil && !r.methods.IsEmpty() {
+		for _, t := range r.methods.List {
 			if t.Sender == nil {
 				if r.defaultSender == nil {
 					log.Fatalf("If you not define auth sender - first define default sender\nDefaultSender(s sender.Sender)")

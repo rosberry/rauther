@@ -15,9 +15,9 @@ import (
 
 func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		at, ok := r.findAuthType(c, authtype.Social)
+		at, ok := r.findAuthMethod(c, authtype.Social)
 		if !ok {
-			log.Print("not found expected auth type")
+			log.Print("not found expected auth method")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return

@@ -108,16 +108,16 @@ func generateNumericCode(length int) string {
 	return string(b)
 }
 
-func (r *Rauther) findAuthType(c *gin.Context, expectedTypeOfAuthType authtype.Type) (at *authtype.AuthType, ok bool) {
-	at = r.types.Select(c, expectedTypeOfAuthType)
+func (r *Rauther) findAuthMethod(c *gin.Context, expectedType authtype.Type) (am *authtype.AuthMethod, ok bool) {
+	am = r.methods.Select(c, expectedType)
 
-	if at == nil {
+	if am == nil {
 		return
 	}
 
-	if at.Type != expectedTypeOfAuthType {
+	if am.Type != expectedType {
 		return
 	}
 
-	return at, true
+	return am, true
 }

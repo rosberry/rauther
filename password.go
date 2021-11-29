@@ -21,9 +21,9 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at, ok := r.findAuthType(c, authtype.Password)
+		at, ok := r.findAuthMethod(c, authtype.Password)
 		if !ok {
-			log.Print("not found expected auth type")
+			log.Print("not found expected auth method")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -135,9 +135,9 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at, ok := r.findAuthType(c, authtype.Password)
+		at, ok := r.findAuthMethod(c, authtype.Password)
 		if !ok {
-			log.Print("not found expected auth type")
+			log.Print("not found expected auth method")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -220,9 +220,9 @@ func (r *Rauther) validateLoginField() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		at, ok := r.findAuthType(c, authtype.Password)
+		at, ok := r.findAuthMethod(c, authtype.Password)
 		if !ok {
-			log.Print("not found expected auth type")
+			log.Print("not found expected auth method")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return

@@ -24,10 +24,10 @@ type Rauther struct {
 	// checker for check implement user interfaces
 	checker *checker.Checker
 
-	// types is list of auth types - default or custom sign-up/sign-ip structs and code sender
-	types *authtype.AuthTypes
+	// methods is list of auth methods - default or custom sign-up/sign-ip structs and code sender
+	methods *authtype.AuthMethods
 
-	// defaultSender usage if we not define auth types with senders
+	// defaultSender usage if we not define auth methods with senders
 	defaultSender sender.Sender
 }
 
@@ -67,24 +67,24 @@ func (r *Rauther) InitHandlers() error {
 		u = r.deps.Storage.UserStorer.Create()
 	}
 
-	if r.types == nil {
-		r.types = authtype.New(nil)
+	if r.methods == nil {
+		r.methods = authtype.New(nil)
 	}
 
-	if r.emptyAuthTypes() {
-		r.AddAuthType(authtype.AuthType{
+	if r.emptyAuthMethods() {
+		r.AddAuthMethod(authtype.AuthMethod{
 			Key: "email",
 		})
 	}
 
-	if ok := r.checkAuthTypes(u); !ok {
+	if ok := r.checkAuthMethods(u); !ok {
 		log.Fatal("failed auth types")
 	}
 
 	log.Printf("\nEnabled auth types:\n- AuthTypePassword: %v\n- AuthTypeSocial: %v\n- AuthTypeOTP: %v",
-		r.types.ExistingTypes[authtype.Password],
-		r.types.ExistingTypes[authtype.Social],
-		r.types.ExistingTypes[authtype.OTP],
+		r.methods.ExistingTypes[authtype.Password],
+		r.methods.ExistingTypes[authtype.Social],
+		r.methods.ExistingTypes[authtype.OTP],
 	)
 	log.Printf("\nEnabled auth modules:\n%v", r.Modules)
 
@@ -95,13 +95,13 @@ func (r *Rauther) InitHandlers() error {
 	return nil
 }
 
-// checkAuthTypes - run fields definitions check in user model
-func (r *Rauther) checkAuthTypes(user user.User) bool {
-	if r.types == nil {
+// checkAuthMethods - run fields definitions check in user model
+func (r *Rauther) checkAuthMethods(user user.User) bool {
+	if r.methods == nil {
 		return false
 	}
 
-	ok, badFields := r.types.CheckFieldsDefine(user)
+	ok, badFields := r.methods.CheckFieldsDefine(user)
 	if !ok {
 		log.Print("Please, check `auth` tags in user model:")
 
@@ -113,25 +113,25 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 	return ok
 }
 
-// AddAuthType adds a new type of authorization and uses a default sender, if not transmitted another
-func (r *Rauther) AddAuthType(at authtype.AuthType) *Rauther {
-	if r.types == nil {
-		r.types = authtype.New(nil)
+// AddAuthMethod adds a new method of authorization and uses a default sender, if not transmitted another
+func (r *Rauther) AddAuthMethod(at authtype.AuthMethod) *Rauther {
+	if r.methods == nil {
+		r.methods = authtype.New(nil)
 	}
 
-	r.types.Add(at)
+	r.methods.Add(at)
 
 	return r
 }
 
-// AddAuthTypes adds a new types of authorization and uses a default sender, if not transmitted another
-func (r *Rauther) AddAuthTypes(arrTypes []authtype.AuthType) *Rauther {
-	if r.types == nil {
-		r.types = authtype.New(nil)
+// AddAuthMethods adds a new types of authorization and uses a default sender, if not transmitted another
+func (r *Rauther) AddAuthMethods(methods []authtype.AuthMethod) *Rauther {
+	if r.methods == nil {
+		r.methods = authtype.New(nil)
 	}
 
-	for _, row := range arrTypes {
-		r.types.Add(row)
+	for _, row := range methods {
+		r.methods.Add(row)
 	}
 
 	return r
@@ -139,18 +139,18 @@ func (r *Rauther) AddAuthTypes(arrTypes []authtype.AuthType) *Rauther {
 
 // AuthSelector specifies the selector with which the type of authorization will be selected
 func (r *Rauther) AuthSelector(selector authtype.Selector) *Rauther {
-	if r.types == nil {
-		r.types = authtype.New(selector)
+	if r.methods == nil {
+		r.methods = authtype.New(selector)
 	}
 
-	r.types.Selector = selector
+	r.methods.Selector = selector
 
 	return r
 }
 
-// emptyAuthTypes check auth types nil or empty
-func (r *Rauther) emptyAuthTypes() (ok bool) {
-	return r.types == nil || r.types.IsEmpty()
+// emptyAuthMethods check auth types nil or empty
+func (r *Rauther) emptyAuthMethods() (ok bool) {
+	return r.methods == nil || r.methods.IsEmpty()
 }
 
 // DefaultSender set sender for all auth types (if auth type not contain sender)

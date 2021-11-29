@@ -60,7 +60,7 @@ func main() {
 
 	rauth.DefaultSender(&fakeEmailSender{})
 
-	rauth.AddAuthTypes([]authtype.AuthType{
+	rauth.AddAuthMethods([]authtype.AuthMethod{
 		{
 			Key:    "email",
 			Sender: &fakeEmailSender{},

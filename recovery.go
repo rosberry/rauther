@@ -19,9 +19,9 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			UID string `json:"uid" binding:"required"`
 		}
 
-		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		at, ok := r.findAuthMethod(c, authtype.Password) // FIXME: Password only?
 		if !ok {
-			log.Print("not found expected auth type")
+			log.Print("not found expected auth method")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -86,9 +86,9 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 			Code string `json:"code" binding:"required"`
 		}
 
-		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		at, ok := r.findAuthMethod(c, authtype.Password) // FIXME: Password only?
 		if !ok {
-			log.Print("not found expected auth type")
+			log.Print("not found expected auth method")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -124,9 +124,9 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			Password string `json:"password" binding:"required"`
 		}
 
-		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		at, ok := r.findAuthMethod(c, authtype.Password) // FIXME: Password only?
 		if !ok {
-			log.Print("not found expected auth type")
+			log.Print("not found expected auth method")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
