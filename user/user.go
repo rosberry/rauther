@@ -75,22 +75,7 @@ func SetFields(obj interface{}, key string, value interface{}) error {
 		return errObjecNotPointer
 	}
 
-	findAuthName := func(t reflect.StructTag) string {
-		if jt, ok := t.Lookup("auth"); ok {
-			return strings.Split(jt, ",")[0]
-		}
-
-		return ""
-	}
-
-	fieldNames := map[string]int{}
-
-	for i := 0; i < v.NumField(); i++ {
-		typeField := v.Type().Field(i)
-		tag := typeField.Tag
-		jname := findAuthName(tag)
-		fieldNames[jname] = i
-	}
+	fieldNames := getFieldNames(v)
 
 	fieldNum, ok := fieldNames[key]
 	if !ok {
@@ -109,22 +94,7 @@ func GetField(obj interface{}, key string) (value interface{}, err error) {
 		return nil, errObjecNotPointer
 	}
 
-	findAuthName := func(t reflect.StructTag) string {
-		if jt, ok := t.Lookup("auth"); ok {
-			return strings.Split(jt, ",")[0]
-		}
-
-		return ""
-	}
-
-	fieldNames := map[string]int{}
-
-	for i := 0; i < v.NumField(); i++ {
-		typeField := v.Type().Field(i)
-		tag := typeField.Tag
-		jname := findAuthName(tag)
-		fieldNames[jname] = i
-	}
+	fieldNames := getFieldNames(v)
 
 	fieldNum, ok := fieldNames[key]
 	if !ok {
@@ -134,4 +104,25 @@ func GetField(obj interface{}, key string) (value interface{}, err error) {
 	fieldVal := v.Field(fieldNum)
 
 	return fieldVal.Interface(), nil
+}
+
+func findAuthName(t reflect.StructTag) string {
+	if jt, ok := t.Lookup("auth"); ok {
+		return strings.Split(jt, ",")[0]
+	}
+
+	return ""
+}
+
+func getFieldNames(v reflect.Value) map[string]int {
+	fieldNames := map[string]int{}
+
+	for i := 0; i < v.NumField(); i++ {
+		typeField := v.Type().Field(i)
+		tag := typeField.Tag
+		jname := findAuthName(tag)
+		fieldNames[jname] = i
+	}
+
+	return fieldNames
 }
