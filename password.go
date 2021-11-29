@@ -90,7 +90,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		}
 
 		if r.Modules.ConfirmableUser {
-			confirmCode := generateConfirmCode()
+			confirmCode := generateCode()
 
 			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 

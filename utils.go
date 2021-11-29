@@ -47,7 +47,7 @@ func passwordCompare(requestPassword, hashedPassword string) (ok bool) {
 	return
 }
 
-func generateConfirmCode() (code string) {
+func generateCode() (code string) {
 	// TODO: Implement me!
 	return uuid.NewString()
 }

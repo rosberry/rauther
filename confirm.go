@@ -85,8 +85,9 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		confirmCode := generateConfirmCode()
+		confirmCode := generateCode()
 
+		// check resend timeout
 		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 			curTime := time.Now()
 			lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
@@ -101,12 +102,10 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 				}
 			}
 
-			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
-
 			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
-		} else {
-			u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 		}
+
+		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)

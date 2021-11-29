@@ -39,8 +39,9 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			return
 		}
 
-		code := generateConfirmCode()
+		code := generateCode()
 
+		// check resend timeout
 		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 			lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 			curTime := time.Now()
@@ -55,12 +56,10 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 				}
 			}
 
-			u.(user.RecoverableUser).SetRecoveryCode(code)
-
 			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
-		} else {
-			u.(user.RecoverableUser).SetRecoveryCode(code)
 		}
+
+		u.(user.RecoverableUser).SetRecoveryCode(code)
 
 		err = r.deps.Storage.UserStorer.Save(u)
 		if err != nil {
