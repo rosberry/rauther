@@ -15,20 +15,6 @@ import (
 type Type int
 
 type (
-	Config struct {
-		AuthType Type
-		AuthKey  string
-		Sender   sender.Sender
-
-		SignUpRequest          AuthRequest
-		SignInRequest          AuthRequest
-		CheckUserExistsRequest CheckUserExistsRequest
-
-		SocialSignInRequest SocialAuthRequest
-		SocialAuthType      auth.Type
-	}
-	Configs []Config
-
 	// AuthType stores request structures, key and sender that use to send confirmation/recovery codes.
 	AuthType struct {
 		Type   Type
@@ -74,7 +60,6 @@ type (
 	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
 	AuhtRequestFieldable interface {
 		AuthRequest
-
 		Fields() map[string]string
 	}
 )
@@ -114,16 +99,16 @@ func New(selector Selector) *AuthTypes {
 }
 
 // Add new AuthType in AuthTypes list
-func (a *AuthTypes) Add(cfg Config) *AuthTypes {
+func (a *AuthTypes) Add(cfg AuthType) *AuthTypes {
 	if a == nil {
 		log.Fatal("auth types is nil")
 	}
 
-	if _, ok := ExistingTypes[cfg.AuthType]; !ok {
-		log.Fatalf("invalid auth type %v for '%s' key", cfg.AuthType, cfg.AuthKey)
+	if _, ok := ExistingTypes[cfg.Type]; !ok {
+		log.Fatalf("invalid auth type %v for '%s' key", cfg.Type, cfg.Key)
 	}
 
-	ExistingTypes[cfg.AuthType] = true
+	ExistingTypes[cfg.Type] = true
 
 	if cfg.SignUpRequest == nil {
 		cfg.SignUpRequest = &SignUpRequestByEmail{}
@@ -137,23 +122,11 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		cfg.CheckUserExistsRequest = &CheckLoginFieldRequestByEmail{}
 	}
 
-	if cfg.AuthType == Social && cfg.SocialSignInRequest == nil {
+	if cfg.Type == Social && cfg.SocialSignInRequest == nil {
 		cfg.SocialSignInRequest = &SocialSignInRequest{}
 	}
 
-	t := AuthType{
-		Type:                   cfg.AuthType,
-		Key:                    cfg.AuthKey,
-		Sender:                 cfg.Sender,
-		SignUpRequest:          cfg.SignUpRequest,
-		SignInRequest:          cfg.SignInRequest,
-		CheckUserExistsRequest: cfg.CheckUserExistsRequest,
-
-		SocialAuthType:      cfg.SocialAuthType,
-		SocialSignInRequest: cfg.SocialSignInRequest,
-	}
-
-	a.List[cfg.AuthKey] = t
+	a.List[cfg.Key] = cfg
 
 	return a
 }

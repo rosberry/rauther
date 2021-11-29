@@ -72,8 +72,8 @@ func (r *Rauther) InitHandlers() error {
 	}
 
 	if r.emptyAuthTypes() {
-		r.AddAuthType(authtype.Config{
-			AuthKey: "email",
+		r.AddAuthType(authtype.AuthType{
+			Key: "email",
 		})
 	}
 
@@ -114,7 +114,7 @@ func (r *Rauther) checkAuthTypes(user user.User) bool {
 }
 
 // AddAuthType adds a new type of authorization and uses a default sender, if not transmitted another
-func (r *Rauther) AddAuthType(at authtype.Config) *Rauther {
+func (r *Rauther) AddAuthType(at authtype.AuthType) *Rauther {
 	if r.types == nil {
 		r.types = authtype.New(nil)
 	}
@@ -125,7 +125,7 @@ func (r *Rauther) AddAuthType(at authtype.Config) *Rauther {
 }
 
 // AddAuthTypes adds a new types of authorization and uses a default sender, if not transmitted another
-func (r *Rauther) AddAuthTypes(arrTypes authtype.Configs) *Rauther {
+func (r *Rauther) AddAuthTypes(arrTypes []authtype.AuthType) *Rauther {
 	if r.types == nil {
 		r.types = authtype.New(nil)
 	}
