@@ -1,7 +1,6 @@
 package rauther
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -19,6 +18,7 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 		log.Print("Not implement OTPAuth interface")
 		return nil
 	}
+
 	return func(c *gin.Context) {
 		at, ok := r.findAuthMethod(c, authtype.OTP)
 		if !ok {
@@ -101,11 +101,15 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 		}
 
 		expiredAt := time.Now().Add(r.Config.OTP.CodeLifeTime)
-		u.(user.OTPAuth).SetOTP(at.Key, code, &expiredAt)
+
+		err = u.(user.OTPAuth).SetOTP(at.Key, code, &expiredAt)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+		}
 
 		err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
 		if err != nil {
-			err = fmt.Errorf("send OTP code error: %w", err)
+			log.Printf("send OTP code error: %v", err)
 		}
 
 		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
@@ -138,6 +142,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 		log.Print("Not implement OTPAuth interface")
 		return nil
 	}
+
 	return func(c *gin.Context) {
 		at, ok := r.findAuthMethod(c, authtype.OTP)
 		if !ok {
@@ -181,6 +186,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 		if err != nil {
 			log.Print(err)
 		}
+
 		if u == nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
@@ -229,7 +235,11 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		u.(user.OTPAuth).SetOTP(at.Key, "", nil)
+		err = u.(user.OTPAuth).SetOTP(at.Key, "", nil)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+			return
+		}
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)

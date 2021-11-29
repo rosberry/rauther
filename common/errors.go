@@ -70,7 +70,7 @@ var Errors = map[ErrTypes]Err{
 	ErrGinDependency:                    {"gin_dependency_nil", "Nil gin dependency"},
 	ErrSessionStorerDependency:          {"session_storer_nil", "Nil SessionStorer dependency"},
 	ErrAuthableUserNotImplement:         {"authable_user_not_implement", "Please implement AuthableUser interface"},
-	ErrPasswordAuthableUserNotImplement: {"password_authable_user_not_implement", "Please implement PasswordAuthableUser interface"},
+	ErrPasswordAuthableUserNotImplement: {"password_authable_user_not_implement", "Please implement PasswordAuthableUser interface"}, // nolint:lll
 	ErrConfirmableUserNotImplement:      {"confirmable_user_not_implement", "Please implement ConfirmableUser interface"},
 	ErrSenderRequired:                   {"sender_required", "At least one sender is required"},
 	ErrRecoverableUserNotImplement:      {"recoverable_user_not_implement", "Please implement RecoverableUser interface"},

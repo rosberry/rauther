@@ -154,6 +154,7 @@ func (u *User) SetOTP(authType string, code string, expiredIn *time.Time) error 
 	u.Auths[authType] = at
 
 	u.ExpiredIn = expiredIn
+
 	return nil
 }
 
@@ -194,7 +195,7 @@ func (s *UserStorer) Create() (user user.User) {
 	rand.Seed(time.Now().Unix())
 
 	u := &User{
-		ID:    uint(rand.Uint64()),
+		ID:    uint(rand.Uint64()), // nolint
 		Auths: map[string]AuthIdentities{},
 	}
 
@@ -222,7 +223,7 @@ func (s *UserStorer) RemoveByUID(authType, uid string) error {
 
 	user, ok := u.(*User)
 	if !ok {
-		return fmt.Errorf("Failed user type assertion")
+		return fmt.Errorf("Failed user type assertion") // nolint
 	}
 
 	delete(s.Users, user.ID)

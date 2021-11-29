@@ -14,7 +14,7 @@ import (
 	"github.com/rosberry/rauther/sender"
 )
 
-func main() {
+func main() { // nolint
 	log.Print("It's basic example for rauther lib")
 
 	r := gin.Default()

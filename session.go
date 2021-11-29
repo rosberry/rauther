@@ -87,6 +87,7 @@ func (r *Rauther) checkSession(c *gin.Context) (info sessionInfo, success bool) 
 	if !ok {
 		log.Fatal("failed 'sess' type assertion to session.Session")
 		errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+
 		return
 	}
 
