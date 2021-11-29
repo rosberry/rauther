@@ -21,7 +21,7 @@ type GuestUser interface {
 	SetGuest(guest bool)
 }
 
-type AuthableUser interface {
+type PasswordAuthableUser interface {
 	User
 
 	GetPassword() (password string)

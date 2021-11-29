@@ -86,6 +86,17 @@ func main() {
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
 		},
+		{
+			AuthKey:        "google",
+			AuthType:       authtype.Social,
+			SocialAuthType: authtype.SocialAuthTypeGoogle,
+		},
+		{
+			AuthKey:             "apple",
+			AuthType:            authtype.Social,
+			SocialSignInRequest: &CustomSocialSignInRequest{},
+			SocialAuthType:      authtype.SocialAuthTypeApple,
+		},
 	})
 
 	customAuthTypeSelector := func(c *gin.Context, t authtype.Type) (key string) {
@@ -181,3 +192,12 @@ type otpRequest struct {
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
+
+type CustomSocialSignInRequest struct {
+	Name  string `json:"name" binding:"required"`
+	Token string `json:"token" binding:"required"`
+}
+
+func (r *CustomSocialSignInRequest) GetToken() string {
+	return r.Token
+}

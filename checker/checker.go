@@ -5,11 +5,11 @@ import (
 )
 
 type Checker struct {
-	Authable     bool
-	Confirmable  bool
-	Recoverable  bool
-	CodeSentTime bool
-	OTPAuth      bool
+	PasswordAuthable bool
+	Confirmable      bool
+	Recoverable      bool
+	CodeSentTime     bool
+	OTPAuth          bool
 }
 
 func New(user user.User) *Checker {
@@ -20,8 +20,8 @@ func New(user user.User) *Checker {
 }
 
 // IsAuthableUser check implement user AuthableUser interface or not
-func (c *Checker) IsAuthableUser(u user.User) (ok bool) {
-	_, ok = u.(user.AuthableUser)
+func (c *Checker) IsPasswordAuthableUser(u user.User) (ok bool) {
+	_, ok = u.(user.PasswordAuthableUser)
 	return
 }
 
@@ -47,7 +47,7 @@ func (c *Checker) IsOTPAuth(u user.User) (ok bool) {
 }
 
 func (c *Checker) checkAllInterfaces(u user.User) {
-	c.Authable = c.IsAuthableUser(u)
+	c.PasswordAuthable = c.IsPasswordAuthableUser(u)
 	c.Confirmable = c.IsConfirmableUser(u)
 	c.Recoverable = c.IsRecoverableUser(u)
 	c.CodeSentTime = c.IsCodeSentTimeUser(u)

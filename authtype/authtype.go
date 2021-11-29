@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rosberry/auth"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/user"
 )
@@ -22,6 +23,9 @@ type (
 		SignUpRequest          AuthRequest
 		SignInRequest          AuthRequest
 		CheckUserExistsRequest CheckUserExistsRequest
+
+		SocialSignInRequest SocialAuthRequest
+		SocialAuthType      auth.Type
 	}
 	Configs []Config
 
@@ -34,6 +38,9 @@ type (
 		SignUpRequest          AuthRequest
 		SignInRequest          AuthRequest
 		CheckUserExistsRequest CheckUserExistsRequest
+
+		SocialSignInRequest SocialAuthRequest
+		SocialAuthType      auth.Type
 	}
 
 	// List of AuthType by key
@@ -60,6 +67,10 @@ type (
 		GetUID() (uid string)
 	}
 
+	SocialAuthRequest interface {
+		GetToken() string
+	}
+
 	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
 	AuhtRequestFieldable interface {
 		AuthRequest
@@ -70,12 +81,21 @@ type (
 
 const (
 	Password Type = iota
+	Social
 	OTP
 )
 
-var typeNames = map[Type]string{
-	Password: "Password",
-	OTP:      "OTP",
+const (
+	SocialAuthTypeGoogle   = auth.AuthTypeGoogle
+	SocialAuthTypeApple    = auth.AuthTypeApple
+	SocialAuthTypeFacebook = auth.AuthTypeFacebook
+	SocialAuthTypeVK       = auth.AuthTypeVK
+)
+
+var ExistingTypes = map[Type]bool{
+	Password: false,
+	Social:   false,
+	OTP:      false,
 }
 
 // New create AuthTypes (list of AuthType).
@@ -99,9 +119,11 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		log.Fatal("auth types is nil")
 	}
 
-	if _, ok := typeNames[cfg.AuthType]; !ok {
+	if _, ok := ExistingTypes[cfg.AuthType]; !ok {
 		log.Fatalf("invalid auth type %v for '%s' key", cfg.AuthType, cfg.AuthKey)
 	}
+
+	ExistingTypes[cfg.AuthType] = true
 
 	if cfg.SignUpRequest == nil {
 		cfg.SignUpRequest = &SignUpRequestByEmail{}
@@ -115,6 +137,10 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		cfg.CheckUserExistsRequest = &CheckLoginFieldRequestByEmail{}
 	}
 
+	if cfg.AuthType == Social && cfg.SocialSignInRequest == nil {
+		cfg.SocialSignInRequest = &SocialSignInRequest{}
+	}
+
 	t := AuthType{
 		Type:                   cfg.AuthType,
 		Key:                    cfg.AuthKey,
@@ -122,6 +148,9 @@ func (a *AuthTypes) Add(cfg Config) *AuthTypes {
 		SignUpRequest:          cfg.SignUpRequest,
 		SignInRequest:          cfg.SignInRequest,
 		CheckUserExistsRequest: cfg.CheckUserExistsRequest,
+
+		SocialAuthType:      cfg.SocialAuthType,
+		SocialSignInRequest: cfg.SocialSignInRequest,
 	}
 
 	a.List[cfg.AuthKey] = t

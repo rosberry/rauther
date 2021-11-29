@@ -21,6 +21,12 @@ type Config struct {
 		// SignOut is gin route path for sign-out handler. Default: "logout"
 		SignOut string
 
+		// SignIn is gin route path for sign-in handler. Default: "social-login"
+		SocialSignIn string
+
+		// SocialSignOut is gin route path for sign-out handler. Default: "social-logout"
+		SocialSignOut string
+
 		// ConfirmCode is gin route path for email confirmation handler. Default: "confirm"
 		ConfirmCode string
 
@@ -41,6 +47,9 @@ type Config struct {
 
 		// OTPCheckCode is gin route path for One Time Password auth - code validation (sign-in)
 		OTPCheckCode string
+
+		// OTPSignOut is gin route path for sign-out handler. Default: "otp/logout"
+		OTPSignOut string
 	}
 
 	// Context Names is group for setup how save data in context
@@ -77,6 +86,9 @@ func (c *Config) Default() {
 	c.Routes.SignIn = "login"
 	c.Routes.SignOut = "logout"
 
+	c.Routes.SocialSignIn = "login/social"
+	c.Routes.SocialSignOut = "logout/social"
+
 	c.Routes.ConfirmCode = "confirm"
 	c.Routes.ConfirmResend = "confirm/resend"
 
@@ -91,4 +103,5 @@ func (c *Config) Default() {
 
 	c.Routes.OTPRequestCode = "otp/code"
 	c.Routes.OTPCheckCode = "otp/auth"
+	c.Routes.OTPSignOut = "otp/logout"
 }

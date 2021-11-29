@@ -54,3 +54,11 @@ func DefaultSelector(c *gin.Context, t Type) string {
 
 	return r.Type
 }
+
+type SocialSignInRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+func (r *SocialSignInRequest) GetToken() string {
+	return r.Token
+}

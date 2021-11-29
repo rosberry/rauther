@@ -123,6 +123,35 @@ paths:
       security:
       - authtoken: []
 
+  /login/social:
+    post:
+      consumes:
+        - application/json
+      description: Social login user
+      parameters:
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/SocialSignInRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/SocialSignInResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - auth
+      security:
+        - authtoken: []
+
   /logout:
     post:
       consumes:
@@ -389,6 +418,22 @@ definitions:
     required:
     - type
     - password
+
+  SocialSignInRequest:
+    type: object
+    properties:
+      token:
+        type: string
+        description: token from oauth service
+    required:
+    - token
+
+  SocialSignInResponse:
+    properties:
+      result:
+        example: true
+        type: boolean
+    type: object
 
   SignInResponse:
     properties:
