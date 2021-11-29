@@ -69,20 +69,17 @@ func generateSessionID() string {
 }
 
 func sendConfirmCode(s sender.Sender, recipient, code string) error {
-	log.Printf("Confirm code for %s: %s", recipient, code)
-
-	err := s.Send(sender.ConfirmationEvent, recipient, code)
-	if err != nil {
-		err = fmt.Errorf("sendConfirmCode error: %w", err)
-	}
-
-	return err
+	return sendCode(s, sender.ConfirmationEvent, recipient, code)
 }
 
 func sendRecoveryCode(s sender.Sender, recipient, code string) error {
+	return sendCode(s, sender.PasswordRecoveryEvent, recipient, code)
+}
+
+func sendCode(s sender.Sender, event sender.Event, recipient, code string) error {
 	log.Printf("Recovery code for %s: %s", recipient, code)
 
-	err := s.Send(sender.PasswordRecoveryEvent, recipient, code)
+	err := s.Send(event, recipient, code)
 	if err != nil {
 		err = fmt.Errorf("sendRecoveryCode error: %w", err)
 	}
