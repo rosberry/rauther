@@ -18,7 +18,7 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 
 		sessionInfo.Session.UnbindUser(sessionInfo.User)
 
-		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest { // nolint:nestif
+		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
 			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 			if !ok {
 				log.Print("[signOutHandler] failed 'UserStorer' type assertion to RemovableUserStorer")

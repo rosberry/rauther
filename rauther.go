@@ -82,9 +82,9 @@ func (r *Rauther) InitHandlers() error {
 	}
 
 	log.Printf("\nEnabled auth types:\n- AuthTypePassword: %v\n- AuthTypeSocial: %v\n- AuthTypeOTP: %v",
-		authtype.ExistingTypes[authtype.Password],
-		authtype.ExistingTypes[authtype.Social],
-		authtype.ExistingTypes[authtype.OTP],
+		r.types.ExistingTypes[authtype.Password],
+		r.types.ExistingTypes[authtype.Social],
+		r.types.ExistingTypes[authtype.OTP],
 	)
 	log.Printf("\nEnabled auth modules:\n%v", r.Modules)
 

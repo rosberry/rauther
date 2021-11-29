@@ -34,8 +34,9 @@ type (
 
 	// AuthTypes is list of AuthType by key and selector for select AuthType
 	AuthTypes struct {
-		List     list
-		Selector Selector
+		List          list
+		ExistingTypes map[Type]bool
+		Selector      Selector
 	}
 
 	// Selector defines the key of authorization type using gin context
@@ -77,18 +78,17 @@ const (
 	SocialAuthTypeVK       = auth.AuthTypeVK
 )
 
-var ExistingTypes = map[Type]bool{
-	Password: false,
-	Social:   false,
-	OTP:      false,
-}
-
 // New create AuthTypes (list of AuthType).
 // If selector is nil - used default selector
 func New(selector Selector) *AuthTypes {
 	authTypes := &AuthTypes{
 		List:     make(list),
 		Selector: DefaultSelector,
+		ExistingTypes: map[Type]bool{
+			Password: false,
+			Social:   false,
+			OTP:      false,
+		},
 	}
 
 	if selector != nil {
@@ -104,11 +104,11 @@ func (a *AuthTypes) Add(cfg AuthType) *AuthTypes {
 		log.Fatal("auth types is nil")
 	}
 
-	if _, ok := ExistingTypes[cfg.Type]; !ok {
+	if _, ok := a.ExistingTypes[cfg.Type]; !ok {
 		log.Fatalf("invalid auth type %v for '%s' key", cfg.Type, cfg.Key)
 	}
 
-	ExistingTypes[cfg.Type] = true
+	a.ExistingTypes[cfg.Type] = true
 
 	if cfg.SignUpRequest == nil {
 		cfg.SignUpRequest = &SignUpRequestByEmail{}
@@ -156,17 +156,19 @@ func (a *AuthTypes) Select(c *gin.Context, t Type) *AuthType {
 			foundedAt = &at
 		}
 	case len(a.List) == 1:
-		for _, at := range a.List {
+		for i := range a.List {
+			at := a.List[i]
 			foundedAt = &at
 		}
 	default:
 		var key string
+
 		for k, at := range a.List {
 			if at.Type == t {
 				if key == "" {
 					key = k
 				} else {
-					k = ""
+					key = ""
 					break
 				}
 			}

@@ -29,15 +29,15 @@ func (r *Rauther) includeAuthabe(router *gin.RouterGroup) {
 
 	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
 
-	if r.Modules.PasswordAuthableUser && authtype.ExistingTypes[authtype.Password] {
+	if r.Modules.PasswordAuthableUser && r.types.ExistingTypes[authtype.Password] {
 		r.includePasswordAuthable(router)
 	}
 
-	if r.Modules.SocialAuthableUser && authtype.ExistingTypes[authtype.Social] {
+	if r.Modules.SocialAuthableUser && r.types.ExistingTypes[authtype.Social] {
 		r.includeSocialAuthable(router)
 	}
 
-	if r.Modules.OTP && authtype.ExistingTypes[authtype.OTP] {
+	if r.Modules.OTP && r.types.ExistingTypes[authtype.OTP] {
 		r.includeOTPAuthable(router)
 	}
 }
