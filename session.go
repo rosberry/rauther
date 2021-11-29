@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/user"
@@ -47,7 +46,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 			session.BindUser(user)
 		}
 
-		session.SetToken(uuid.New().String())
+		session.SetToken(generateSessionToken())
 
 		err = r.deps.SessionStorer.Save(session)
 		if err != nil {

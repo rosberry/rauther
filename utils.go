@@ -69,6 +69,10 @@ func generateSessionID() string {
 	return uuid.NewString()
 }
 
+func generateSessionToken() string {
+	return uuid.NewString()
+}
+
 func sendConfirmCode(s sender.Sender, recipient, code string) error {
 	return sendCode(s, sender.ConfirmationEvent, recipient, code)
 }

@@ -5,50 +5,28 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/rosberry/rauther/common"
-	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/storage"
-	"github.com/rosberry/rauther/user"
 )
 
 func (r *Rauther) signOutHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		s, ok := c.Get(r.Config.ContextNames.Session)
-		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		sessionInfo, success := r.checkSession(c)
+		if !success {
 			return
 		}
 
-		session, ok := s.(session.Session)
-		if !ok {
-			log.Fatal("[signOutHandler] failed 's' type assertion to session.Session")
-		}
+		sessionInfo.Session.UnbindUser(sessionInfo.User)
 
-		u, ok := c.Get(r.Config.ContextNames.User)
-		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.ErrNotSignIn)
-			return
-		}
+		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest { // nolint:nestif
+			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
+			if !ok {
+				log.Print("[signOutHandler] failed 'UserStorer' type assertion to RemovableUserStorer")
+			}
 
-		usr, ok := u.(user.User)
-		if !ok {
-			log.Fatal("[signOutHandler] failed 'user' type assertion to User")
-		}
-
-		guestUser, isGuestInterface := usr.(user.GuestUser)
-
-		if r.Config.CreateGuestUser && isGuestInterface { // nolint:nestif
-			if guestUser.IsGuest() {
-				rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
-				if !ok {
-					log.Print("[signOutHandler] failed 'UserStorer' type assertion to RemovableUserStorer")
-				}
-
-				err := rmStorer.RemoveByID(session.GetUserID())
-				if err != nil {
-					log.Printf("Failed delete guest user %v: %v", session.GetUserID(), err)
-				}
+			err := rmStorer.RemoveByID(sessionInfo.UserID)
+			if err != nil {
+				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 			}
 
 			us, errType := r.createGuestUser()
@@ -57,15 +35,12 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 				return
 			}
 
-			session.BindUser(us)
-		} else {
-			session.UnbindUser(usr)
+			sessionInfo.Session.BindUser(us)
 		}
 
-		newToken := uuid.New().String()
-		session.SetToken(newToken)
+		sessionInfo.Session.SetToken(generateSessionToken())
 
-		err := r.deps.SessionStorer.Save(session)
+		err := r.deps.SessionStorer.Save(sessionInfo.Session)
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
@@ -73,7 +48,7 @@ func (r *Rauther) signOutHandler() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
-			"token":  newToken,
+			"token":  sessionInfo.Session.GetToken(),
 		})
 	}
 }
