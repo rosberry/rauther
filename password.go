@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
-	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
 	"golang.org/x/crypto/bcrypt"
@@ -55,32 +54,9 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		s, ok := c.Get(r.Config.ContextNames.Session)
-		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		sessionInfo, success := r.checkSession(c)
+		if !success {
 			return
-		}
-
-		sess, ok := s.(session.Session)
-		if !ok {
-			log.Fatal("[signUpHandler] failed 'sess' type assertion to session.Session")
-		}
-
-		currentUserID := sess.GetUserID()
-
-		var currentUserIsGuest bool
-
-		if currentUserID != nil {
-			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
-
-			if currentUser != nil && err == nil {
-				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
-			}
-
-			if !currentUserIsGuest {
-				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-				return
-			}
 		}
 
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
@@ -89,8 +65,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Config.CreateGuestUser && currentUserIsGuest {
-			u, _ = r.deps.UserStorer.LoadByID(currentUserID)
+		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+			u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
 			u.(user.AuthableUser).SetUID(at.Key, uid)
 			u.(user.GuestUser).SetGuest(false)
 		} else {
@@ -140,15 +116,15 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
-		sess.BindUser(u)
+		sessionInfo.Session.BindUser(u)
 
-		err = r.deps.SessionStorer.Save(sess)
+		err = r.deps.SessionStorer.Save(sessionInfo.Session)
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
 
-		c.Set(r.Config.ContextNames.Session, sess)
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 		c.Set(r.Config.ContextNames.User, u)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -189,32 +165,9 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		s, ok := c.Get(r.Config.ContextNames.Session)
-		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		sessionInfo, success := r.checkSession(c)
+		if !success {
 			return
-		}
-
-		sess, ok := s.(session.Session)
-		if !ok {
-			log.Fatal("[signInHandler] failed 'sess' type assertion to session.Session")
-		}
-
-		currentUserID := sess.GetUserID()
-
-		var currentUserIsGuest bool
-
-		if currentUserID != nil {
-			currentUser, err := r.deps.UserStorer.LoadByID(currentUserID)
-
-			if currentUser != nil && err == nil {
-				currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
-			}
-
-			if !currentUserIsGuest {
-				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-				return
-			}
 		}
 
 		uid, password := request.GetUID(), request.GetPassword()
@@ -239,9 +192,9 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		sess.BindUser(u)
+		sessionInfo.Session.BindUser(u)
 
-		if err = r.deps.SessionStorer.Save(sess); err != nil {
+		if err = r.deps.SessionStorer.Save(sessionInfo.Session); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
@@ -251,19 +204,19 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		if r.Config.CreateGuestUser && currentUserIsGuest {
+		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
 			rmStorer, ok := r.deps.UserStorer.(storage.RemovableUserStorer)
 			if !ok {
 				log.Printf("[signInHandler] failed 'UserStorer' type assertion to storage.RemovableUserStorer")
 			}
 
-			err := rmStorer.RemoveByID(currentUserID)
+			err := rmStorer.RemoveByID(sessionInfo.UserID)
 			if err != nil {
-				log.Printf("Failed delete guest user %v: %v", currentUserID, err)
+				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 			}
 		}
 
-		c.Set(r.Config.ContextNames.Session, sess)
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 		c.Set(r.Config.ContextNames.User, u)
 
 		c.JSON(http.StatusOK, gin.H{
