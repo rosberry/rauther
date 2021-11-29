@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
-	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/user"
 )
 
@@ -67,24 +66,12 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 
 func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		s, ok := c.Get(r.Config.ContextNames.Session)
-		if !ok {
-			errorResponse(c, http.StatusUnauthorized, common.ErrNotAuth)
+		sessionInfo, success := r.checkSession(c)
+		if !success {
 			return
 		}
 
-		sess, ok := s.(session.Session)
-		if !ok {
-			log.Fatal("[resendCodeHandler] failed 's' type assertion to Session")
-		}
-
-		userID := sess.GetUserID()
-		if userID == "" {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
-			return
-		}
-
-		u, err := r.deps.UserStorer.LoadByID(userID)
+		u, err := r.deps.UserStorer.LoadByID(sessionInfo.UserID)
 		if err != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
