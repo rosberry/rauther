@@ -19,7 +19,6 @@ type (
 		Auths map[string]AuthIdentities `json:"auths"`
 
 		Username  string     `auth:"username" json:"username"`
-		Password  string     `json:"password"`
 		ExpiredIn *time.Time `json:"expired"`
 
 		Guest bool   `json:"guest"`
@@ -35,6 +34,7 @@ type (
 	AuthIdentities struct {
 		Type        string `json:"type"`
 		UID         string `json:"uid"`
+		Password    string `json:"password"`
 		ConfirmCode string `json:"confirmCode"`
 		Confirmed   bool   `json:"confirmed"`
 	}
@@ -59,8 +59,15 @@ func (u *User) SetUID(authType, uid string) {
 	}
 }
 
-func (u *User) GetPassword() (password string) { return u.Password }
-func (u *User) SetPassword(password string)    { u.Password = password }
+func (u *User) GetPassword(authType string) (password string) {
+	return u.Auths[authType].Password
+}
+
+func (u *User) SetPassword(authType, password string) {
+	at := u.Auths[authType]
+	at.Password = password
+	u.Auths[authType] = at
+}
 
 func (u *User) Confirmed() (ok bool) {
 	for _, at := range u.Auths {
@@ -133,15 +140,20 @@ func (u *User) SetGuest(guest bool) {
 	u.Guest = guest
 }
 
-func (u *User) GetOTP() (code string, expiredIn time.Time) {
+func (u *User) GetOTP(authType string) (code string, expiredIn time.Time) {
 	if u.ExpiredIn != nil {
 		expiredIn = *u.ExpiredIn
 	}
-	return u.Password, expiredIn
+
+	return u.Auths[authType].Password, expiredIn
 }
 
-func (u *User) SetOTP(code string, expiredIn *time.Time) error {
-	u.Password, u.ExpiredIn = code, expiredIn
+func (u *User) SetOTP(authType string, code string, expiredIn *time.Time) error {
+	at := u.Auths[authType]
+	at.Password = code
+	u.Auths[authType] = at
+
+	u.ExpiredIn = expiredIn
 	return nil
 }
 

@@ -12,54 +12,56 @@ import (
 
 type User interface {
 	GetID() (id interface{})
-	GetUID(authType string) (uid string)
-	SetUID(authType, uid string)
 }
 
 type GuestUser interface {
+	User
 	IsGuest() bool
 	SetGuest(guest bool)
 }
 
-type PasswordAuthableUser interface {
+type AuthableUser interface {
 	User
+	GetUID(authType string) (uid string)
+	SetUID(authType, uid string)
+}
 
-	GetPassword() (password string)
-	SetPassword(password string)
+type PasswordAuthableUser interface {
+	AuthableUser
+	GetPassword(authType string) (password string)
+	SetPassword(authType, password string)
 }
 
 type ConfirmableUser interface {
-	User
-
+	AuthableUser
 	Confirmed() (ok bool)
 	GetConfirmed(authType string) (ok bool)
 	GetConfirmCode(authType string) (code string)
-
 	SetConfirmed(authType string, ok bool)
 	SetConfirmCode(authType, code string)
 }
 
 type RecoverableUser interface {
-	User
-
+	AuthableUser
 	GetRecoveryCode() (code string)
 	SetRecoveryCode(code string)
 }
 
 // interface for checking the interval during which confirmation codes cannot be sent
 type CodeSentTimeUser interface {
-	User
-
+	AuthableUser
 	GetCodeSentTime(authType string) *time.Time
 	SetCodeSentTime(authType string, t *time.Time)
 }
 
 type OTPAuth interface {
-	GetOTP() (code string, expiredIn time.Time)
-	SetOTP(code string, expiredIn *time.Time) error
+	AuthableUser
+	GetOTP(authType string) (code string, expiredIn time.Time)
+	SetOTP(authType string, code string, expiredIn *time.Time) error
 }
 
 type OTPAuthCustomCodeGenerator interface {
+	OTPAuth
 	GenerateCode() string
 }
 

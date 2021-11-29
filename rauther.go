@@ -459,11 +459,11 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 
 		if r.Config.CreateGuestUser && currentUserIsGuest {
 			u, _ = r.deps.UserStorer.LoadByID(currentUserID)
-			u.SetUID(at.Key, uid)
+			u.(user.AuthableUser).SetUID(at.Key, uid)
 			u.(user.GuestUser).SetGuest(false)
 		} else {
 			u = r.deps.UserStorer.Create()
-			u.SetUID(at.Key, uid)
+			u.(user.AuthableUser).SetUID(at.Key, uid)
 		}
 
 		encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -472,7 +472,7 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
 		}
 
-		u.(user.PasswordAuthableUser).SetPassword(string(encryptedPassword))
+		u.(user.PasswordAuthableUser).SetPassword(at.Key, string(encryptedPassword))
 
 		if _, ok := request.(authtype.AuhtRequestFieldable); ok {
 			fields := request.(authtype.AuhtRequestFieldable).Fields()
@@ -600,7 +600,7 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
-		userPassword := u.(user.PasswordAuthableUser).GetPassword()
+		userPassword := u.(user.PasswordAuthableUser).GetPassword(at.Key)
 
 		if !passwordCompare(password, userPassword) {
 			errorResponse(c, http.StatusForbidden, common.ErrIncorrectPassword)
@@ -712,7 +712,7 @@ func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 		if u == nil {
 			// create user if not exist
 			u = r.deps.UserStorer.Create()
-			u.SetUID(at.Key, userInfo.ID)
+			u.(user.AuthableUser).SetUID(at.Key, userInfo.ID)
 
 			if err = r.deps.UserStorer.Save(u); err != nil {
 				errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
@@ -992,7 +992,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		uid := u.GetUID(at.Key)
+		uid := u.(user.AuthableUser).GetUID(at.Key)
 
 		err = sendConfirmCode(at.Sender, uid, confirmCode)
 		if err != nil {
@@ -1170,7 +1170,7 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
 		}
 
-		u.(user.PasswordAuthableUser).SetPassword(string(encryptedPassword))
+		u.(user.PasswordAuthableUser).SetPassword(at.Key, string(encryptedPassword))
 		u.(user.RecoverableUser).SetRecoveryCode("")
 
 		err = r.deps.Storage.UserStorer.Save(u)
@@ -1327,7 +1327,7 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 				u.(user.GuestUser).SetGuest(true)
 			}
 
-			u.SetUID(at.Key, uid)
+			u.(user.AuthableUser).SetUID(at.Key, uid)
 		}
 
 		// Check last send time
@@ -1357,7 +1357,7 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 		}
 
 		expiredAt := time.Now().Add(r.Config.OTP.CodeLifeTime)
-		u.(user.OTPAuth).SetOTP(code, &expiredAt)
+		u.(user.OTPAuth).SetOTP(at.Key, code, &expiredAt)
 
 		err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
 		if err != nil {
@@ -1450,7 +1450,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		userCode, expiredAt := u.(user.OTPAuth).GetOTP()
+		userCode, expiredAt := u.(user.OTPAuth).GetOTP(at.Key)
 		if expiredAt.Before(time.Now()) {
 			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
 			return
@@ -1465,7 +1465,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 			var removeUserID interface{}
 
 			if u.(user.GuestUser).IsGuest() {
-				sessionInfo.User.SetUID(at.Key, uid)
+				sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
 				sessionInfo.User.(user.GuestUser).SetGuest(false)
 
 				removeUserID = u.GetID()
@@ -1493,7 +1493,7 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		u.(user.OTPAuth).SetOTP("", nil)
+		u.(user.OTPAuth).SetOTP(at.Key, "", nil)
 
 		if err = r.deps.UserStorer.Save(u); err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)

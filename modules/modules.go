@@ -8,6 +8,7 @@ import (
 
 type Modules struct {
 	Session              bool
+	AuthableUser         bool
 	PasswordAuthableUser bool
 	SocialAuthableUser   bool
 	ConfirmableUser      bool
@@ -17,8 +18,17 @@ type Modules struct {
 }
 
 func (m Modules) String() string {
-	return fmt.Sprintf("- Session: %v\n- PasswordAuthableUser: %v\n- SocialAuthableUser: %v\n- ConfirmableUser: %v\n- RecoverableUser: %v\n- CodeSentTimeUser: %v\n- One Time Password: %v",
+	return fmt.Sprintf(`
+	- Session: %v
+	- AuthableUser: %v
+	- PasswordAuthableUser: %v
+	- SocialAuthableUser: %v
+	- ConfirmableUser: %v
+	- RecoverableUser: %v
+	- CodeSentTimeUser: %v
+	- One Time Password: %v`,
 		m.Session,
+		m.AuthableUser,
 		m.PasswordAuthableUser,
 		m.SocialAuthableUser,
 		m.ConfirmableUser,
@@ -30,6 +40,7 @@ func (m Modules) String() string {
 func New(checker *checker.Checker) *Modules {
 	return &Modules{
 		Session:              true,
+		AuthableUser:         checker.Authable,
 		PasswordAuthableUser: checker.PasswordAuthable,
 		SocialAuthableUser:   true, // no interfaces required
 		ConfirmableUser:      checker.Confirmable,
