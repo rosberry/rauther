@@ -20,17 +20,9 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 		return nil
 	}
 	return func(c *gin.Context) {
-		expectedTypeOfAuthType := authtype.OTP
-		at := r.types.Select(c, expectedTypeOfAuthType)
-
-		if at == nil {
-			log.Print("OTP auth handler: not found auth type")
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
+		at, ok := r.findAuthType(c, authtype.OTP)
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return
@@ -147,17 +139,9 @@ func (r *Rauther) otpAuthHandler() gin.HandlerFunc {
 		return nil
 	}
 	return func(c *gin.Context) {
-		expectedTypeOfAuthType := authtype.OTP
-		at := r.types.Select(c, expectedTypeOfAuthType)
-
-		if at == nil {
-			log.Print("OTP auth handler: not found auth type")
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
+		at, ok := r.findAuthType(c, authtype.OTP)
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 			return

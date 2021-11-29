@@ -19,17 +19,11 @@ func (r *Rauther) requestRecoveryHandler() gin.HandlerFunc {
 			UID string `json:"uid" binding:"required"`
 		}
 
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("recovery request handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -93,17 +87,11 @@ func (r *Rauther) validateRecoveryCodeHandler() gin.HandlerFunc {
 			Code string `json:"code" binding:"required"`
 		}
 
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("recovery handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -137,17 +125,11 @@ func (r *Rauther) recoveryHandler() gin.HandlerFunc {
 			Password string `json:"password" binding:"required"`
 		}
 
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("recovery handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 

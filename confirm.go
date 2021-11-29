@@ -20,17 +20,11 @@ func (r *Rauther) confirmHandler() gin.HandlerFunc {
 			Code string `json:"code" binding:"required"`
 		}
 
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("confirm handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -96,17 +90,11 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("resend confirm code handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password) // FIXME: Password only?
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 

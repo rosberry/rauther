@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/sender"
 	"golang.org/x/crypto/bcrypt"
@@ -101,4 +102,18 @@ func generateNumericCode(length int) string {
 		b[i] = table[int(b[i])%len(table)]
 	}
 	return string(b)
+}
+
+func (r *Rauther) findAuthType(c *gin.Context, expectedTypeOfAuthType authtype.Type) (at *authtype.AuthType, ok bool) {
+	at = r.types.Select(c, expectedTypeOfAuthType)
+
+	if at == nil {
+		return
+	}
+
+	if at.Type != expectedTypeOfAuthType {
+		return
+	}
+
+	return at, true
 }

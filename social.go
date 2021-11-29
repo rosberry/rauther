@@ -16,17 +16,11 @@ import (
 
 func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		expectedTypeOfAuthType := authtype.Social
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("social sign in handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Social)
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 

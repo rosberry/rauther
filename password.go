@@ -21,17 +21,11 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("sign up handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password)
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -141,17 +135,11 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("sign in handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password)
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
@@ -232,17 +220,11 @@ func (r *Rauther) validateLoginField() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		expectedTypeOfAuthType := authtype.Password
-		at := r.types.Select(c, expectedTypeOfAuthType)
-		if at == nil {
-			log.Print("validate login field handler: not found auth type")
+		at, ok := r.findAuthType(c, authtype.Password)
+		if !ok {
+			log.Print("not found expected auth type")
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
-			return
-		}
-
-		if at.Type != expectedTypeOfAuthType {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
 
