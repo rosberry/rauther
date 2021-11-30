@@ -118,6 +118,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Incorrect password
+          schema:
+            $ref: "#/definitions/ErrorResponse"
       tags:
       - auth
       security:
@@ -422,6 +426,9 @@ definitions:
   SocialSignInRequest:
     type: object
     properties:
+      type:
+        type: string
+        example: google
       token:
         type: string
         description: token from oauth service
