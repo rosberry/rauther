@@ -15,12 +15,12 @@ func (r *Rauther) includeSession() {
 	withSession := r.deps.R.Group("", r.authMiddleware())
 	{
 		if r.Modules.AuthableUser {
-			r.includeAuthabe(withSession)
+			r.includeAuthable(withSession)
 		}
 	}
 }
 
-func (r *Rauther) includeAuthabe(router *gin.RouterGroup) {
+func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	if !r.checker.Authable {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}

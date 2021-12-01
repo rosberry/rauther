@@ -53,6 +53,11 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 			return
 		}
 
+		if !sessionInfo.UserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
 		u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err == nil && u != nil {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
@@ -72,6 +77,8 @@ func (r *Rauther) signUpHandler() gin.HandlerFunc {
 		if err != nil {
 			log.Print("encrypt password error:", err)
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+
+			return
 		}
 
 		u.(user.PasswordAuthableUser).SetPassword(at.Key, string(encryptedPassword))

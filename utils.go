@@ -47,6 +47,7 @@ func passwordCompare(requestPassword, hashedPassword string) (ok bool) {
 	return
 }
 
+// TODO: generateCode() - make beautiful code
 func generateCode() (code string) {
 	return uuid.NewString()
 }

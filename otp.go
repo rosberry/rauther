@@ -105,6 +105,7 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 		err = u.(user.OTPAuth).SetOTP(at.Key, code, &expiredAt)
 		if err != nil {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+			return
 		}
 
 		err = at.Sender.Send(sender.ConfirmationEvent, uid, code)

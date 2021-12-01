@@ -60,13 +60,18 @@ func (u *User) SetUID(authType, uid string) {
 }
 
 func (u *User) GetPassword(authType string) (password string) {
+	if at, ok := u.Auths[authType]; ok {
+		return at.Password
+	}
+
 	return u.Auths[authType].Password
 }
 
 func (u *User) SetPassword(authType, password string) {
-	at := u.Auths[authType]
-	at.Password = password
-	u.Auths[authType] = at
+	if at, ok := u.Auths[authType]; ok {
+		at.Password = password
+		u.Auths[authType] = at
+	}
 }
 
 func (u *User) Confirmed() (ok bool) {
