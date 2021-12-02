@@ -165,6 +165,11 @@ func (r *Rauther) signInHandler() gin.HandlerFunc {
 			return
 		}
 
+		if !sessionInfo.UserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
 		uid, password := request.GetUID(), request.GetPassword()
 
 		if uid == "" || password == "" {

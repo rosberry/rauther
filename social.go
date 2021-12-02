@@ -38,6 +38,11 @@ func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 			return
 		}
 
+		if !sessionInfo.UserIsGuest {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
 		var u user.User
 
 		token := request.GetToken()
