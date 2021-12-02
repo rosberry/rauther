@@ -23,7 +23,7 @@ func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 			return
 		}
 
-		request := clone(at.SocialSignInRequest).(authtype.SocialSignInRequest)
+		request := clone(at.SocialSignInRequest).(authtype.SocialAuthRequest)
 
 		err := c.ShouldBindBodyWith(request, binding.JSON)
 		if err != nil {
