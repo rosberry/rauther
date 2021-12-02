@@ -52,12 +52,7 @@ func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 			return
 		}
 
-		u, err = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
-		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.ErrUserLoad)
-			return
-		}
-
+		u, _ = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
 		if u == nil {
 			// create user if not exist
 			u = r.deps.UserStorer.Create()
