@@ -63,6 +63,10 @@ func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 			u = r.deps.UserStorer.Create()
 			u.(user.AuthableUser).SetUID(at.Key, userInfo.ID)
 
+			if r.Modules.ConfirmableUser && r.checker.Confirmable {
+				u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+			}
+
 			if err = r.deps.UserStorer.Save(u); err != nil {
 				errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 				return
