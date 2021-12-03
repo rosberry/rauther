@@ -36,6 +36,7 @@ const (
 	ErrInvalidConfirmCode
 	ErrGinDependency
 	ErrSessionStorerDependency
+	ErrAuthableUserNotImplement
 	ErrPasswordAuthableUserNotImplement
 	ErrConfirmableUserNotImplement
 	ErrSenderRequired
@@ -68,7 +69,8 @@ var Errors = map[ErrTypes]Err{
 	ErrInvalidConfirmCode:               {"invalid_code", "Invalid confirm code"},
 	ErrGinDependency:                    {"gin_dependency_nil", "Nil gin dependency"},
 	ErrSessionStorerDependency:          {"session_storer_nil", "Nil SessionStorer dependency"},
-	ErrPasswordAuthableUserNotImplement: {"password_authable_user_not_implement", "Please implement PasswordAuthableUser interface"},
+	ErrAuthableUserNotImplement:         {"authable_user_not_implement", "Please implement AuthableUser interface"},
+	ErrPasswordAuthableUserNotImplement: {"password_authable_user_not_implement", "Please implement PasswordAuthableUser interface"}, // nolint:lll
 	ErrConfirmableUserNotImplement:      {"confirmable_user_not_implement", "Please implement ConfirmableUser interface"},
 	ErrSenderRequired:                   {"sender_required", "At least one sender is required"},
 	ErrRecoverableUserNotImplement:      {"recoverable_user_not_implement", "Please implement RecoverableUser interface"},
