@@ -15,20 +15,6 @@ type SignUpRequestByEmail struct {
 func (r SignUpRequestByEmail) GetUID() (uid string)           { return r.Email } // trim spaces, toLower
 func (r SignUpRequestByEmail) GetPassword() (password string) { return r.Password }
 
-// TODO: It's not working: uid = username -> send code to uid
-type SignUpRequestByUsername struct {
-	Username string `json:"username" form:"username" binding:"required"`
-	Password string `json:"password" form:"password" binding:"required"`
-	Email    string `json:"email" form:"email"`
-}
-
-func (r SignUpRequestByUsername) GetUID() (uid string)           { return r.Username } // trim spaces
-func (r SignUpRequestByUsername) GetPassword() (password string) { return r.Password }
-
-func (r SignUpRequestByUsername) Fields() map[string]string {
-	return map[string]string{"email": r.Email}
-}
-
 type CheckLoginFieldRequestByEmail struct {
 	Email string `json:"email" form:"email" binding:"required"`
 }

@@ -27,7 +27,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 
 	r.checkRemovableUser()
 
-	router.POST(r.Config.Routes.SignOut, r.signOutHandler())
+	router.POST(r.Config.Routes.SignOut, r.signOutHandler)
 
 	if r.Modules.PasswordAuthableUser && r.methods.ExistingTypes[authtype.Password] {
 		r.includePasswordAuthable(router)
@@ -47,9 +47,9 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrPasswordAuthableUserNotImplement])
 	}
 
-	router.POST(r.Config.Routes.SignUp, r.signUpHandler())
-	router.POST(r.Config.Routes.SignIn, r.signInHandler())
-	router.POST(r.Config.Routes.ValidateLoginField, r.validateLoginField())
+	router.POST(r.Config.Routes.SignUp, r.signUpHandler)
+	router.POST(r.Config.Routes.SignIn, r.signInHandler)
+	router.POST(r.Config.Routes.ValidateLoginField, r.validateLoginField)
 
 	if r.Modules.ConfirmableUser {
 		r.includeConfirmable(router)
@@ -63,7 +63,7 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup) {
 func (r *Rauther) includeSocialAuthable(router *gin.RouterGroup) {
 	r.checkRemovableUser()
 
-	router.POST(r.Config.Routes.SocialSignIn, r.socialSignInHandler())
+	router.POST(r.Config.Routes.SocialSignIn, r.socialSignInHandler)
 }
 
 func (r *Rauther) includeOTPAuthable(router *gin.RouterGroup) {
@@ -71,8 +71,8 @@ func (r *Rauther) includeOTPAuthable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrOTPNotImplement])
 	}
 
-	router.POST(r.Config.Routes.OTPRequestCode, r.otpGetCodeHandler())
-	router.POST(r.Config.Routes.OTPCheckCode, r.otpAuthHandler())
+	router.POST(r.Config.Routes.OTPRequestCode, r.otpGetCodeHandler)
+	router.POST(r.Config.Routes.OTPCheckCode, r.otpAuthHandler)
 }
 
 func (r *Rauther) checkRemovableUser() {
@@ -98,8 +98,8 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
-	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler())
-	router.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler())
+	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
+	router.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler)
 }
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
@@ -111,9 +111,9 @@ func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
-	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler())
-	router.POST(r.Config.Routes.RecoveryValidateCode, r.validateRecoveryCodeHandler())
-	router.POST(r.Config.Routes.RecoveryCode, r.recoveryHandler())
+	router.POST(r.Config.Routes.RecoveryRequest, r.requestRecoveryHandler)
+	router.POST(r.Config.Routes.RecoveryValidateCode, r.validateRecoveryCodeHandler)
+	router.POST(r.Config.Routes.RecoveryCode, r.recoveryHandler)
 }
 
 func (r *Rauther) checkSender() (ok bool) {
