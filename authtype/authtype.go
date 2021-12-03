@@ -60,7 +60,6 @@ type (
 
 	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
 	AuhtRequestFieldable interface {
-		AuthRequest
 		Fields() map[string]string
 	}
 )
