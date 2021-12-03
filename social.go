@@ -67,6 +67,19 @@ func (r *Rauther) socialSignInHandler() gin.HandlerFunc {
 				u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 			}
 
+			if _, ok := request.(authtype.AuhtRequestFieldable); ok {
+				fields := request.(authtype.AuhtRequestFieldable).Fields()
+				for fieldKey, fieldValue := range fields {
+					err := user.SetFields(u, fieldKey, fieldValue)
+					if err != nil {
+						log.Printf("sign up: set fields %v: %v", fieldKey, err)
+						errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+						return
+					}
+				}
+			}
+
 			if err = r.deps.UserStorer.Save(u); err != nil {
 				errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 				return
