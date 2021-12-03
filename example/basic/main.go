@@ -14,7 +14,7 @@ import (
 	"github.com/rosberry/rauther/sender"
 )
 
-func main() {
+func main() { // nolint
 	log.Print("It's basic example for rauther lib")
 
 	r := gin.Default()
@@ -60,40 +60,40 @@ func main() {
 
 	rauth.DefaultSender(&fakeEmailSender{})
 
-	rauth.AddAuthTypes([]authtype.Config{
+	rauth.AddAuthMethods([]authtype.AuthMethod{
 		{
-			AuthKey: "email",
-			Sender:  &fakeEmailSender{},
+			Key:    "email",
+			Sender: &fakeEmailSender{},
 		},
 		{
-			AuthKey:                "phone",
+			Key:                    "phone",
 			Sender:                 &fakeSmsSender{},
 			SignUpRequest:          &phoneSignUp{},
 			SignInRequest:          &phoneSignIn{},
 			CheckUserExistsRequest: &CheckPhoneRequest{},
 		},
 		{
-			AuthKey:       "sms",
-			AuthType:      authtype.OTP,
+			Key:           "sms",
+			Type:          authtype.OTP,
 			Sender:        &fakeSmsSender{},
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
 		},
 		{
-			AuthKey:       "telegram",
-			AuthType:      authtype.OTP,
+			Key:           "telegram",
+			Type:          authtype.OTP,
 			Sender:        &fakeTelegramSender{},
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
 		},
 		{
-			AuthKey:        "google",
-			AuthType:       authtype.Social,
+			Key:            "google",
+			Type:           authtype.Social,
 			SocialAuthType: authtype.SocialAuthTypeGoogle,
 		},
 		{
-			AuthKey:             "apple",
-			AuthType:            authtype.Social,
+			Key:                 "apple",
+			Type:                authtype.Social,
 			SocialSignInRequest: &CustomSocialSignInRequest{},
 			SocialAuthType:      authtype.SocialAuthTypeApple,
 		},

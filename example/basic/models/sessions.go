@@ -73,10 +73,5 @@ func (s *Session) BindUser(u user.User) {
 }
 
 func (s *Session) UnbindUser(u user.User) {
-	user, ok := u.(*User)
-	if !ok {
-		log.Printf("failed user type assertion")
-	}
-
-	s.UserID = user.ID
+	s.UserID = 0
 }

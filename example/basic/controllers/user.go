@@ -68,6 +68,7 @@ func UpdateProfile(c *gin.Context) {
 			"result":  false,
 			"message": "bad request, mf",
 		})
+
 		return
 	}
 

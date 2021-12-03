@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/sender"
 	"golang.org/x/crypto/bcrypt"
@@ -46,8 +47,8 @@ func passwordCompare(requestPassword, hashedPassword string) (ok bool) {
 	return
 }
 
-func generateConfirmCode() (code string) {
-	// TODO: Implement me!
+// TODO: generateCode() - make beautiful code
+func generateCode() (code string) {
 	return uuid.NewString()
 }
 
@@ -64,25 +65,25 @@ func parseAuthToken(c *gin.Context) (token string) {
 }
 
 func generateSessionID() string {
-	// TODO: Implement me!
+	return uuid.NewString()
+}
+
+func generateSessionToken() string {
 	return uuid.NewString()
 }
 
 func sendConfirmCode(s sender.Sender, recipient, code string) error {
-	log.Printf("Confirm code for %s: %s", recipient, code)
-
-	err := s.Send(sender.ConfirmationEvent, recipient, code)
-	if err != nil {
-		err = fmt.Errorf("sendConfirmCode error: %w", err)
-	}
-
-	return err
+	return sendCode(s, sender.ConfirmationEvent, recipient, code)
 }
 
 func sendRecoveryCode(s sender.Sender, recipient, code string) error {
+	return sendCode(s, sender.PasswordRecoveryEvent, recipient, code)
+}
+
+func sendCode(s sender.Sender, event sender.Event, recipient, code string) error {
 	log.Printf("Recovery code for %s: %s", recipient, code)
 
-	err := s.Send(sender.PasswordRecoveryEvent, recipient, code)
+	err := s.Send(event, recipient, code)
 	if err != nil {
 		err = fmt.Errorf("sendRecoveryCode error: %w", err)
 	}
@@ -98,10 +99,25 @@ func generateNumericCode(length int) string {
 	table := [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
 
 	b := make([]byte, length)
-	rand.Read(b)
+	rand.Read(b) // nolint
 
 	for i := 0; i < len(b); i++ {
 		b[i] = table[int(b[i])%len(table)]
 	}
+
 	return string(b)
+}
+
+func (r *Rauther) findAuthMethod(c *gin.Context, expectedType authtype.Type) (am *authtype.AuthMethod, ok bool) {
+	am = r.methods.Select(c, expectedType)
+
+	if am == nil {
+		return
+	}
+
+	if am.Type != expectedType {
+		return
+	}
+
+	return am, true
 }
