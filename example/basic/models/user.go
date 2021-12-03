@@ -197,8 +197,6 @@ func (s *UserStorer) LoadByID(id interface{}) (user user.User, err error) {
 }
 
 func (s *UserStorer) Create() (user user.User) {
-	rand.Seed(time.Now().Unix())
-
 	u := &User{
 		ID:    uint(rand.Uint64()), // nolint
 		Auths: map[string]AuthIdentities{},
