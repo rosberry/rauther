@@ -34,11 +34,6 @@ var phone = "+7" + (Math.floor(Math.random()*999999999));
 var userPassword = "password1";
 var userPassword2 = "password2";
 
-var googleToken = process.env.GOOGLE_TOKEN || "";
-if (googleToken == "") {
-  console.log('ATTENTION! No GOOGLE_TOKEN provided, so google login tests are skipped.');
-}
-
 var device_id = "test"+(Math.floor(Math.random()*99999));
 var apiToken = "";
 var uid = "";
