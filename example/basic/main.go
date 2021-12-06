@@ -194,10 +194,17 @@ func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
 type otpRequest struct {
 	Phone string `json:"phone" binding:"required"`
 	Code  string `json:"code"`
+	Name  string `json:"name"`
 }
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
+
+func (r *otpRequest) Fields() map[string]string {
+	return map[string]string{
+		"username": r.Name,
+	}
+}
 
 type CustomSocialSignInRequest struct {
 	Name  string `json:"name"`
