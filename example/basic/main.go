@@ -88,6 +88,9 @@ func main() { // nolint
 			Sender:        &fakeTelegramSender{},
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
+			CodeGenerator: func(l int) string {
+				return "123321"
+			},
 		},
 		{
 			Key:            "google",
