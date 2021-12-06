@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/auth"
+	"github.com/rosberry/rauther/code"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/user"
 )
@@ -27,6 +28,9 @@ type (
 
 		SocialSignInRequest SocialAuthRequest
 		SocialAuthType      auth.Type
+
+		CodeGenerator code.Generator
+		CodeLength    int
 	}
 
 	// list of AuthType by key
@@ -123,6 +127,10 @@ func (a *AuthMethods) Add(cfg AuthMethod) *AuthMethods {
 
 	if cfg.Type == Social && cfg.SocialSignInRequest == nil {
 		cfg.SocialSignInRequest = &SocialSignInRequest{}
+	}
+
+	if cfg.CodeGenerator == nil {
+		cfg.CodeGenerator = code.Numeric
 	}
 
 	a.List[cfg.Key] = cfg

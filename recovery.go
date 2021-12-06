@@ -38,7 +38,7 @@ func (r *Rauther) requestRecoveryHandler(c *gin.Context) {
 		return
 	}
 
-	code := generateCode()
+	code := r.generateCode(at)
 
 	// check resend timeout
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {

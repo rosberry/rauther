@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther"
 	"github.com/rosberry/rauther/authtype"
+	"github.com/rosberry/rauther/code"
 	"github.com/rosberry/rauther/deps"
 	"github.com/rosberry/rauther/example/basic/controllers"
 	"github.com/rosberry/rauther/example/basic/models"
@@ -78,6 +79,8 @@ func main() { // nolint
 			Sender:        &fakeSmsSender{},
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
+			CodeGenerator: code.Numeric,
+			CodeLength:    4,
 		},
 		{
 			Key:           "telegram",

@@ -84,7 +84,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 	}
 
 	if r.Modules.ConfirmableUser {
-		confirmCode := generateCode()
+		confirmCode := r.generateCode(at)
 
 		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 

@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
-	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/user"
 )
 
@@ -76,7 +75,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		}
 	}
 
-	code := r.getOTPCode(u)
+	code := r.generateCode(at)
 
 	expiredAt := time.Now().Add(r.Config.OTP.CodeLifeTime)
 
@@ -91,16 +90,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
-	}
-
-	err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
-	if err != nil {
-		log.Printf("send OTP code error: %v", err)
-	}
-
-	if err = r.deps.UserStorer.Save(u); err != nil {
-		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
-		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -217,16 +206,6 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"result": true,
 	})
-}
-
-func (r *Rauther) getOTPCode(u user.User) (code string) {
-	if uCodeGenerator, ok := u.(user.OTPAuthCustomCodeGenerator); ok {
-		code = uCodeGenerator.GenerateCode()
-	} else {
-		code = generateNumericCode(r.Config.OTP.CodeLength)
-	}
-
-	return
 }
 
 func (r *Rauther) checkCodeSent(u user.User, authKey string) (timeOffset *time.Time, ok bool) {

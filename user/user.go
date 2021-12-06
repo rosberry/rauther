@@ -60,11 +60,6 @@ type OTPAuth interface {
 	SetOTP(authType string, code string, expiredIn *time.Time) error
 }
 
-type OTPAuthCustomCodeGenerator interface {
-	OTPAuth
-	GenerateCode() string
-}
-
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")
 
 const notFoundFieldErrText = "field %s does not exist within the provided item"

@@ -1,7 +1,6 @@
 package rauther
 
 import (
-	"crypto/rand"
 	"fmt"
 	"log"
 	"net/http"
@@ -47,11 +46,6 @@ func passwordCompare(requestPassword, hashedPassword string) (ok bool) {
 	return
 }
 
-// TODO: generateCode() - make beautiful code
-func generateCode() (code string) {
-	return uuid.NewString()
-}
-
 func parseAuthToken(c *gin.Context) (token string) {
 	if authHeader := c.Request.Header.Get("Authorization"); authHeader != "" {
 		if strings.HasPrefix(authHeader, "Bearer ") {
@@ -81,7 +75,7 @@ func sendRecoveryCode(s sender.Sender, recipient, code string) error {
 }
 
 func sendCode(s sender.Sender, event sender.Event, recipient, code string) error {
-	log.Printf("Recovery code for %s: %s", recipient, code)
+	log.Printf("%s code for %s: %s", event, recipient, code)
 
 	err := s.Send(event, recipient, code)
 	if err != nil {
@@ -93,19 +87,6 @@ func sendCode(s sender.Sender, event sender.Event, recipient, code string) error
 
 func clone(obj interface{}) interface{} {
 	return reflect.New(reflect.TypeOf(obj).Elem()).Interface()
-}
-
-func generateNumericCode(length int) string {
-	table := [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
-
-	b := make([]byte, length)
-	rand.Read(b) // nolint
-
-	for i := 0; i < len(b); i++ {
-		b[i] = table[int(b[i])%len(table)]
-	}
-
-	return string(b)
 }
 
 func (r *Rauther) findAuthMethod(c *gin.Context, expectedType authtype.Type) (am *authtype.AuthMethod, ok bool) {
