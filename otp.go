@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
+	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/user"
 )
 
@@ -90,6 +91,16 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			return
 		}
+	}
+
+	err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
+	if err != nil {
+		log.Printf("send OTP code error: %v", err)
+	}
+
+	if err = r.deps.UserStorer.Save(u); err != nil {
+		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
