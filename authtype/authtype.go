@@ -58,8 +58,8 @@ type (
 		GetToken() string
 	}
 
-	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
-	AuhtRequestFieldable interface {
+	// AuthRequestFieldable is additional sign-up/sign-in interface for use additional fields
+	AuthRequestFieldable interface {
 		Fields() map[string]string
 	}
 )
@@ -207,7 +207,7 @@ func (a *AuthMethods) CheckFieldsDefine(u user.User) (ok bool, badFields map[str
 	failFields := make(map[string][]string)
 
 	for _, at := range a.List {
-		if r, ok := at.SignUpRequest.(AuhtRequestFieldable); ok {
+		if r, ok := at.SignUpRequest.(AuthRequestFieldable); ok {
 			fields := r.Fields()
 			if f := checkFields(fields); len(f) > 0 {
 				key := "sign-up " + at.Key
@@ -219,7 +219,7 @@ func (a *AuthMethods) CheckFieldsDefine(u user.User) (ok bool, badFields map[str
 			}
 		}
 
-		if r, ok := at.SignInRequest.(AuhtRequestFieldable); ok {
+		if r, ok := at.SignInRequest.(AuthRequestFieldable); ok {
 			fields := r.Fields()
 			if f := checkFields(fields); len(f) > 0 {
 				key := "sign-in " + at.Key

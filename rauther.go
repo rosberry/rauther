@@ -163,3 +163,16 @@ func (r *Rauther) DefaultSender(s sender.Sender) *Rauther {
 
 	return r
 }
+
+func (r *Rauther) fillFields(request authtype.AuthRequestFieldable, u user.User) (ok bool) {
+	fields := request.Fields()
+	for fieldKey, fieldValue := range fields {
+		err := user.SetFields(u, fieldKey, fieldValue)
+		if err != nil {
+			log.Printf("sign up: set fields %v: %v", fieldKey, err)
+			return false
+		}
+	}
+
+	return true
+}

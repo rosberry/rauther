@@ -137,8 +137,8 @@ type DefaultEmailSender struct{} // TODO
 		GetPassword() (password string)
 	}
 
-	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
-	type AuhtRequestFieldable interface {
+	// AuthRequestFieldable is additional sign-up/sign-in interface for use additional fields
+	type AuthRequestFieldable interface {
 		AuthRequest
 
 		Fields() map[string]string

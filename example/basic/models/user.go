@@ -49,7 +49,7 @@ func (u *User) GetUID(authType string) (uid string) {
 		return at.UID
 	}
 
-	return "" // FIXME: return error?
+	return ""
 }
 
 func (u *User) SetUID(authType, uid string) {
