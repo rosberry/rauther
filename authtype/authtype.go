@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/auth"
+	"github.com/rosberry/rauther/code"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/user"
 )
@@ -27,6 +28,9 @@ type (
 
 		SocialSignInRequest SocialAuthRequest
 		SocialAuthType      auth.Type
+
+		CodeGenerator code.Generator
+		CodeLength    int
 	}
 
 	// list of AuthType by key
@@ -58,8 +62,8 @@ type (
 		GetToken() string
 	}
 
-	// AuhtRequestFieldable is additional sign-up/sign-in interface for use additional fields
-	AuhtRequestFieldable interface {
+	// AuthRequestFieldable is additional sign-up/sign-in interface for use additional fields
+	AuthRequestFieldable interface {
 		Fields() map[string]string
 	}
 )
@@ -123,6 +127,10 @@ func (a *AuthMethods) Add(cfg AuthMethod) *AuthMethods {
 
 	if cfg.Type == Social && cfg.SocialSignInRequest == nil {
 		cfg.SocialSignInRequest = &SocialSignInRequest{}
+	}
+
+	if cfg.CodeGenerator == nil {
+		cfg.CodeGenerator = code.Numeric
 	}
 
 	a.List[cfg.Key] = cfg
@@ -207,7 +215,7 @@ func (a *AuthMethods) CheckFieldsDefine(u user.User) (ok bool, badFields map[str
 	failFields := make(map[string][]string)
 
 	for _, at := range a.List {
-		if r, ok := at.SignUpRequest.(AuhtRequestFieldable); ok {
+		if r, ok := at.SignUpRequest.(AuthRequestFieldable); ok {
 			fields := r.Fields()
 			if f := checkFields(fields); len(f) > 0 {
 				key := "sign-up " + at.Key
@@ -219,7 +227,7 @@ func (a *AuthMethods) CheckFieldsDefine(u user.User) (ok bool, badFields map[str
 			}
 		}
 
-		if r, ok := at.SignInRequest.(AuhtRequestFieldable); ok {
+		if r, ok := at.SignInRequest.(AuthRequestFieldable); ok {
 			fields := r.Fields()
 			if f := checkFields(fields); len(f) > 0 {
 				key := "sign-in " + at.Key

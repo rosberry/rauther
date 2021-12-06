@@ -61,10 +61,12 @@ type Config struct {
 	// ValidConfirmationInterval is the allowed interval between the last confirmation and the present time.
 	ValidConfirmationInterval time.Duration
 
+	// CodeLength is default code length for all auth methods (if not specified in auth method)
+	CodeLength int
+
 	OTP struct {
 		CodeLifeTime time.Duration
 		ResendDelay  time.Duration
-		CodeLength   int
 	}
 }
 
@@ -90,9 +92,10 @@ func (c *Config) Default() {
 	c.Routes.RecoveryCode = "recovery"
 
 	c.ValidConfirmationInterval = 1 * time.Minute
+	c.CodeLength = 6
+
 	c.OTP.CodeLifeTime = time.Minute * 2 // nolint:gomnd
 	c.OTP.ResendDelay = c.OTP.CodeLifeTime
-	c.OTP.CodeLength = 4
 
 	c.Routes.OTPRequestCode = "otp/code"
 	c.Routes.OTPCheckCode = "otp/auth"

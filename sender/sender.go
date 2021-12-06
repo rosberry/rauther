@@ -36,6 +36,19 @@ type (
 	Messages map[Event]string
 )
 
+var eventStrings = map[Event]string{ // nolint:gochecknoglobals
+	ConfirmationEvent:     "Confirmation",
+	PasswordRecoveryEvent: "Password Recovery",
+}
+
+func (e Event) String() string {
+	if s, ok := eventStrings[e]; ok {
+		return s
+	}
+
+	return "Unknown Event"
+}
+
 // NewDefaultEmailSender return Sender
 // Argument 'Messages' should be exists '%s' symbols for use substring to wrap your dynamic message
 func NewDefaultEmailSender(cr EmailCredentials, sj Subjects, m Messages) (Sender, error) {

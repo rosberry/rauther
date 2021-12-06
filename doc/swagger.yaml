@@ -15,46 +15,46 @@ paths:
   /auth:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Register device and returns token
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/AuthRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/AuthRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/AuthResponse'
+            $ref: "#/definitions/AuthResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
         - auth
 
   /register:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Register user
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/SignUpRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/SignUpRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SignUpResponse'
+            $ref: "#/definitions/SignUpResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
         "401":
           description: Not auth. Auth token required
           schema:
@@ -62,7 +62,7 @@ paths:
       tags:
         - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /register/check:
     post:
@@ -92,40 +92,40 @@ paths:
       tags:
         - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /login:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Login user
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/SignInRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/SignInRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SignInResponse'
+            $ref: "#/definitions/EmptyResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
         "401":
           description: Not auth. Auth token required
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
         "403":
           description: Incorrect password
           schema:
             $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /login/social:
     post:
@@ -156,103 +156,171 @@ paths:
       security:
         - authtoken: []
 
+  /otp/{key}/code:
+    post:
+      consumes:
+        - application/json
+      description: Request code for
+      parameters:
+        - in: path
+          name: key
+          type: string
+          required: true
+          description: Method for send code (sms or telegram)
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/OtpCodeRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/EmptyResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - auth
+      security:
+        - authtoken: []
+
+  /otp/{key}/auth:
+    post:
+      consumes:
+        - application/json
+      description: Auth with OTP code
+      parameters:
+        - in: path
+          name: key
+          type: string
+          required: true
+          description: Method for send code (sms or telegram)
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/OtpAuthRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/EmptyResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - auth
+      security:
+        - authtoken: []
+
   /logout:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Logout user
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SignOutResponse'
+            $ref: "#/definitions/SignOutResponse"
         "401":
           description: Not auth. Auth token required
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /confirm:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Confirmation user
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/ConfirmRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/ConfirmRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ConfirmResponse'
+            $ref: "#/definitions/EmptyResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /confirm/resend:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Resend confirmation code
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/ResendConfirmationRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/ResendConfirmationRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ResendConfirmationResponse'
+            $ref: "#/definitions/ResendConfirmationResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
         "401":
           description: Not auth. Auth token required
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /recovery/request:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Send recovery code
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/CodeRecoveryRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/CodeRecoveryRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/CodeRecoveryResponse'
+            $ref: "#/definitions/CodeRecoveryResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /recovery/validate:
     post:
@@ -260,24 +328,24 @@ paths:
         - application/json
       description: Validate recovery code
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/ValidateRecoveryCodeRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/ValidateRecoveryCodeRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/RecoveryResponse'
+            $ref: "#/definitions/RecoveryResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /recovery:
     post:
@@ -285,47 +353,47 @@ paths:
         - application/json
       description: Send new credentials for user
       parameters:
-      - description: Request body
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/RecoveryRequest'
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/RecoveryRequest"
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/RecoveryResponse'
+            $ref: "#/definitions/RecoveryResponse"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - auth
+        - auth
       security:
-      - authtoken: []
+        - authtoken: []
 
   /profile:
     get:
       consumes:
-      - application/json
+        - application/json
       description: Get user info
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ProfileResponse'
+            $ref: "#/definitions/ProfileResponse"
         "401":
           description: Authorized user required
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
         "500":
           description: Internal error. User not found
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: "#/definitions/ErrorResponse"
       tags:
-      - profile
+        - profile
       security:
-      - authtoken: []
+        - authtoken: []
 
 definitions:
   Error:
@@ -338,7 +406,7 @@ definitions:
   ErrorResponse:
     properties:
       error:
-        $ref: '#/definitions/Error'
+        $ref: "#/definitions/Error"
       result:
         example: false
         type: boolean
@@ -367,8 +435,8 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       email:
         example: example@mailer.com
         type: string
@@ -385,9 +453,9 @@ definitions:
         example: Name
     type: object
     required:
-    - type
-    - password
-    - name
+      - type
+      - password
+      - name
 
   SignUpResponse:
     properties:
@@ -405,8 +473,8 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       email:
         example: example@mailer.com
         type: string
@@ -420,8 +488,8 @@ definitions:
         type: string
     type: object
     required:
-    - type
-    - password
+      - type
+      - password
 
   SocialSignInRequest:
     type: object
@@ -433,7 +501,7 @@ definitions:
         type: string
         description: token from oauth service
     required:
-    - token
+      - token
 
   SocialSignInResponse:
     properties:
@@ -442,12 +510,20 @@ definitions:
         type: boolean
     type: object
 
-  SignInResponse:
+  OtpCodeRequest:
     properties:
-      result:
-        example: true
-        type: boolean
-    type: object
+      phone:
+        example: 79876543210
+        type: string
+  
+  OtpAuthRequest:
+    properties:
+      phone:
+        example: 79876543210
+        type: string
+      code:
+        example: "1285"
+        type: string
 
   CheckLoginFieldRequest:
     properties:
@@ -455,8 +531,8 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       email:
         example: example@mailer.com
         type: string
@@ -467,7 +543,7 @@ definitions:
         description: required for type `phone`
     type: object
     required:
-    - type
+      - type
 
   CheckLoginFieldResponse:
     properties:
@@ -492,8 +568,8 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       uid:
         example: example@mailer.com
         type: string
@@ -502,11 +578,11 @@ definitions:
         type: string
     type: object
     required:
-    - type
-    - uid
-    - code
+      - type
+      - uid
+      - code
 
-  ConfirmResponse:
+  EmptyResponse:
     properties:
       result:
         example: true
@@ -519,15 +595,15 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       uid:
         example: example@mailer.com
         type: string
     type: object
     required:
-    - type
-    - uid
+      - type
+      - uid
 
   ResendConfirmationResponse:
     properties:
@@ -542,15 +618,15 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       uid:
         example: example@mailer.com
         type: string
     type: object
     required:
-    - type
-    - uid
+      - type
+      - uid
 
   CodeRecoveryResponse:
     properties:
@@ -565,8 +641,8 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       uid:
         example: example@mailer.com
         type: string
@@ -575,9 +651,9 @@ definitions:
         type: string
     type: object
     required:
-    - type
-    - uid
-    - code
+      - type
+      - uid
+      - code
 
   RecoveryRequest:
     properties:
@@ -585,8 +661,8 @@ definitions:
         type: string
         example: email
         enum:
-        - email
-        - phone
+          - email
+          - phone
       uid:
         example: example@mailer.com
         type: string
@@ -598,10 +674,10 @@ definitions:
         type: string
     type: object
     required:
-    - type
-    - uid
-    - code
-    - password
+      - type
+      - uid
+      - code
+      - password
 
   RecoveryResponse:
     properties:
