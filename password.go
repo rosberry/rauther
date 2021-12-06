@@ -46,7 +46,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		return
 	}
 
-	if !sessionInfo.UserIsGuest {
+	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
 		errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 		return
 	}
@@ -145,7 +145,7 @@ func (r *Rauther) signInHandler(c *gin.Context) {
 		return
 	}
 
-	if !sessionInfo.UserIsGuest {
+	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
 		errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 		return
 	}

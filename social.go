@@ -36,7 +36,7 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		return
 	}
 
-	if !sessionInfo.UserIsGuest {
+	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
 		errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 		return
 	}
