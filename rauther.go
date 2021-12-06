@@ -163,3 +163,18 @@ func (r *Rauther) DefaultSender(s sender.Sender) *Rauther {
 
 	return r
 }
+
+func (r *Rauther) generateCode(at *authtype.AuthMethod) string {
+	if at == nil {
+		log.Print("Cannot generate code for nil AuthMethod")
+		return ""
+	}
+
+	length := at.CodeLength
+
+	if length == 0 {
+		length = r.Config.CodeLength
+	}
+
+	return at.CodeGenerator(length)
+}

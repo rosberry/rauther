@@ -92,13 +92,7 @@ func (r *Rauther) otpGetCodeHandler() gin.HandlerFunc {
 			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime) // FIXME: А если дальше чет зафейлится?
 		}
 
-		var code string
-
-		if uCodeGenerator, ok := u.(user.OTPAuthCustomCodeGenerator); ok {
-			code = uCodeGenerator.GenerateCode()
-		} else {
-			code = generateNumericCode(r.Config.OTP.CodeLength)
-		}
+		code := r.generateCode(at)
 
 		expiredAt := time.Now().Add(r.Config.OTP.CodeLifeTime)
 

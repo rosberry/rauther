@@ -85,7 +85,7 @@ func (r *Rauther) resendCodeHandler() gin.HandlerFunc {
 			return
 		}
 
-		confirmCode := generateCode()
+		confirmCode := r.generateCode(at)
 
 		// check resend timeout
 		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
