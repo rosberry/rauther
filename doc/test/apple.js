@@ -68,7 +68,7 @@ describe("apple auth:", function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
             .base(baseUrl)
-            .post("/login/social")
+            .post("/social/login")
             .json()
             .send({
               type: "apple",
@@ -150,7 +150,7 @@ describe("apple auth:", function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
             .base(baseUrl)
-            .post("/login/social")
+            .post("/social/login")
             .json()
             .send({
               type: "apple",

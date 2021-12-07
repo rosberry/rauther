@@ -68,7 +68,7 @@ describe("google auth:", function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
             .base(baseUrl)
-            .post("/login/social")
+            .post("/social/login")
             .json()
             .send({
               type: "google",
@@ -148,7 +148,7 @@ describe("google auth:", function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
             .base(baseUrl)
-            .post("/login/social")
+            .post("/social/login")
             .json()
             .send({
               type: "google",

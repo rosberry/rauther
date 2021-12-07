@@ -437,7 +437,7 @@ describe("email auth:", function () {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
-          .post("/recovery/request")
+          .post("/recover")
           .json()
           .send({
             type: "email",
@@ -476,7 +476,7 @@ describe("email auth:", function () {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
-          .post("/recovery/request")
+          .post("/recover")
           .json()
           .send({
             type: "email",
@@ -500,7 +500,7 @@ describe("email auth:", function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
             .base(baseUrl)
-            .post("/recovery/request")
+            .post("/recover")
             .json()
             .send({
               type: "email",
@@ -577,7 +577,7 @@ describe("email auth:", function () {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
-          .post("/recovery/validate")
+          .post("/recover/validate")
           .json()
             .send({
               type: "email",
@@ -598,7 +598,7 @@ describe("email auth:", function () {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
-          .post("/recovery")
+          .post("/recover/reset")
           .json()
             .send({
               type: "email",
