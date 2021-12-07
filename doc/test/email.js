@@ -9,28 +9,14 @@ var chaihttp = require("chai-http")
 let should = chai.should();
 var spec;
 
+var config = require("./config.js");
+
 chai.use(chaihttp);
 
-var env = process.env.ENV || "local";
-
-// dev-staging
-var baseUrl;
-var specFile;
-
-switch (env) {
-  case "local":
-    // dev
-    baseUrl = "http://localhost:8080";
-    specFile = process.env.GOPATH + "/src/github.com/rosberry/rauther/doc/swagger.yaml";
-    break;
-  default:
-    console.error("Unknown environment " + env + "!");
-    return;
-}
-console.log("Selected environment: " + env);
+var baseUrl = config.baseUrl;
+var specFile = config.specFile;
 
 var email = "test"+(Math.floor(Math.random()*99999))+"@rosberry.com";
-var phone = "+7" + (Math.floor(Math.random()*999999999));
 var userPassword = "password1";
 var userPassword2 = "password2";
 

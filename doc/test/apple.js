@@ -9,30 +9,12 @@ var chaihttp = require("chai-http")
 let should = chai.should();
 var spec;
 
+var config = require("./config.js");
+
 chai.use(chaihttp);
 
-var env = process.env.ENV || "local";
-
-// dev-staging
-var baseUrl;
-var specFile;
-
-switch (env) {
-  case "local":
-    // dev
-    baseUrl = "http://localhost:8080";
-    specFile = process.env.GOPATH + "/src/github.com/rosberry/rauther/doc/swagger.yaml";
-    break;
-  default:
-    console.error("Unknown environment " + env + "!");
-    return;
-}
-console.log("Selected environment: " + env);
-
-var email = "test"+(Math.floor(Math.random()*99999))+"@rosberry.com";
-var phone = "+7" + (Math.floor(Math.random()*999999999));
-var userPassword = "password1";
-var userPassword2 = "password2";
+var baseUrl = config.baseUrl;
+var specFile = config.specFile;
 
 var appleToken = process.env.APPLE_TOKEN || "";
 if (appleToken == "") {
@@ -41,9 +23,6 @@ if (appleToken == "") {
 
 var device_id = "test"+(Math.floor(Math.random()*99999));
 var apiToken = "";
-var uid = "";
-var code = "";
-var recoveryCode = "";
 
 describe("apple auth:", function () {
   this.timeout(10000); // very large swagger files may take a few seconds to parse

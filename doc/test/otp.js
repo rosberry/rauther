@@ -9,38 +9,20 @@ var chaihttp = require("chai-http")
 let should = chai.should();
 var spec;
 
+var config = require("./config.js");
+
 chai.use(chaihttp);
 
-var env = process.env.ENV || "local";
+var baseUrl = config.baseUrl;
+var specFile = config.specFile;
 
-// dev-staging
-var baseUrl;
-var specFile;
-
-switch (env) {
-  case "local":
-    // dev
-    baseUrl = "http://localhost:8080";
-    specFile = process.env.GOPATH + "/src/github.com/rosberry/rauther/doc/swagger.yaml";
-    break;
-  default:
-    console.error("Unknown environment " + env + "!");
-    return;
-}
-console.log("Selected environment: " + env);
-
-var email = "test"+(Math.floor(Math.random()*99999))+"@rosberry.com";
 var phone = "+7" + (Math.floor(Math.random()*999999999));
-var userPassword = "password1";
-var userPassword2 = "password2";
 var userName = "Name 1";
 var userName2 = "Name 2";
 
 var device_id = "test"+(Math.floor(Math.random()*99999));
 var apiToken = "";
-var uid = "";
 var code = "123321";
-var recoveryCode = "";
 
 describe("otp auth:", function () {
   this.timeout(10000); // very large swagger files may take a few seconds to parse
@@ -125,6 +107,53 @@ describe("otp auth:", function () {
           });
       });
     });
+
+    describe("get otp code with sms", function () {
+      it("should return result true", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/otp/{key}/code")
+          .pathParams({
+            key: "sms"
+          })
+          .json()
+          .send({
+            phone: phone
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+
+      it("should return error invalid confirmation time", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/otp/{key}/code")
+          .pathParams({
+            key: "sms"
+          })
+          .json()
+          .send({
+            phone: phone
+          })
+          .expectStatus(400)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("invalid_confirmation_time");
+            expect(res).to.have.property("info");
+            expect(res.info).to.have.property("validInterval");
+            expect(res.info).to.have.property("validTime");
+            done.apply(null, arguments);
+          });
+      });
+    });
+
     describe("profile", function () {
       it("should return guest user", function (done) {
         hippie(spec)
