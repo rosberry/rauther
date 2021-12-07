@@ -82,16 +82,16 @@ func (c *Config) Default() {
 	c.Routes.SignIn = "login"
 	c.Routes.SignOut = "logout"
 
-	c.Routes.SocialSignIn = "login/social"
+	c.Routes.SocialSignIn = "social/login"
 
 	c.Routes.ConfirmCode = "confirm"
 	c.Routes.ConfirmResend = "confirm/resend"
 
-	c.Routes.RecoveryRequest = "recovery/request"
-	c.Routes.RecoveryValidateCode = "recovery/validate"
-	c.Routes.RecoveryCode = "recovery"
+	c.Routes.RecoveryRequest = "recover"
+	c.Routes.RecoveryValidateCode = "recover/validate"
+	c.Routes.RecoveryCode = "recover/reset"
 
-	c.ValidConfirmationInterval = 1 * time.Minute
+	c.ValidConfirmationInterval = 30 * time.Minute
 	c.CodeLength = 6
 
 	c.OTP.CodeLifeTime = time.Minute * 2 // nolint:gomnd

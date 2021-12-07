@@ -123,7 +123,7 @@ paths:
       security:
         - authtoken: []
 
-  /login/social:
+  /social/login:
     post:
       consumes:
         - application/json
@@ -293,7 +293,7 @@ paths:
       security:
         - authtoken: []
 
-  /recovery/request:
+  /recover:
     post:
       consumes:
         - application/json
@@ -318,7 +318,7 @@ paths:
       security:
         - authtoken: []
 
-  /recovery/validate:
+  /recover/validate:
     post:
       consumes:
         - application/json
@@ -343,7 +343,7 @@ paths:
       security:
         - authtoken: []
 
-  /recovery:
+  /recover/reset:
     post:
       consumes:
         - application/json
