@@ -63,6 +63,27 @@ describe("otp auth:", function () {
     });
 
     describe("get otp code", function () {
+      it("should return error auth failed", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer invalid_api_token")
+          .base(baseUrl)
+          .post("/otp/{key}/code")
+          .pathParams({
+            key: "telegram"
+          })
+          .json()
+          .send({
+            phone: phone
+          })
+          .expectStatus(401)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("auth_failed");
+            done.apply(null, arguments);
+          });
+      });
+
       it("should return result true", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
@@ -173,6 +194,29 @@ describe("otp auth:", function () {
     });
 
     describe("otp login", function () {
+      it("should return error auth failed", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer invalid_api_token")
+          .base(baseUrl)
+          .post("/otp/{key}/auth")
+          .pathParams({
+            key: "telegram"
+          })
+          .json()
+          .send({
+            name: userName,
+            phone: phone,
+            code: code
+          })
+          .expectStatus(401)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("auth_failed");
+            done.apply(null, arguments);
+          });
+      });
+
       it("should return result true", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)

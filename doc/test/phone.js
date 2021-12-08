@@ -325,6 +325,25 @@ describe("phone auth:", function () {
     });
 
     describe("confirm resend", function () {
+      it("should return error auth failed", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer invalid_api_token")
+          .base(baseUrl)
+          .post("/confirm/resend")
+          .json()
+          .send({
+            type: "phone",
+            uid: phone
+          })
+          .expectStatus(401)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("auth_failed");
+            done.apply(null, arguments);
+          });
+      });
+
       it("should return error invalid confirmation time", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
