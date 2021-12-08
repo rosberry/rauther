@@ -1,17 +1,24 @@
-var env = process.env.ENV || "local";
+var env = process.env.ENV || "";
 
 var baseUrl;
 var specFile;
 
 switch (env) {
   case "local":
-    // dev
+    // local
     baseUrl = "http://localhost:8080";
     specFile = process.env.GOPATH + "/src/github.com/rosberry/rauther/doc/swagger.yaml";
     break;
   default:
-    console.error("Unknown environment " + env + "!");
-    return;
+    // custom
+    baseUrl = process.env.BASE_URL || "";
+    specFile = process.env.SPEC_FILE || "";
+
+    if (baseUrl == "" || specFile == "") {
+      console.error('Please set BASE_URL and SPEC_FILE env variables');
+      process.exit();
+      return;
+    }
 }
 
 var config = {
