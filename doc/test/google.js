@@ -81,7 +81,28 @@ describe("google auth:", function () {
               done.apply(null, arguments);
             });
         });
+
+        it("should return error already authorized", function (done) {
+          hippie(spec)
+            .header("Authorization", "Bearer " + apiToken)
+            .base(baseUrl)
+            .post("/social/login")
+            .json()
+            .send({
+              type: "google",
+              token: googleToken
+            })
+          .expectStatus(400)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("already_auth");
+            expect(res).to.not.have.property("uid");
+            done.apply(null, arguments);
+          });
+        });
       });
+
 
       describe("profile", function () {
         it("should return result true", function (done) {
