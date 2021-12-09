@@ -72,6 +72,6 @@ func (s *Session) BindUser(u user.User) {
 	s.UserID = user.ID
 }
 
-func (s *Session) UnbindUser(u user.User) {
+func (s *Session) UnbindUser() {
 	s.UserID = 0
 }

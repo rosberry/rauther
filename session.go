@@ -35,6 +35,14 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 			return
 		}
 
+		if userID := session.GetUserID(); userID != nil {
+			if u, err := r.deps.UserStorer.LoadByID(userID); err == nil && u != nil {
+				if !u.(user.GuestUser).IsGuest() {
+					session.UnbindUser()
+				}
+			}
+		}
+
 		// Create new guest user if it enabled in config
 		if r.Modules.PasswordAuthableUser && r.Config.CreateGuestUser && session.GetUserID() == nil {
 			user, errType := r.createGuestUser()
