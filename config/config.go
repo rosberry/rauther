@@ -72,11 +72,10 @@ type Config struct {
 
 // Default set default values to configuration
 func (c *Config) Default() {
-	c.Routes.Auth = "auth"
 	c.ContextNames.Session = "session"
-
 	c.ContextNames.User = "user"
 
+	c.Routes.Auth = "auth"
 	c.Routes.SignUp = "register"
 	c.Routes.ValidateLoginField = "register/check"
 	c.Routes.SignIn = "login"

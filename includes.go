@@ -14,6 +14,8 @@ func (r *Rauther) includeSession() {
 
 	withSession := r.deps.R.Group("", r.authMiddleware())
 	{
+		withSession.GET(r.Config.Routes.Auth, r.checkAuthHandler)
+
 		if r.Modules.AuthableUser {
 			r.includeAuthable(withSession)
 		}
