@@ -14,7 +14,7 @@ func (r *Rauther) signOutHandler(c *gin.Context) {
 		return
 	}
 
-	sessionInfo.Session.UnbindUser(sessionInfo.User)
+	sessionInfo.Session.UnbindUser()
 
 	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
 		err := r.deps.Storage.UserRemover.RemoveByID(sessionInfo.UserID)
