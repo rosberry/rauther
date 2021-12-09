@@ -14,7 +14,6 @@ import (
 
 func (r *Rauther) confirmHandler(c *gin.Context) {
 	type confirmRequest struct {
-		UID  string `json:"uid" binding:"required"`
 		Code string `json:"code" binding:"required"`
 	}
 
@@ -33,28 +32,35 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		return
 	}
 
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, request.UID)
-	if err != nil {
-		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+	sessionInfo, ok := r.checkSession(c)
+	if !ok {
+		return
+	}
+	if sessionInfo.User == nil {
+		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 		return
 	}
 
-	code := u.(user.ConfirmableUser).GetConfirmCode(at.Key)
-	if request.Code != code || code == "" {
-		errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
-		return
-	}
+	u := sessionInfo.User
 
-	u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+	if !u.(user.ConfirmableUser).GetConfirmed(at.Key) {
+		code := u.(user.ConfirmableUser).GetConfirmCode(at.Key)
+		if request.Code != code || code == "" {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
+			return
+		}
 
-	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
-	}
+		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
-	err = r.deps.UserStorer.Save(u)
-	if err != nil {
-		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
-		return
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
+		}
+
+		err := r.deps.UserStorer.Save(u)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -63,22 +69,29 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 }
 
 func (r *Rauther) resendCodeHandler(c *gin.Context) {
-	sessionInfo, success := r.checkSession(c)
-	if !success {
-		return
-	}
-
-	u, err := r.deps.UserStorer.LoadByID(sessionInfo.UserID)
-	if err != nil {
-		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
-		return
-	}
-
 	at, ok := r.findAuthMethod(c, authtype.Password)
 	if !ok {
 		log.Print("not found expected auth method")
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+		return
+	}
+
+	sessionInfo, success := r.checkSession(c)
+	if !success {
+		return
+	}
+
+	if sessionInfo.User == nil {
+		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+		return
+	}
+
+	u := sessionInfo.User
+
+	uid := u.(user.AuthableUser).GetUID(at.Key)
+	if uid == "" {
+		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 		return
 	}
 
@@ -104,15 +117,13 @@ func (r *Rauther) resendCodeHandler(c *gin.Context) {
 
 	u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
 
-	if err = r.deps.UserStorer.Save(u); err != nil {
+	if err := r.deps.UserStorer.Save(u); err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 
 		return
 	}
 
-	uid := u.(user.AuthableUser).GetUID(at.Key)
-
-	err = sendConfirmCode(at.Sender, uid, confirmCode)
+	err := sendConfirmCode(at.Sender, uid, confirmCode)
 	if err != nil {
 		log.Print(err)
 		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
