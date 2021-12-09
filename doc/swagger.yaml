@@ -508,7 +508,7 @@ definitions:
       phone:
         example: 79876543210
         type: string
-  
+
   OtpAuthRequest:
     properties:
       phone:
@@ -563,16 +563,12 @@ definitions:
         enum:
           - email
           - phone
-      uid:
-        example: example@mailer.com
-        type: string
       code:
         example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
         type: string
     type: object
     required:
       - type
-      - uid
       - code
 
   EmptyResponse:
@@ -590,13 +586,9 @@ definitions:
         enum:
           - email
           - phone
-      uid:
-        example: example@mailer.com
-        type: string
     type: object
     required:
       - type
-      - uid
 
   ResendConfirmationResponse:
     properties:
