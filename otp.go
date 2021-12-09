@@ -86,13 +86,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		return
 	}
 
-	if fieldableRequest, ok := request.(authtype.AuthRequestFieldable); ok {
-		if ok := r.fillFields(fieldableRequest, u); !ok {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-			return
-		}
-	}
-
 	err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
 	if err != nil {
 		log.Printf("send OTP code error: %v", err)
@@ -204,6 +197,13 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
 		return
+	}
+
+	if fieldableRequest, ok := request.(authtype.AuthRequestFieldable); ok {
+		if ok := r.fillFields(fieldableRequest, u); !ok {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
 	}
 
 	if err = r.deps.UserStorer.Save(u); err != nil {
