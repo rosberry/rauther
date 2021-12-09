@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "chai": "^4.3.4",
+    "chai-http": "^4.3.0",
+    "hippie-swagger": "^3.3.2",
+    "swagger-parser": "^10.0.3"
+  }
+}

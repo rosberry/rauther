@@ -118,6 +118,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "403":
+          description: Incorrect password
+          schema:
+            $ref: "#/definitions/ErrorResponse"
       tags:
         - auth
       security:
@@ -390,6 +394,31 @@ paths:
         - profile
       security:
         - authtoken: []
+    post:
+      consumes:
+        - application/json
+      description: Register device and returns token
+      parameters:
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/ProfileRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/ProfileResponse"
+        "401":
+          description: Authorized user required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Internal error. User not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - profile
 
 definitions:
   Error:
@@ -490,6 +519,9 @@ definitions:
   SocialSignInRequest:
     type: object
     properties:
+      type:
+        type: string
+        example: google
       token:
         type: string
         description: token from oauth service
@@ -678,6 +710,13 @@ definitions:
         example: true
         type: boolean
     type: object
+
+  ProfileRequest:
+    type: object
+    properties:
+      username:
+        type: string
+        example: Name
 
   ProfileResponse:
     type: object
