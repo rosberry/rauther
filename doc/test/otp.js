@@ -17,6 +17,7 @@ var baseUrl = config.baseUrl;
 var specFile = config.specFile;
 
 var phone = "+7" + (Math.floor(Math.random()*999999999));
+var phone2 = "+7" + (Math.floor(Math.random()*999999999));
 var userName = "Name 1";
 var userName2 = "Name 2";
 
@@ -533,4 +534,260 @@ describe("otp auth:", function () {
       });
     });
   }); // otp login
+
+  describe("otp user flow", function () {
+    describe("auth", function () {
+      it("should return token and device_id", function (done) {
+        hippie(spec)
+          .base(baseUrl)
+          .post("/auth")
+          .json()
+          .send({
+            device_id: device_id
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            expect(res).to.have.property("token");
+            apiToken = res.token;
+            expect(res).to.have.property("device_id").that.equals(device_id);
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("update profile", function () {
+      it("should return guest user with username", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/profile")
+          .json()
+          .send({
+            username: userName
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            expect(res).to.have.property("user").that.is.an("object");
+            expect(res.user).to.have.property("guest").that.is.true;
+            expect(res.user).to.have.property("username").that.equals(userName);
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("get otp code", function () {
+      it("should return result true", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/otp/{key}/code")
+          .pathParams({
+            key: "telegram"
+          })
+          .json()
+          .send({
+            phone: phone2
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("otp login", function () {
+      it("should return result true", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/otp/{key}/auth")
+          .pathParams({
+            key: "telegram"
+          })
+          .json()
+          .send({
+            phone: phone2,
+            code: code
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("profile", function () {
+      it("should return not guest user with username", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .get("/profile")
+          .json()
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            expect(res).to.have.property("user").that.is.an("object");
+            expect(res.user).to.have.property("guest").that.is.false;
+            expect(res.user).to.have.property("username").that.equals(userName);
+            expect(res.user).to.have.property("auths").that.is.an("object");
+            expect(res.user.auths).to.have.property("telegram").that.is.an("object");
+            expect(res.user.auths.telegram).to.have.property("confirmed").that.is.true;
+            expect(res.user).to.have.property("username").that.equals(userName);
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("logout", function () {
+      it("should return true", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/logout")
+          .json()
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("auth", function () {
+      it("should return token and device_id", function (done) {
+        hippie(spec)
+          .base(baseUrl)
+          .post("/auth")
+          .json()
+          .send({
+            device_id: device_id
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            expect(res).to.have.property("token");
+            apiToken = res.token;
+            expect(res).to.have.property("device_id").that.equals(device_id);
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("update profile", function () {
+      it("should return guest user with username", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/profile")
+          .json()
+          .send({
+            username: userName2
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            expect(res).to.have.property("user").that.is.an("object");
+            expect(res.user).to.have.property("guest").that.is.true;
+            expect(res.user).to.have.property("username").that.equals(userName2);
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("get otp code", function () {
+      it("should return result true", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/otp/{key}/code")
+          .pathParams({
+            key: "telegram"
+          })
+          .json()
+          .send({
+            phone: phone2
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("otp login", function () {
+      it("should return result true", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/otp/{key}/auth")
+          .pathParams({
+            key: "telegram"
+          })
+          .json()
+          .send({
+            phone: phone2,
+            code: code
+          })
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("profile", function () {
+      it("should return not guest user with username", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .get("/profile")
+          .json()
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            expect(res).to.have.property("user").that.is.an("object");
+            expect(res.user).to.have.property("guest").that.is.false;
+            expect(res.user).to.have.property("username").that.equals(userName);
+            expect(res.user).to.have.property("auths").that.is.an("object");
+            expect(res.user.auths).to.have.property("telegram").that.is.an("object");
+            expect(res.user.auths.telegram).to.have.property("confirmed").that.is.true;
+            expect(res.user).to.have.property("username").that.equals(userName);
+            done.apply(null, arguments);
+          });
+      });
+    });
+
+    describe("logout", function () {
+      it("should return true", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/logout")
+          .json()
+          .expectStatus(200)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true;
+            expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+    });
+  }); // otp user flow
 }); // testing
