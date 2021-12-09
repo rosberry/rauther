@@ -25,14 +25,14 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 
 func errorCodeTimeoutResponse(c *gin.Context, timeOffset, curTime time.Time) {
 	interval := timeOffset.Sub(curTime) / time.Second
-	startAtStr := timeOffset.Format(time.RFC3339)
+	nextRequestTime := timeOffset.Format(time.RFC3339)
 
-	c.JSON(http.StatusBadRequest, gin.H{
+	c.JSON(http.StatusTooManyRequests, gin.H{
 		"result": false,
-		"error":  common.Errors[common.ErrConfirmationTimeInterval],
-		"info": common.ConfirmationTimeErrInfo{
-			ValidInterval: interval,
-			ValidTime:     startAtStr,
+		"error":  common.Errors[common.ErrRequestCodeTimeout],
+		"info": common.ResendCodeErrInfo{
+			TimeoutSec:      interval,
+			NextRequestTime: nextRequestTime,
 		},
 	})
 }
@@ -101,4 +101,14 @@ func (r *Rauther) findAuthMethod(c *gin.Context, expectedType authtype.Type) (am
 	}
 
 	return am, true
+}
+
+func calcExpiredAt(t *time.Time, d time.Duration) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+
+	tm := *t
+
+	return tm.Add(d)
 }

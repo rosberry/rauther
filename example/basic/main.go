@@ -123,7 +123,8 @@ func main() { // nolint
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
 	rauth.Modules.CodeSentTimeUser = true
-	rauth.Config.ValidConfirmationInterval = 15 * time.Second // nolint:gomnd
+	rauth.Config.Password.ResendDelay = 15 * time.Second // nolint:gomnd
+	rauth.Config.OTP.ResendDelay = 15 * time.Second      // nolint:gomnd
 
 	rauth.Config.Routes.OTPRequestCode = "/otp/:sendby/code"
 	rauth.Config.Routes.OTPCheckCode = "/otp/:sendby/auth"

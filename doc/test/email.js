@@ -16,11 +16,11 @@ chai.use(chaihttp);
 var baseUrl = config.baseUrl;
 var specFile = config.specFile;
 
-var email = "test"+(Math.floor(Math.random()*99999))+"@rosberry.com";
+var email = "test" + (Math.floor(Math.random() * 99999)) + "@rosberry.com";
 var userPassword = "password1";
 var userPassword2 = "password2";
 
-var device_id = "test"+(Math.floor(Math.random()*99999));
+var device_id = "test" + (Math.floor(Math.random() * 99999));
 var apiToken = "";
 var uid = "";
 var code = "";
@@ -344,7 +344,7 @@ describe("email auth:", function () {
           });
       });
 
-      it("should return error invalid confirmation time", function (done) {
+      it("should return error too many code requests", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
@@ -354,36 +354,36 @@ describe("email auth:", function () {
             type: "email",
             uid: email
           })
-          .expectStatus(400)
+          .expectStatus(429)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.false;
             expect(res).to.have.property("error");
-            expect(res.error).to.have.property("code").that.equals("invalid_confirmation_time");
+            expect(res.error).to.have.property("code").that.equals("code_timeout");
             expect(res).to.have.property("info");
-            expect(res.info).to.have.property("validInterval");
-            expect(res.info).to.have.property("validTime");
+            expect(res.info).to.have.property("timeoutSec");
+            expect(res.info).to.have.property("nextRequestTime");
             done.apply(null, arguments);
           });
       });
 
       it("should return result true", function (done) {
         this.timeout(20000);
-        setTimeout(function() {
-        hippie(spec)
-          .header("Authorization", "Bearer " + apiToken)
-          .base(baseUrl)
-          .post("/confirm/resend")
-          .json()
-          .send({
-            type: "email",
-            uid: email
-          })
-          .expectStatus(200)
-          .end(function (err, raw, res) {
-            expect(res).to.have.property("result").that.is.true;
-            expect(res).to.not.have.property("error");
-            done.apply(null, arguments);
-          });
+        setTimeout(function () {
+          hippie(spec)
+            .header("Authorization", "Bearer " + apiToken)
+            .base(baseUrl)
+            .post("/confirm/resend")
+            .json()
+            .send({
+              type: "email",
+              uid: email
+            })
+            .expectStatus(200)
+            .end(function (err, raw, res) {
+              expect(res).to.have.property("result").that.is.true;
+              expect(res).to.not.have.property("error");
+              done.apply(null, arguments);
+            });
         }, 16000);
       });
     });
@@ -491,7 +491,7 @@ describe("email auth:", function () {
     });
 
     describe("recovery request", function () {
-      it("should return error invalid confirmation time", function (done) {
+      it("should return error too many code requests", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
@@ -501,21 +501,21 @@ describe("email auth:", function () {
             type: "email",
             uid: email
           })
-          .expectStatus(400)
+          .expectStatus(429)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.false;
             expect(res).to.have.property("error");
-            expect(res.error).to.have.property("code").that.equals("invalid_confirmation_time");
+            expect(res.error).to.have.property("code").that.equals("code_timeout");
             expect(res).to.have.property("info");
-            expect(res.info).to.have.property("validInterval");
-            expect(res.info).to.have.property("validTime");
+            expect(res.info).to.have.property("timeoutSec");
+            expect(res.info).to.have.property("nextRequestTime");
             done.apply(null, arguments);
           });
       });
 
       it("should return result true", function (done) {
         this.timeout(20000);
-        setTimeout(function() {
+        setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
             .base(baseUrl)
@@ -598,11 +598,11 @@ describe("email auth:", function () {
           .base(baseUrl)
           .post("/recover/validate")
           .json()
-            .send({
-              type: "email",
-              uid: email,
-              code: recoveryCode
-            })
+          .send({
+            type: "email",
+            uid: email,
+            code: recoveryCode
+          })
           .expectStatus(200)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.true;
@@ -619,12 +619,12 @@ describe("email auth:", function () {
           .base(baseUrl)
           .post("/recover/reset")
           .json()
-            .send({
-              type: "email",
-              uid: email,
-              code: recoveryCode,
-              password: userPassword2
-            })
+          .send({
+            type: "email",
+            uid: email,
+            code: recoveryCode,
+            password: userPassword2
+          })
           .expectStatus(200)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.true;

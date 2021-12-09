@@ -56,8 +56,8 @@ type CodeSentTimeUser interface {
 
 type OTPAuth interface {
 	AuthableUser
-	GetOTP(authType string) (code string, expiredIn time.Time)
-	SetOTP(authType string, code string, expiredIn *time.Time) error
+	GetOTP(authType string) (code string)
+	SetOTP(authType string, code string) error
 }
 
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")

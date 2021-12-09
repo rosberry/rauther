@@ -185,6 +185,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "429":
+          description: Too many code requests
+          schema:
+            $ref: "#/definitions/TooManyErrorResponse"
       tags:
         - auth
       security:
@@ -288,6 +292,10 @@ paths:
           description: Bad Request
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "429":
+          description: Too many code requests
+          schema:
+            $ref: "#/definitions/TooManyErrorResponse"
         "401":
           description: Not auth. Auth token required
           schema:
@@ -317,6 +325,11 @@ paths:
           description: Bad Request
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "429":
+          description: Too many code requests
+          schema:
+            $ref: "#/definitions/TooManyErrorResponse"
+
       tags:
         - auth
       security:
@@ -436,7 +449,22 @@ definitions:
         example: false
         type: boolean
     type: object
-
+  TooManyErrorResponse:
+    properties:
+      result:
+        example: false
+        type: boolean
+      error:
+        $ref: "#/definitions/Error"
+      info:
+        type: object
+        properties:
+          timeoutSec:
+            type: integer
+            example: 25
+          nextRequestTime:
+            type: string
+            example: "2021-12-09T16:36:13+06:00"
   AuthRequest:
     properties:
       device_id:
@@ -540,7 +568,7 @@ definitions:
       phone:
         example: 79876543210
         type: string
-  
+
   OtpAuthRequest:
     properties:
       phone:
