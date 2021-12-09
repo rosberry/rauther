@@ -525,7 +525,7 @@ describe("otp auth:", function () {
             expect(res).to.not.have.property("error");
             expect(res).to.have.property("user").that.is.an("object");
             expect(res.user).to.have.property("guest").that.is.false;
-            expect(res.user).to.have.property("username").that.equals(userName);
+            expect(res.user).to.have.property("username").that.equals(userName2);
             expect(res.user).to.have.property("auths").that.is.an("object");
             expect(res.user.auths).to.have.property("telegram").that.is.an("object");
             expect(res.user.auths.telegram).to.have.property("confirmed").that.is.true;
