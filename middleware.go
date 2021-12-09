@@ -33,7 +33,7 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			if r.Modules.PasswordAuthableUser {
+			if r.Modules.AuthableUser {
 				if u, err := r.deps.UserStorer.LoadByID(session.GetUserID()); err == nil && u != nil {
 					c.Set(r.Config.ContextNames.User, u)
 				}
