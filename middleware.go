@@ -26,7 +26,7 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if token := parseAuthToken(c); token != "" {
 			session := r.deps.SessionStorer.FindByToken(token)
-			if session == nil {
+			if session == nil || session.GetToken() == "" {
 				errorResponse(c, http.StatusUnauthorized, common.ErrAuthFailed)
 				c.Abort()
 
