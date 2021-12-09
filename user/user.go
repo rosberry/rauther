@@ -78,7 +78,9 @@ func SetFields(obj interface{}, key string, value interface{}) error {
 	}
 
 	fieldVal := v.Field(fieldNum)
-	fieldVal.Set(reflect.ValueOf(value))
+	if value != nil {
+		fieldVal.Set(reflect.ValueOf(value))
+	}
 
 	return nil
 }
