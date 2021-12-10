@@ -23,9 +23,9 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	})
 }
 
-func errorCodeTimeoutResponse(c *gin.Context, timeOffset, curTime time.Time) {
-	interval := timeOffset.Sub(curTime) / time.Second
-	nextRequestTime := timeOffset.Format(time.RFC3339)
+func errorCodeTimeoutResponse(c *gin.Context, resendTime, curTime time.Time) {
+	interval := resendTime.Sub(curTime) / time.Second
+	nextRequestTime := resendTime.Format(time.RFC3339)
 
 	c.JSON(http.StatusTooManyRequests, gin.H{
 		"result": false,

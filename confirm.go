@@ -96,8 +96,8 @@ func (r *Rauther) resendCodeHandler(c *gin.Context) {
 	// check resend timeout
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 		curTime := time.Now()
-		if timeOffset, ok := r.checkResendTime(u, curTime, at); !ok {
-			errorCodeTimeoutResponse(c, *timeOffset, curTime)
+		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
+			errorCodeTimeoutResponse(c, *resendTime, curTime)
 			return
 		}
 	}

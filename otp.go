@@ -70,8 +70,8 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	// Check last send time
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 		curTime := time.Now()
-		if timeOffset, ok := r.checkResendTime(u, curTime, at); !ok {
-			errorCodeTimeoutResponse(c, *timeOffset, curTime)
+		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
+			errorCodeTimeoutResponse(c, *resendTime, curTime)
 			return
 		}
 
@@ -226,7 +226,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	})
 }
 
-func (r *Rauther) checkResendTime(u user.User, curTime time.Time, authMethod *authtype.AuthMethod) (timeOffset *time.Time, ok bool) {
+func (r *Rauther) checkResendTime(u user.User, curTime time.Time, authMethod *authtype.AuthMethod) (resendTime *time.Time, ok bool) {
 	lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(authMethod.Key)
 
 	if lastCodeSentTime != nil {
@@ -239,10 +239,10 @@ func (r *Rauther) checkResendTime(u user.User, curTime time.Time, authMethod *au
 			resendInterval = r.Config.OTP.ResendDelay
 		}
 
-		timeOffset := lastCodeSentTime.Add(resendInterval)
+		resendTime := lastCodeSentTime.Add(resendInterval)
 
-		if !curTime.After(timeOffset) {
-			return &timeOffset, false
+		if !curTime.After(resendTime) {
+			return &resendTime, false
 		}
 	}
 
