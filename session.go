@@ -76,6 +76,23 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 	}
 }
 
+func (r *Rauther) checkAuthHandler(c *gin.Context) {
+	sessionInfo, ok := r.checkSession(c)
+	if !ok {
+		return
+	}
+
+	respMap := gin.H{
+		"result": true,
+	}
+
+	if r.hooks.AfterAuthCheck != nil {
+		r.hooks.AfterAuthCheck(respMap, sessionInfo.Session)
+	}
+
+	c.JSON(http.StatusOK, respMap)
+}
+
 type sessionInfo struct {
 	Session     session.Session
 	User        user.User

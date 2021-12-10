@@ -8,3 +8,7 @@ import (
 func (r *Rauther) AfterAuth(f func(resp gin.H, ses session.Session)) {
 	r.hooks.AfterAuth = f
 }
+
+func (r *Rauther) AfterAuthCheck(f func(resp gin.H, ses session.Session)) {
+	r.hooks.AfterAuthCheck = f
+}
