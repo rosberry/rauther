@@ -58,9 +58,6 @@ type Config struct {
 	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
 	CreateGuestUser bool
 
-	// ValidConfirmationInterval is the allowed interval between the last confirmation and the present time.
-	// ValidConfirmationInterval time.Duration
-
 	// CodeLength is default code length for all auth methods (if not specified in auth method)
 	CodeLength int
 
