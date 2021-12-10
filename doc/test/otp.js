@@ -16,12 +16,12 @@ chai.use(chaihttp);
 var baseUrl = config.baseUrl;
 var specFile = config.specFile;
 
-var phone = "+7" + (Math.floor(Math.random()*999999999));
-var phone2 = "+7" + (Math.floor(Math.random()*999999999));
+var phone = "+7" + (Math.floor(Math.random() * 999999999));
+var phone2 = "+7" + (Math.floor(Math.random() * 999999999));
 var userName = "Name 1";
 var userName2 = "Name 2";
 
-var device_id = "test"+(Math.floor(Math.random()*99999));
+var device_id = "test" + (Math.floor(Math.random() * 99999));
 var apiToken = "";
 var code = "123321";
 
@@ -105,7 +105,7 @@ describe("otp auth:", function () {
           });
       });
 
-      it("should return error invalid confirmation time", function (done) {
+      it("should return error too many code requests", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
@@ -117,14 +117,14 @@ describe("otp auth:", function () {
           .send({
             phone: phone
           })
-          .expectStatus(400)
+          .expectStatus(429)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.false;
             expect(res).to.have.property("error");
-            expect(res.error).to.have.property("code").that.equals("invalid_confirmation_time");
+            expect(res.error).to.have.property("code").that.equals("code_timeout");
             expect(res).to.have.property("info");
-            expect(res.info).to.have.property("validInterval");
-            expect(res.info).to.have.property("validTime");
+            expect(res.info).to.have.property("timeoutSec");
+            expect(res.info).to.have.property("nextRequestTime");
             done.apply(null, arguments);
           });
       });
@@ -151,7 +151,7 @@ describe("otp auth:", function () {
           });
       });
 
-      it("should return error invalid confirmation time", function (done) {
+      it("should return error too many code requests", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
@@ -163,14 +163,14 @@ describe("otp auth:", function () {
           .send({
             phone: phone
           })
-          .expectStatus(400)
+          .expectStatus(429)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.false;
             expect(res).to.have.property("error");
-            expect(res.error).to.have.property("code").that.equals("invalid_confirmation_time");
+            expect(res.error).to.have.property("code").that.equals("code_timeout");
             expect(res).to.have.property("info");
-            expect(res.info).to.have.property("validInterval");
-            expect(res.info).to.have.property("validTime");
+            expect(res.info).to.have.property("timeoutSec");
+            expect(res.info).to.have.property("nextRequestTime");
             done.apply(null, arguments);
           });
       });
@@ -254,14 +254,14 @@ describe("otp auth:", function () {
             phone: phone,
             code: code
           })
-        .expectStatus(400)
-        .end(function (err, raw, res) {
-          expect(res).to.have.property("result").that.is.false;
-          expect(res).to.have.property("error");
-          expect(res.error).to.have.property("code").that.equals("already_auth");
-          expect(res).to.not.have.property("uid");
-          done.apply(null, arguments);
-        });
+          .expectStatus(400)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("already_auth");
+            expect(res).to.not.have.property("uid");
+            done.apply(null, arguments);
+          });
       });
     });
 
@@ -393,7 +393,7 @@ describe("otp auth:", function () {
           });
       });
 
-      it("should return error invalid confirmation time", function (done) {
+      it("should return error too many code requests", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
@@ -405,14 +405,14 @@ describe("otp auth:", function () {
           .send({
             phone: phone
           })
-          .expectStatus(400)
+          .expectStatus(429)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.false;
             expect(res).to.have.property("error");
-            expect(res.error).to.have.property("code").that.equals("invalid_confirmation_time");
+            expect(res.error).to.have.property("code").that.equals("code_timeout");
             expect(res).to.have.property("info");
-            expect(res.info).to.have.property("validInterval");
-            expect(res.info).to.have.property("validTime");
+            expect(res.info).to.have.property("timeoutSec");
+            expect(res.info).to.have.property("nextRequestTime");
             done.apply(null, arguments);
           });
       });
@@ -440,7 +440,7 @@ describe("otp auth:", function () {
     });
 
     describe("get otp code", function () {
-      it("should return error invalid confirmation time", function (done) {
+      it("should return error too many code requests", function (done) {
         hippie(spec)
           .header("Authorization", "Bearer " + apiToken)
           .base(baseUrl)
@@ -452,21 +452,21 @@ describe("otp auth:", function () {
           .send({
             phone: phone
           })
-          .expectStatus(400)
+          .expectStatus(429)
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.false;
             expect(res).to.have.property("error");
-            expect(res.error).to.have.property("code").that.equals("invalid_confirmation_time");
+            expect(res.error).to.have.property("code").that.equals("code_timeout");
             expect(res).to.have.property("info");
-            expect(res.info).to.have.property("validInterval");
-            expect(res.info).to.have.property("validTime");
+            expect(res.info).to.have.property("timeoutSec");
+            expect(res.info).to.have.property("nextRequestTime");
             done.apply(null, arguments);
           });
       });
 
       it("should return result true", function (done) {
         this.timeout(20000);
-        setTimeout(function() {
+        setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
             .base(baseUrl)
