@@ -42,17 +42,10 @@ func (r *Rauther) requestRecoveryHandler(c *gin.Context) {
 
 	// check resend timeout
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-		lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 		curTime := time.Now()
-
-		if lastConfirmationTime != nil {
-			timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
-
-			if !curTime.After(timeOffset) {
-				errorCodeTimeoutResponse(c, timeOffset, curTime)
-
-				return
-			}
+		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
+			errorCodeTimeoutResponse(c, *resendTime, curTime)
+			return
 		}
 
 		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
@@ -103,6 +96,17 @@ func (r *Rauther) validateRecoveryCodeHandler(c *gin.Context) {
 		return
 	}
 
+	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+		codeSent := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+
+		expiredAt := calcExpiredAt(codeSent, r.Config.Password.CodeLifeTime)
+
+		if expiredAt.Before(time.Now()) {
+			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+			return
+		}
+	}
+
 	code := u.(user.RecoverableUser).GetRecoveryCode()
 	if code != request.Code {
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
@@ -137,6 +141,18 @@ func (r *Rauther) recoveryHandler(c *gin.Context) {
 	if err != nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
+	}
+
+	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+		codeSent := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+
+		expiredAt := calcExpiredAt(codeSent, r.Config.Password.CodeLifeTime)
+		if expiredAt.Before(time.Now()) {
+			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+			return
+		}
+
+		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
 	}
 
 	code := u.(user.RecoverableUser).GetRecoveryCode()

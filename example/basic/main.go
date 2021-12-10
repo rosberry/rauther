@@ -89,6 +89,9 @@ func main() { // nolint
 			Sender:        &fakeTelegramSender{},
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
+			CodeGenerator: func(l int) string {
+				return "123321"
+			},
 		},
 		{
 			Key:            "google",
@@ -121,7 +124,8 @@ func main() { // nolint
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
 	rauth.Modules.CodeSentTimeUser = true
-	rauth.Config.ValidConfirmationInterval = 15 * time.Second // nolint:gomnd
+	rauth.Config.Password.ResendDelay = 15 * time.Second // nolint:gomnd
+	rauth.Config.OTP.ResendDelay = 15 * time.Second      // nolint:gomnd
 
 	rauth.Config.Routes.OTPRequestCode = "/otp/:sendby/code"
 	rauth.Config.Routes.OTPCheckCode = "/otp/:sendby/auth"
@@ -194,16 +198,23 @@ type CheckPhoneRequest struct {
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
 
 type otpRequest struct {
-	Phone string `json:"phone" binding:"required"`
-	Code  string `json:"code"`
-	Name  string `json:"name"`
+	Phone string  `json:"phone" binding:"required"`
+	Code  string  `json:"code"`
+	Name  *string `json:"name"`
 }
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
-func (r *otpRequest) Fields() map[string]string {
-	return map[string]string{
-		"username": r.Name,
+
+func (r *otpRequest) Fields() map[string]interface{} {
+	return map[string]interface{}{
+		"username": func() interface{} {
+			if r.Name == nil {
+				return nil
+			}
+
+			return *r.Name
+		}(),
 	}
 }
 
@@ -212,8 +223,8 @@ type CustomSocialSignInRequest struct {
 	Token string `json:"token" binding:"required"`
 }
 
-func (r *CustomSocialSignInRequest) Fields() map[string]string {
-	return map[string]string{
+func (r *CustomSocialSignInRequest) Fields() map[string]interface{} {
+	return map[string]interface{}{
 		"username": r.Name,
 	}
 }

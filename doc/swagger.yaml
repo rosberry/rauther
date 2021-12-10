@@ -118,6 +118,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "403":
+          description: Incorrect password
+          schema:
+            $ref: "#/definitions/ErrorResponse"
       tags:
         - auth
       security:
@@ -181,6 +185,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "429":
+          description: Too many code requests
+          schema:
+            $ref: "#/definitions/TooManyErrorResponse"
       tags:
         - auth
       security:
@@ -284,6 +292,10 @@ paths:
           description: Bad Request
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "429":
+          description: Too many code requests
+          schema:
+            $ref: "#/definitions/TooManyErrorResponse"
         "401":
           description: Not auth. Auth token required
           schema:
@@ -313,6 +325,11 @@ paths:
           description: Bad Request
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "429":
+          description: Too many code requests
+          schema:
+            $ref: "#/definitions/TooManyErrorResponse"
+
       tags:
         - auth
       security:
@@ -390,6 +407,31 @@ paths:
         - profile
       security:
         - authtoken: []
+    post:
+      consumes:
+        - application/json
+      description: Register device and returns token
+      parameters:
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/ProfileRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/ProfileResponse"
+        "401":
+          description: Authorized user required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Internal error. User not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - profile
 
 definitions:
   Error:
@@ -407,7 +449,22 @@ definitions:
         example: false
         type: boolean
     type: object
-
+  TooManyErrorResponse:
+    properties:
+      result:
+        example: false
+        type: boolean
+      error:
+        $ref: "#/definitions/Error"
+      info:
+        type: object
+        properties:
+          timeoutSec:
+            type: integer
+            example: 25
+          nextRequestTime:
+            type: string
+            example: "2021-12-09T16:36:13+06:00"
   AuthRequest:
     properties:
       device_id:
@@ -490,6 +547,9 @@ definitions:
   SocialSignInRequest:
     type: object
     properties:
+      type:
+        type: string
+        example: google
       token:
         type: string
         description: token from oauth service
@@ -508,7 +568,7 @@ definitions:
       phone:
         example: 79876543210
         type: string
-  
+
   OtpAuthRequest:
     properties:
       phone:
@@ -678,6 +738,13 @@ definitions:
         example: true
         type: boolean
     type: object
+
+  ProfileRequest:
+    type: object
+    properties:
+      username:
+        type: string
+        example: Name
 
   ProfileResponse:
     type: object

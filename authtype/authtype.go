@@ -64,7 +64,7 @@ type (
 
 	// AuthRequestFieldable is additional sign-up/sign-in interface for use additional fields
 	AuthRequestFieldable interface {
-		Fields() map[string]string
+		Fields() map[string]interface{}
 	}
 )
 
@@ -198,7 +198,7 @@ func (a *AuthMethods) Select(c *gin.Context, t Type) *AuthMethod {
 
 // CheckFieldsDefine checks whether all fields required for queries defined in models
 func (a *AuthMethods) CheckFieldsDefine(u user.User) (ok bool, badFields map[string][]string) { // nolint:cyclop
-	checkFields := func(fields map[string]string) []string {
+	checkFields := func(fields map[string]interface{}) []string {
 		notFoundFields := make([]string, 0)
 
 		for k := range fields {

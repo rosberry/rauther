@@ -26,14 +26,14 @@ func (r *Rauther) authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if token := parseAuthToken(c); token != "" {
 			session := r.deps.SessionStorer.FindByToken(token)
-			if session == nil {
+			if session == nil || session.GetToken() == "" {
 				errorResponse(c, http.StatusUnauthorized, common.ErrAuthFailed)
 				c.Abort()
 
 				return
 			}
 
-			if r.Modules.PasswordAuthableUser {
+			if r.Modules.AuthableUser {
 				if u, err := r.deps.UserStorer.LoadByID(session.GetUserID()); err == nil && u != nil {
 					c.Set(r.Config.ContextNames.User, u)
 				}
