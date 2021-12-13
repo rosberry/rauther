@@ -14,6 +14,7 @@ import (
 
 func (r *Rauther) confirmHandler(c *gin.Context) {
 	type confirmRequest struct {
+		UID  string `json:"uid" binding:"required"`
 		Code string `json:"code" binding:"required"`
 	}
 
@@ -32,16 +33,11 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		return
 	}
 
-	sessionInfo, ok := r.checkSession(c)
-	if !ok {
+	u, err := r.deps.UserStorer.LoadByUID(at.Key, request.UID)
+	if err != nil || u == nil {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
 	}
-	if sessionInfo.User == nil {
-		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-		return
-	}
-
-	u := sessionInfo.User
 
 	if !u.(user.ConfirmableUser).GetConfirmed(at.Key) {
 		code := u.(user.ConfirmableUser).GetConfirmCode(at.Key)
