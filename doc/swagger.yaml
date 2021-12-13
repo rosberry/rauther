@@ -261,8 +261,6 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       tags:
         - auth
-      security:
-        - authtoken: []
 
   /confirm/resend:
     post:
@@ -566,9 +564,13 @@ definitions:
       code:
         example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
         type: string
+      uid:
+        example: example@mailer.com
+        type: string
     type: object
     required:
       - type
+      - uid
       - code
 
   EmptyResponse:
