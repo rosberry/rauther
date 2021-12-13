@@ -9,6 +9,7 @@ import (
 	"github.com/rosberry/auth"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
+	"github.com/rosberry/rauther/storage"
 	"github.com/rosberry/rauther/user"
 )
 
@@ -53,7 +54,12 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		return
 	}
 
-	u, _ := r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
+	var u user.User
+	if socialStorer, ok := r.deps.UserStorer.(storage.SocialStorer); ok {
+		u, _ = socialStorer.LoadBySocial(at.Key, user.SocialDetails(userInfo))
+	} else {
+		u, _ = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
+	}
 	if u == nil {
 		// create user if not exist
 		u = r.deps.UserStorer.Create()
@@ -61,6 +67,10 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 
 		if r.Modules.ConfirmableUser && r.checker.Confirmable {
 			u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+		}
+
+		if socialUser, ok := u.(user.SocialAuthableUser); ok {
+			socialUser.SetUserDetails(at.Key, user.SocialDetails(userInfo))
 		}
 
 		if fieldableRequest, ok := request.(authtype.AuthRequestFieldable); ok {

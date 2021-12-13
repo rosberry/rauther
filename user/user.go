@@ -6,7 +6,11 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/rosberry/auth"
 )
+
+type SocialDetails *auth.UserDetails
 
 // Definition of user interfaces
 
@@ -30,6 +34,11 @@ type PasswordAuthableUser interface {
 	AuthableUser
 	GetPassword(authType string) (password string)
 	SetPassword(authType, password string)
+}
+
+type SocialAuthableUser interface {
+	AuthableUser
+	SetUserDetails(authType string, userDetails SocialDetails)
 }
 
 type ConfirmableUser interface {
