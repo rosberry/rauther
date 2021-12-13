@@ -8,9 +8,9 @@ type Err struct {
 	Message string `json:"message"`
 }
 
-type ConfirmationTimeErrInfo struct {
-	ValidInterval time.Duration `json:"validInterval"`
-	ValidTime     string        `json:"validTime"`
+type ResendCodeErrInfo struct {
+	TimeoutSec      time.Duration `json:"timeoutSec"`
+	NextRequestTime string        `json:"nextRequestTime"`
 }
 
 func (e Err) Error() string {
@@ -44,7 +44,7 @@ const (
 	ErrInvalidRecoveryCode
 	ErrAlreadyAuth
 	ErrNotSignIn
-	ErrConfirmationTimeInterval
+	ErrRequestCodeTimeout
 	ErrInvalidAuthToken
 	ErrOTPNotImplement
 	ErrCodeExpired
@@ -76,7 +76,7 @@ var Errors = map[ErrTypes]Err{
 	ErrRecoverableUserNotImplement:      {"recoverable_user_not_implement", "Please implement RecoverableUser interface"},
 	ErrInvalidRecoveryCode:              {"invalid_code", "Invalid recovery code"},
 	ErrAlreadyAuth:                      {"already_auth", "User already authorised"},
-	ErrConfirmationTimeInterval:         {"invalid_confirmation_time", "invalid confirmation time"},
+	ErrRequestCodeTimeout:               {"code_timeout", "Cannot request code, please wait and try later"},
 	ErrInvalidAuthToken:                 {"invalid_auth_token", "invalid auth token"},
 	ErrOTPNotImplement:                  {"one_time_password_not_implement", "Please implement OTPUser interface"},
 	ErrCodeExpired:                      {"code_expired", "Code expired"},

@@ -70,27 +70,20 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	// Check last send time
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 		curTime := time.Now()
-		if timeOffset, ok := r.checkCodeSent(u, at.Key); !ok {
-			errorCodeTimeoutResponse(c, *timeOffset, curTime)
+		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
+			errorCodeTimeoutResponse(c, *resendTime, curTime)
 			return
 		}
+
+		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 	}
 
 	code := r.generateCode(at)
 
-	expiredAt := time.Now().Add(r.Config.OTP.CodeLifeTime)
-
-	err = u.(user.OTPAuth).SetOTP(at.Key, code, &expiredAt)
+	err = u.(user.OTPAuth).SetOTP(at.Key, code)
 	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
 		return
-	}
-
-	if fieldableRequest, ok := request.(authtype.AuthRequestFieldable); ok {
-		if ok := r.fillFields(fieldableRequest, u); !ok {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-			return
-		}
 	}
 
 	err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
@@ -157,10 +150,17 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
-	userCode, expiredAt := u.(user.OTPAuth).GetOTP(at.Key)
-	if expiredAt.Before(time.Now()) {
-		errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
-		return
+	userCode := u.(user.OTPAuth).GetOTP(at.Key)
+
+	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+		codeSent := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+
+		expiredAt := calcExpiredAt(codeSent, r.Config.OTP.CodeLifeTime)
+
+		if expiredAt.Before(time.Now()) {
+			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+			return
+		}
 	}
 
 	if code != userCode {
@@ -200,10 +200,17 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
-	err = u.(user.OTPAuth).SetOTP(at.Key, "", nil)
+	err = u.(user.OTPAuth).SetOTP(at.Key, "")
 	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
 		return
+	}
+
+	if fieldableRequest, ok := request.(authtype.AuthRequestFieldable); ok {
+		if ok := r.fillFields(fieldableRequest, u); !ok {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			return
+		}
 	}
 
 	if err = r.deps.UserStorer.Save(u); err != nil {
@@ -219,19 +226,27 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	})
 }
 
-func (r *Rauther) checkCodeSent(u user.User, authKey string) (timeOffset *time.Time, ok bool) {
-	lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(authKey)
-	curTime := time.Now()
+func (r *Rauther) checkResendTime(u user.User, curTime time.Time, authMethod *authtype.AuthMethod) (resendTime *time.Time, ok bool) {
+	lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(authMethod.Key)
 
 	if lastCodeSentTime != nil {
-		timeOffset := lastCodeSentTime.Add(r.Config.ValidConfirmationInterval)
+		var resendInterval time.Duration
 
-		if !curTime.After(timeOffset) {
-			return &timeOffset, false
+		switch authMethod.Type { // nolint:exhaustive
+		case authtype.Password:
+			resendInterval = r.Config.Password.ResendDelay
+		case authtype.OTP:
+			resendInterval = r.Config.OTP.ResendDelay
+		}
+
+		resendTime := lastCodeSentTime.Add(resendInterval)
+
+		if !curTime.After(resendTime) {
+			return &resendTime, false
 		}
 	}
 
-	u.(user.CodeSentTimeUser).SetCodeSentTime(authKey, &curTime)
+	u.(user.CodeSentTimeUser).SetCodeSentTime(authMethod.Key, &curTime)
 
 	return nil, true
 }

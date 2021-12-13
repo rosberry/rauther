@@ -58,11 +58,13 @@ type Config struct {
 	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
 	CreateGuestUser bool
 
-	// ValidConfirmationInterval is the allowed interval between the last confirmation and the present time.
-	ValidConfirmationInterval time.Duration
-
 	// CodeLength is default code length for all auth methods (if not specified in auth method)
 	CodeLength int
+
+	Password struct {
+		CodeLifeTime time.Duration
+		ResendDelay  time.Duration
+	}
 
 	OTP struct {
 		CodeLifeTime time.Duration
@@ -72,11 +74,10 @@ type Config struct {
 
 // Default set default values to configuration
 func (c *Config) Default() {
-	c.Routes.Auth = "auth"
 	c.ContextNames.Session = "session"
-
 	c.ContextNames.User = "user"
 
+	c.Routes.Auth = "auth"
 	c.Routes.SignUp = "register"
 	c.Routes.ValidateLoginField = "register/check"
 	c.Routes.SignIn = "login"
@@ -91,7 +92,9 @@ func (c *Config) Default() {
 	c.Routes.RecoveryValidateCode = "recover/validate"
 	c.Routes.RecoveryCode = "recover/reset"
 
-	c.ValidConfirmationInterval = 30 * time.Minute
+	c.Password.CodeLifeTime = time.Minute * 30 // nolint:gomnd
+	c.Password.ResendDelay = time.Minute * 2   // nolint:gomnd
+
 	c.CodeLength = 6
 
 	c.OTP.CodeLifeTime = time.Minute * 2 // nolint:gomnd

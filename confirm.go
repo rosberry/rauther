@@ -49,6 +49,15 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
 		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			codeSent := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+
+			expiredAt := calcExpiredAt(codeSent, r.Config.Password.CodeLifeTime)
+
+			if expiredAt.Before(time.Now()) {
+				errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+				return
+			}
+
 			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
 		}
 
@@ -96,19 +105,10 @@ func (r *Rauther) resendCodeHandler(c *gin.Context) {
 	// check resend timeout
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 		curTime := time.Now()
-		lastConfirmationTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
-
-		if lastConfirmationTime != nil {
-			timeOffset := lastConfirmationTime.Add(r.Config.ValidConfirmationInterval)
-
-			if !curTime.After(timeOffset) {
-				errorCodeTimeoutResponse(c, timeOffset, curTime)
-
-				return
-			}
+		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
+			errorCodeTimeoutResponse(c, *resendTime, curTime)
+			return
 		}
-
-		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 	}
 
 	u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)

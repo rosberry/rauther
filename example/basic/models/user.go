@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -18,8 +17,7 @@ type (
 
 		Auths map[string]AuthIdentities `json:"auths"`
 
-		Username  string     `auth:"username" json:"username"`
-		ExpiredIn *time.Time `json:"expired"`
+		Username string `auth:"username" json:"username"`
 
 		Guest bool   `json:"guest"`
 		Email string `auth:"email"`
@@ -27,16 +25,16 @@ type (
 		FirstName string `auth:"fname" json:"firstName"`
 		LastName  string `auth:"lname" json:"lastName"`
 
-		RecoveryCode         string       `json:"recoveryCode"`
-		LastConfirmationTime sql.NullTime `json:"lastConfirmationTime"`
+		RecoveryCode string `json:"recoveryCode"`
 	}
 
 	AuthIdentities struct {
-		Type        string `json:"type"`
-		UID         string `json:"uid"`
-		Password    string `json:"password"`
-		ConfirmCode string `json:"confirmCode"`
-		Confirmed   bool   `json:"confirmed"`
+		Type        string     `json:"type"`
+		UID         string     `json:"uid"`
+		Password    string     `json:"password"`
+		ConfirmCode string     `json:"confirmCode"`
+		Confirmed   bool       `json:"confirmed"`
+		SentAt      *time.Time `json:"sentAt"`
 	}
 )
 
@@ -105,20 +103,13 @@ func (u *User) SetConfirmCode(authType, code string) {
 }
 
 func (u *User) SetCodeSentTime(authType string, t *time.Time) {
-	if t != nil {
-		u.LastConfirmationTime.Time = *t
-		u.LastConfirmationTime.Valid = true
-	} else {
-		u.LastConfirmationTime.Valid = false
-	}
+	at := u.Auths[authType]
+	at.SentAt = t
+	u.Auths[authType] = at
 }
 
 func (u *User) GetCodeSentTime(authType string) *time.Time {
-	if !u.LastConfirmationTime.Valid {
-		return nil
-	}
-
-	return &u.LastConfirmationTime.Time
+	return u.Auths[authType].SentAt
 }
 
 func (u *User) SetRecoveryCode(code string) {
@@ -145,20 +136,14 @@ func (u *User) SetGuest(guest bool) {
 	u.Guest = guest
 }
 
-func (u *User) GetOTP(authType string) (code string, expiredIn time.Time) {
-	if u.ExpiredIn != nil {
-		expiredIn = *u.ExpiredIn
-	}
-
-	return u.Auths[authType].Password, expiredIn
+func (u *User) GetOTP(authType string) (code string) {
+	return u.Auths[authType].Password
 }
 
-func (u *User) SetOTP(authType string, code string, expiredIn *time.Time) error {
+func (u *User) SetOTP(authType string, code string) error {
 	at := u.Auths[authType]
 	at.Password = code
 	u.Auths[authType] = at
-
-	u.ExpiredIn = expiredIn
 
 	return nil
 }

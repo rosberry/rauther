@@ -6,5 +6,6 @@ import (
 )
 
 type HookOptions struct {
-	AfterAuth func(gin.H, session.Session)
+	AfterAuth      func(gin.H, session.Session)
+	AfterAuthCheck func(gin.H, session.Session)
 }
