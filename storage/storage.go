@@ -35,6 +35,10 @@ type UserStorer interface {
 	Save(user user.User) error
 }
 
+type SocialStorer interface {
+	LoadBySocial(authType string, userDetails user.SocialDetails) (user user.User, err error)
+}
+
 type RemovableUserStorer interface {
 	RemoveByID(id interface{}) error
 }
