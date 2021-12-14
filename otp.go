@@ -37,11 +37,15 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		return
 	}
 
+	var linkAccount bool
+
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
 		if !r.Config.LinkAccount {
 			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}
+
+		linkAccount = true
 	}
 
 	uid := request.GetUID()
@@ -67,6 +71,9 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		}
 
 		u.(user.AuthableUser).SetUID(at.Key, uid)
+	} else if linkAccount {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		return
 	}
 
 	// Check last send time

@@ -95,6 +95,9 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 			return
 		}
+	} else if linkAccount {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		return
 	}
 	// User exist. TODO: Merge if link account?
 
