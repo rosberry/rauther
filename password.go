@@ -46,11 +46,18 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		return
 	}
 
+	var linkAccount bool
+
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
-		errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-		return
+		if !r.Config.LinkAccount {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		linkAccount = true
 	}
 
+	// User exist. TODO: Merge if link account?
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 	if err == nil && u != nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
@@ -62,7 +69,12 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		u.(user.AuthableUser).SetUID(at.Key, uid)
 		u.(user.GuestUser).SetGuest(false)
 	} else {
-		u = r.deps.UserStorer.Create()
+		if linkAccount {
+			u = sessionInfo.User
+		} else {
+			u = r.deps.UserStorer.Create()
+		}
+
 		u.(user.AuthableUser).SetUID(at.Key, uid)
 	}
 

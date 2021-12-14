@@ -37,9 +37,15 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		return
 	}
 
+	var linkAccount bool
+
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
-		errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-		return
+		if !r.Config.LinkAccount {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		linkAccount = true
 	}
 
 	token := request.GetToken()
@@ -62,7 +68,12 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 	}
 	if u == nil {
 		// create user if not exist
-		u = r.deps.UserStorer.Create()
+		if linkAccount {
+			u = sessionInfo.User
+		} else {
+			u = r.deps.UserStorer.Create()
+		}
+
 		u.(user.AuthableUser).SetUID(at.Key, userInfo.ID)
 
 		if r.Modules.ConfirmableUser && r.checker.Confirmable {
@@ -84,7 +95,11 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 			return
 		}
+	} else if linkAccount {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		return
 	}
+	// User exist. TODO: Merge if link account?
 
 	sessionInfo.Session.BindUser(u)
 
