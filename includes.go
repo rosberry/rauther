@@ -29,18 +29,18 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup, authRouter *gin.Route
 
 	r.checkRemovableUser()
 
-	router.POST(r.Config.Routes.SignOut, r.signOutHandler)
+	authRouter.POST(r.Config.Routes.SignOut, r.signOutHandler)
 
 	if r.Modules.PasswordAuthableUser && r.methods.ExistingTypes[authtype.Password] {
 		r.includePasswordAuthable(router, authRouter)
 	}
 
 	if r.Modules.SocialAuthableUser && r.methods.ExistingTypes[authtype.Social] {
-		r.includeSocialAuthable(router)
+		r.includeSocialAuthable(authRouter)
 	}
 
 	if r.Modules.OTP && r.methods.ExistingTypes[authtype.OTP] {
-		r.includeOTPAuthable(router)
+		r.includeOTPAuthable(authRouter)
 	}
 }
 
@@ -58,7 +58,7 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup, authRouter *g
 	}
 
 	if r.Modules.RecoverableUser {
-		r.includeRecoverable(router)
+		r.includeRecoverable(authRouter)
 	}
 }
 
