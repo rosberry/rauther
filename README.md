@@ -93,8 +93,8 @@ type ConfirmableUser interface {
 type RecoverableUser interface {
 	User
 
-	GetRecoveryCode() (code string)
-	SetRecoveryCode(code string)
+	GetRecoveryCode(authType string) (code string)
+	SetRecoveryCode(authType, code string)
 }
 ```
 
