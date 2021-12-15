@@ -17,12 +17,12 @@ func (r *Rauther) includeSession() {
 		withSession.GET(r.Config.Routes.Auth, r.checkAuthHandler)
 
 		if r.Modules.AuthableUser {
-			r.includeAuthable(withSession)
+			r.includeAuthable(r.deps.R, withSession)
 		}
 	}
 }
 
-func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
+func (r *Rauther) includeAuthable(router *gin.RouterGroup, authRouter *gin.RouterGroup) {
 	if !r.checker.Authable {
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
@@ -32,7 +32,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	router.POST(r.Config.Routes.SignOut, r.signOutHandler)
 
 	if r.Modules.PasswordAuthableUser && r.methods.ExistingTypes[authtype.Password] {
-		r.includePasswordAuthable(router)
+		r.includePasswordAuthable(router, authRouter)
 	}
 
 	if r.Modules.SocialAuthableUser && r.methods.ExistingTypes[authtype.Social] {
@@ -44,17 +44,17 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup) {
 	}
 }
 
-func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup) {
+func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup, authRouter *gin.RouterGroup) {
 	if !r.checker.PasswordAuthable {
 		log.Fatal(common.Errors[common.ErrPasswordAuthableUserNotImplement])
 	}
 
-	router.POST(r.Config.Routes.SignUp, r.signUpHandler)
-	router.POST(r.Config.Routes.SignIn, r.signInHandler)
-	router.POST(r.Config.Routes.ValidateLoginField, r.validateLoginField)
+	authRouter.POST(r.Config.Routes.SignUp, r.signUpHandler)
+	authRouter.POST(r.Config.Routes.SignIn, r.signInHandler)
+	authRouter.POST(r.Config.Routes.ValidateLoginField, r.validateLoginField)
 
 	if r.Modules.ConfirmableUser {
-		r.includeConfirmable(router)
+		r.includeConfirmable(router, authRouter)
 	}
 
 	if r.Modules.RecoverableUser {
@@ -91,7 +91,7 @@ func (r *Rauther) checkRemovableUser() {
 	}
 }
 
-func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
+func (r *Rauther) includeConfirmable(router *gin.RouterGroup, authRouter *gin.RouterGroup) {
 	if !r.checker.Confirmable {
 		log.Fatal(common.Errors[common.ErrConfirmableUserNotImplement])
 	}
@@ -101,7 +101,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup) {
 	}
 
 	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
-	router.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler)
+	authRouter.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler)
 }
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
