@@ -61,12 +61,16 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 	}
 
 	var u user.User
+	var isNew bool
+
 	if socialStorer, ok := r.deps.UserStorer.(storage.SocialStorer); ok {
 		u, _ = socialStorer.LoadBySocial(at.Key, user.SocialDetails(userInfo))
 	} else {
 		u, _ = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
 	}
+
 	if u == nil {
+		isNew = true
 		// create user if not exist
 		if linkAccount {
 			u = sessionInfo.User
@@ -117,7 +121,17 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	c.Set(r.Config.ContextNames.User, u)
 
-	c.JSON(http.StatusOK, gin.H{
+	respMap := gin.H{
 		"result": true,
-	})
+	}
+
+	if isNew {
+		if r.hooks.AfterSocialSignUp != nil {
+			r.hooks.AfterSocialSignUp(respMap, sessionInfo.Session, u, at.Key)
+		}
+	} else if r.hooks.AfterSocialSignIn != nil {
+		r.hooks.AfterSocialSignIn(respMap, sessionInfo.Session, u, at.Key)
+	}
+
+	c.JSON(http.StatusOK, respMap)
 }
