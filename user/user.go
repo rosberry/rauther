@@ -52,8 +52,8 @@ type ConfirmableUser interface {
 
 type RecoverableUser interface {
 	AuthableUser
-	GetRecoveryCode() (code string)
-	SetRecoveryCode(code string)
+	GetRecoveryCode(authType string) (code string)
+	SetRecoveryCode(authType, code string)
 }
 
 // interface for checking the interval during which confirmation codes cannot be sent

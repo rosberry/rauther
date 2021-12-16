@@ -112,11 +112,11 @@ func (u *User) GetCodeSentTime(authType string) *time.Time {
 	return u.Auths[authType].SentAt
 }
 
-func (u *User) SetRecoveryCode(code string) {
+func (u *User) SetRecoveryCode(authType, code string) {
 	u.RecoveryCode = code
 }
 
-func (u *User) GetRecoveryCode() (code string) {
+func (u *User) GetRecoveryCode(authType string) (code string) {
 	return u.RecoveryCode
 }
 

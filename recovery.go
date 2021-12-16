@@ -51,7 +51,7 @@ func (r *Rauther) requestRecoveryHandler(c *gin.Context) {
 		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 	}
 
-	u.(user.RecoverableUser).SetRecoveryCode(code)
+	u.(user.RecoverableUser).SetRecoveryCode(at.Key, code)
 
 	err = r.deps.Storage.UserStorer.Save(u)
 	if err != nil {
@@ -107,7 +107,7 @@ func (r *Rauther) validateRecoveryCodeHandler(c *gin.Context) {
 		}
 	}
 
-	code := u.(user.RecoverableUser).GetRecoveryCode()
+	code := u.(user.RecoverableUser).GetRecoveryCode(at.Key)
 	if code != request.Code {
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
 		return
@@ -155,7 +155,7 @@ func (r *Rauther) recoveryHandler(c *gin.Context) {
 		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
 	}
 
-	code := u.(user.RecoverableUser).GetRecoveryCode()
+	code := u.(user.RecoverableUser).GetRecoveryCode(at.Key)
 	if code != request.Code || code == "" {
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRecoveryCode)
 		return
@@ -168,7 +168,7 @@ func (r *Rauther) recoveryHandler(c *gin.Context) {
 	}
 
 	u.(user.PasswordAuthableUser).SetPassword(at.Key, string(encryptedPassword))
-	u.(user.RecoverableUser).SetRecoveryCode("")
+	u.(user.RecoverableUser).SetRecoveryCode(at.Key, "")
 
 	err = r.deps.Storage.UserStorer.Save(u)
 	if err != nil {
