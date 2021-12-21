@@ -195,8 +195,11 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
+	var isNew bool
+
 	// If current user is GUEST, and OTP user is guest (new user) - use current user as actual
 	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+		isNew = true
 		var removeUserID interface{}
 
 		if u.(user.GuestUser).IsGuest() {
@@ -215,6 +218,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 			log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 		}
 	} else if linkAccount {
+		isNew = true
 		sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
 
 		removeUserID := u.GetID()
@@ -259,9 +263,19 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	c.Set(r.Config.ContextNames.User, u)
 
-	c.JSON(http.StatusOK, gin.H{
+	respMap := gin.H{
 		"result": true,
-	})
+	}
+
+	if isNew {
+		if r.hooks.AfterOTPSignUp != nil {
+			r.hooks.AfterOTPSignUp(respMap, sessionInfo.Session, u, at.Key)
+		}
+	} else if r.hooks.AfterOTPSignIn != nil {
+		r.hooks.AfterOTPSignIn(respMap, sessionInfo.Session, u, at.Key)
+	}
+
+	c.JSON(http.StatusOK, respMap)
 }
 
 func (r *Rauther) checkResendTime(u user.User, curTime time.Time, authMethod *authtype.AuthMethod) (resendTime *time.Time, ok bool) {

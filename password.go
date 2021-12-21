@@ -127,10 +127,16 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	c.Set(r.Config.ContextNames.User, u)
 
-	c.JSON(http.StatusOK, gin.H{
+	respMap := gin.H{
 		"result": true,
 		"uid":    uid,
-	})
+	}
+
+	if r.hooks.AfterPasswordSignUp != nil {
+		r.hooks.AfterPasswordSignUp(respMap, sessionInfo.Session, u, at.Key)
+	}
+
+	c.JSON(http.StatusOK, respMap)
 }
 
 func (r *Rauther) signInHandler(c *gin.Context) {
@@ -206,9 +212,15 @@ func (r *Rauther) signInHandler(c *gin.Context) {
 	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	c.Set(r.Config.ContextNames.User, u)
 
-	c.JSON(http.StatusOK, gin.H{
+	respMap := gin.H{
 		"result": true,
-	})
+	}
+
+	if r.hooks.AfterPasswordSignIn != nil {
+		r.hooks.AfterPasswordSignIn(respMap, sessionInfo.Session, u, at.Key)
+	}
+
+	c.JSON(http.StatusOK, respMap)
 }
 
 func (r *Rauther) validateLoginField(c *gin.Context) {
