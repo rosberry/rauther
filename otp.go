@@ -72,8 +72,15 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 		u.(user.AuthableUser).SetUID(at.Key, uid)
 	} else if linkAccount {
-		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-		return
+		if confirmableUser, ok := u.(user.ConfirmableUser); ok {
+			if confirmableUser.GetConfirmed(at.Key) {
+				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+				return
+			}
+		} else {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			return
+		}
 	}
 
 	// Check last send time
