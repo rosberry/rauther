@@ -16,10 +16,12 @@ func (r *Rauther) signOutHandler(c *gin.Context) {
 
 	sessionInfo.Session.UnbindUser()
 
-	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
-		err := r.deps.Storage.UserRemover.RemoveByID(sessionInfo.UserID)
-		if err != nil {
-			log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
+	if r.Config.CreateGuestUser {
+		if sessionInfo.UserIsGuest {
+			err := r.deps.Storage.UserRemover.RemoveByID(sessionInfo.UserID)
+			if err != nil {
+				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
+			}
 		}
 
 		us, errType := r.createGuestUser()
