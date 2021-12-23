@@ -70,6 +70,14 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			u.(user.GuestUser).SetGuest(true)
 		}
 
+		if linkAccount {
+			if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
+				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+
+				return
+			}
+		}
+
 		u.(user.AuthableUser).SetUID(at.Key, uid)
 	} else if linkAccount {
 		if confirmableUser, ok := u.(user.ConfirmableUser); ok {
@@ -219,6 +227,13 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		}
 	} else if linkAccount {
 		isNew = true
+
+		if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
+			errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+
+			return
+		}
+
 		sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
 
 		removeUserID := u.GetID()

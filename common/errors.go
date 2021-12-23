@@ -27,6 +27,7 @@ const (
 	ErrNotSessionID
 	ErrInvalidRequest
 	ErrUserExist
+	ErrAuthIdentityExists
 	ErrUserNotFound
 	ErrIncorrectPassword
 	ErrUserLoad
@@ -60,6 +61,7 @@ var Errors = map[ErrTypes]Err{
 	ErrNotSessionID:                     {"not_session", "Session ID required"},
 	ErrInvalidRequest:                   {"req_invalid", "The request is not valid"},
 	ErrUserExist:                        {"user_exist", "User already exist"},
+	ErrAuthIdentityExists:               {"auth_identity_already_exists", "Auth identity with such type already exists"},
 	ErrUserNotFound:                     {"user_not_found", "User not found"},
 	ErrIncorrectPassword:                {"incorrect_password", "Incorrect password"},
 	ErrUserLoad:                         {"failed_load_user", "Failed load user"},
