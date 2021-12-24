@@ -65,19 +65,14 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	// User not found
 	if u == nil {
 		u = r.deps.UserStorer.Create()
+		u.(user.OTPAuth).SetUID(at.Key, uid)
+		u.(user.OTPAuth).SetConfirmed(at.Key, false)
 
 		if r.Config.CreateGuestUser {
 			u.(user.GuestUser).SetGuest(true)
 		}
-
-		u.(user.AuthableUser).SetUID(at.Key, uid)
 	} else if linkAccount {
-		if confirmableUser, ok := u.(user.ConfirmableUser); ok {
-			if confirmableUser.GetConfirmed(at.Key) {
-				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-				return
-			}
-		} else {
+		if u.(user.OTPAuth).GetConfirmed(at.Key) {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			return
 		}
@@ -195,12 +190,11 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
-	var isNew bool
+	isNew := !u.(user.OTPAuth).GetConfirmed(at.Key)
 
 	// If current user is GUEST, and OTP user is guest (new user) - use current user as actual
 	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
-		isNew = true
-		var removeUserID interface{}
+		removeUserID := sessionInfo.UserID
 
 		if u.(user.GuestUser).IsGuest() {
 			sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
@@ -209,8 +203,6 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 			removeUserID = u.GetID()
 
 			u = sessionInfo.User
-		} else {
-			removeUserID = sessionInfo.UserID
 		}
 
 		err := r.deps.Storage.UserRemover.RemoveByID(removeUserID)
@@ -218,7 +210,6 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 			log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 		}
 	} else if linkAccount {
-		isNew = true
 		sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
 
 		removeUserID := u.GetID()
@@ -230,8 +221,8 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		}
 	}
 
-	if r.Modules.ConfirmableUser {
-		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+	if !u.(user.OTPAuth).GetConfirmed(at.Key) {
+		u.(user.OTPAuth).SetConfirmed(at.Key, true)
 	}
 
 	sessionInfo.Session.BindUser(u)
