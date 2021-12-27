@@ -112,7 +112,7 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		return
 	}
 
-	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+	if r.Modules.GuestUser && sessionInfo.UserIsGuest {
 		if err := r.deps.Storage.UserRemover.RemoveByID(sessionInfo.UserID); err != nil {
 			log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 		}

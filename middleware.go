@@ -67,7 +67,7 @@ func (r *Rauther) authUserMiddleware() gin.HandlerFunc {
 			log.Fatal("[authUserMiddleware] failed 'user' type assertion to user.User")
 		}
 
-		if r.Config.CreateGuestUser && usr.(user.GuestUser).IsGuest() {
+		if r.Modules.GuestUser && usr.(user.GuestUser).IsGuest() {
 			errorResponse(c, http.StatusUnauthorized, common.ErrNotSignIn)
 			c.Abort()
 

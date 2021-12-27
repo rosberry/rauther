@@ -121,7 +121,7 @@ func main() { // nolint
 	rauth.AuthSelector(customAuthTypeSelector)
 
 	rauth.Config.LinkAccount = true
-	rauth.Config.CreateGuestUser = true
+	rauth.Modules.GuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
 	rauth.Modules.CodeSentTimeUser = true
