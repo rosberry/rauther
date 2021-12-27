@@ -74,6 +74,12 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		// create user if not exist
 		if linkAccount {
 			u = sessionInfo.User
+
+			if foundUID := u.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
+				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+
+				return
+			}
 		} else {
 			u = r.deps.UserStorer.Create()
 		}
