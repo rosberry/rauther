@@ -16,6 +16,27 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type CustomError struct {
+	Status   int
+	Response common.Err
+}
+
+func NewCustomError(status int, code, message string) CustomError {
+	ce := CustomError{
+		Status: status,
+		Response: common.Err{
+			Code:    code,
+			Message: message,
+		},
+	}
+
+	return ce
+}
+
+func (ce CustomError) Error() string {
+	return ce.Response.Message
+}
+
 func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	c.JSON(status, gin.H{
 		"result": false,
@@ -23,7 +44,7 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	})
 }
 
-func customErrorResponse(c *gin.Context, cErr common.CustomError) {
+func customErrorResponse(c *gin.Context, cErr CustomError) {
 	c.JSON(cErr.Status, gin.H{
 		"result": false,
 		"error":  cErr.Response,

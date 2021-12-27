@@ -72,8 +72,9 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 
 	if err != nil {
 		log.Print(err)
-		if errors.As(err, &common.CustomError{}) {
-			customErrorResponse(c, err.(common.CustomError))
+		var customErr CustomError
+		if errors.As(err, &customErr) {
+			customErrorResponse(c, customErr)
 			return
 		}
 	}

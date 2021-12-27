@@ -61,8 +61,9 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
-		if errors.As(err, &common.CustomError{}) {
-			customErrorResponse(c, err.(common.CustomError))
+		var customErr CustomError
+		if errors.As(err, &customErr) {
+			customErrorResponse(c, customErr)
 			return
 		}
 	}
@@ -182,8 +183,9 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
-		if errors.As(err, &common.CustomError{}) {
-			customErrorResponse(c, err.(common.CustomError))
+		var customErr CustomError
+		if errors.As(err, &customErr) {
+			customErrorResponse(c, customErr)
 			return
 		}
 	}

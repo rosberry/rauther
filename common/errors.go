@@ -19,27 +19,6 @@ type ResendCodeErrInfo struct {
 	NextRequestTime string        `json:"nextRequestTime"`
 }
 
-type CustomError struct {
-	Status   int
-	Response Err
-}
-
-func NewCustomError(status int, code, message string) CustomError {
-	ce := CustomError{
-		Status: status,
-		Response: Err{
-			Code:    code,
-			Message: message,
-		},
-	}
-
-	return ce
-}
-
-func (ce CustomError) Error() string {
-	return ce.Response.Message
-}
-
 type ErrTypes int
 
 const (
