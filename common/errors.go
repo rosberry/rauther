@@ -49,6 +49,7 @@ const (
 	ErrOTPNotImplement
 	ErrCodeExpired
 	ErrInvalidCode
+	ErrUserNotConfirmed
 )
 
 var Errors = map[ErrTypes]Err{
@@ -81,4 +82,5 @@ var Errors = map[ErrTypes]Err{
 	ErrOTPNotImplement:                  {"one_time_password_not_implement", "Please implement OTPUser interface"},
 	ErrCodeExpired:                      {"code_expired", "Code expired"},
 	ErrInvalidCode:                      {"invalid_code", "Invalid code"},
+	ErrUserNotConfirmed:                 {"user_not_confirmed", "User not confirmed"},
 }

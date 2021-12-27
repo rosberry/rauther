@@ -64,6 +64,11 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 	// User not found
 	if u == nil {
+		if currentConfirmUser, ok := sessionInfo.User.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+			return
+		}
+
 		u = r.deps.UserStorer.Create()
 
 		if r.Config.CreateGuestUser {
@@ -72,6 +77,10 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 		u.(user.AuthableUser).SetUID(at.Key, uid)
 	} else if linkAccount {
+		if currentConfirmUser, ok := sessionInfo.User.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+			return
+		}
 		if confirmableUser, ok := u.(user.ConfirmableUser); ok {
 			if confirmableUser.GetConfirmed(at.Key) {
 				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
