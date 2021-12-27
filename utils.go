@@ -23,6 +23,13 @@ func errorResponse(c *gin.Context, status int, err common.ErrTypes) {
 	})
 }
 
+func customErrorResponse(c *gin.Context, cErr common.CustomError) {
+	c.JSON(cErr.Status, gin.H{
+		"result": false,
+		"error":  cErr.Response,
+	})
+}
+
 func errorCodeTimeoutResponse(c *gin.Context, resendTime, curTime time.Time) {
 	interval := resendTime.Sub(curTime) / time.Second
 	nextRequestTime := resendTime.Format(time.RFC3339)

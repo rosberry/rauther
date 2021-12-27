@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -60,6 +61,10 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
+		if errors.As(err, &common.CustomError{}) {
+			customErrorResponse(c, err.(common.CustomError))
+			return
+		}
 	}
 
 	// User not found
@@ -177,6 +182,10 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
+		if errors.As(err, &common.CustomError{}) {
+			customErrorResponse(c, err.(common.CustomError))
+			return
+		}
 	}
 
 	if u == nil {

@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -64,9 +65,17 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 	var isNew bool
 
 	if socialStorer, ok := r.deps.UserStorer.(storage.SocialStorer); ok {
-		u, _ = socialStorer.LoadBySocial(at.Key, user.SocialDetails(userInfo))
+		u, err = socialStorer.LoadBySocial(at.Key, user.SocialDetails(userInfo))
 	} else {
-		u, _ = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
+		u, err = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
+	}
+
+	if err != nil {
+		log.Print(err)
+		if errors.As(err, &common.CustomError{}) {
+			customErrorResponse(c, err.(common.CustomError))
+			return
+		}
 	}
 
 	if u == nil {
