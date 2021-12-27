@@ -228,12 +228,6 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	} else if linkAccount {
 		isNew = true
 
-		if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
-			errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
-
-			return
-		}
-
 		sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
 
 		removeUserID := u.GetID()
