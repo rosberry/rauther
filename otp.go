@@ -113,6 +113,8 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	err = at.Sender.Send(sender.ConfirmationEvent, uid, code)
 	if err != nil {
 		log.Printf("send OTP code error: %v", err)
+		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+		return
 	}
 
 	if err = r.deps.UserStorer.Save(u); err != nil {
