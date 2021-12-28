@@ -31,7 +31,8 @@ type UserStorer interface {
 	Save(user user.User) error
 }
 
-// SocialStorer interface (optional, for social user)
+// SocialStorer - optional interface for social user which helps to use information from credentials from social networks for extended user binding
+// If the interface is not implemented, then LoadByUID will be used for social user
 type SocialStorer interface {
 	LoadBySocial(authType string, userDetails user.SocialDetails) (user user.User, err error)
 }
@@ -51,9 +52,9 @@ type Session interface {
 	GetUserID() (userID interface{})
 
 	SetToken(token string)
-	// add relation device <-> user
+	// Add relation session <-> user
 	BindUser(u user.User)
-	// remove relation device <-> user
+	// Remove relation session <-> user
 	UnbindUser()
 }
 ```
@@ -122,7 +123,7 @@ type OTPAuth interface {
 }
 ```
 
-Each needs its own interface. You can implicate from one to all. The interfaces used include the corresponding modules in rauther.
+Each needs its own interface. You can implement any number of them. The implementation of these interfaces, as well as other things, allows you to connect special modules. See the description of "Modules".
 
 Also `AuthableUser` modules make use additional interfaces.
 
@@ -142,7 +143,7 @@ type RecoverableUser interface {
 	SetRecoveryCode(authType, code string)
 }
 
-// interface for checking the interval during which confirmation codes cannot be sent
+// Interface for checking the interval during which confirmation codes cannot be sent
 type CodeSentTimeUser interface {
 	AuthableUser
 	GetCodeSentTime(authType string) *time.Time
@@ -179,7 +180,7 @@ OR use default email sender
 ```go
 import "github.com/rosberry/rauther/sender"
 // ...
-defaultSender := sender.EmailCredentials{
+emailCredentials := sender.EmailCredentials{
 	Server:   cfg.Email.Host,
 	Port:     cfg.Email.Port,
 	From:     cfg.Email.From,
@@ -187,11 +188,11 @@ defaultSender := sender.EmailCredentials{
 	Pass:     cfg.Email.Password,
 	Timeout:  timeout * time.Second,
 }
-stdEmailSender, err := sender.NewDefaultEmailSender(defaultSender, nil, nil)
+emailSender, err := sender.NewDefaultEmailSender(emailCredentials, nil, nil)
 ```
-`Timeout` - timeout for connect to email provider.
+`Timeout` - timeout for connection to email provider.
 
-2nd and 3nd argument - Subjects and messages templates. Uses defaults if not exists.
+2nd and 3nd argument - Subjects and messages templates. Uses defaults if not exists. They have a type `map[Event]string`. Type `Event` shoulde be either `sender.ConfirmationEvent` or `sender.PasswordRecoveryEvent`. For any event you make custom notification. For example see [defaultSender](./sender/sender.go#L55)
 
 6. Implement sign-up/sign-in request types
 
@@ -202,11 +203,11 @@ type (
 		GetUID() (uid string)
 		GetPassword() (password string)
 	}
-	// for password module
+	// For password module
 	CheckUserExistsRequest interface {
 		GetUID() (uid string)
 	}
-	// for social module
+	// For social module
 	SocialAuthRequest interface {
 		GetToken() string
 	}
@@ -255,7 +256,7 @@ Password module example:
 	rauth.AddAuthMethod(authtype.AuthMethod{
 		Key:                    "email",
 		Type:                   authtype.Password, // by default
-		Sender:                 defaultSender,
+		Sender:                 emailSender,
 		SignUpRequest:          &models.SignUpRequest{},
 		SignInRequest:          &models.SignInRequest{},
 		CheckUserExistsRequest: &models.CheckLoginRequest{},
@@ -267,7 +268,7 @@ Social module example:
 	rauth.AddAuthMethod(authtype.AuthMethod{
 		Key:                 "google",
 		Type:                authtype.Social,
-		Sender:              defaultSender,
+		Sender:              emailSender,
 		SocialSignInRequest: &models.SocialSignInRequest{},
 		SocialAuthType:      authtype.SocialAuthTypeGoogle,
 	})
@@ -277,7 +278,7 @@ OTP module example:
 	rauth.AddAuthMethod(authtype.AuthMethod{
 		Key:           "otp",
 		Type:          authtype.OTP,
-		Sender:        defaultSender,
+		Sender:        emailSender,
 		SignUpRequest: &models.OTPSendCodeRequest{},
 		SignInRequest: &models.OTPSignInRequest{},
 	})
@@ -326,7 +327,7 @@ rauth.Config.Password.CodeLifeTime = time.Minute * 30
 rauth.Config.OTP.CodeLifeTime = time.Minute * 5
 ```
 
-All configs parameters: https://github.com/rosberry/rauther/blob/master/config/config.go#L79
+All configs parameters [here](./config/config.go#L79)
 
 12. Init rauther handlers
 
