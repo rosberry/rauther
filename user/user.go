@@ -69,6 +69,12 @@ type OTPAuth interface {
 	SetOTP(authType string, code string) error
 }
 
+type TempUser interface {
+	User
+	IsTemp() bool
+	SetTemp(temp bool)
+}
+
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")
 
 const notFoundFieldErrText = "field %s does not exist within the provided item"

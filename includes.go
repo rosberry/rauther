@@ -100,8 +100,13 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup, authRouter *gin.Ro
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
-	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
 	authRouter.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler)
+
+	if r.Config.LinkAccount {
+		authRouter.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
+	} else {
+		router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
+	}
 }
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {

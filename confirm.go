@@ -39,32 +39,49 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		return
 	}
 
-	if !u.(user.ConfirmableUser).GetConfirmed(at.Key) {
-		code := u.(user.ConfirmableUser).GetConfirmCode(at.Key)
-		if request.Code != code || code == "" {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
+	if u.(user.ConfirmableUser).GetConfirmed(at.Key) {
+		c.JSON(http.StatusOK, gin.H{
+			"result": true,
+		})
+
+		return
+	}
+
+	code := u.(user.ConfirmableUser).GetConfirmCode(at.Key)
+	if request.Code != code || code == "" {
+		errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
+		return
+	}
+
+	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+		codeSent := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+
+		expiredAt := calcExpiredAt(codeSent, r.Config.Password.CodeLifeTime)
+
+		if expiredAt.Before(time.Now()) {
+			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
 			return
 		}
 
-		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
+	}
 
-		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-			codeSent := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+	u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
 
-			expiredAt := calcExpiredAt(codeSent, r.Config.Password.CodeLifeTime)
+	err = r.deps.UserStorer.Save(u)
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+		return
+	}
 
-			if expiredAt.Before(time.Now()) {
-				errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+	if r.Config.LinkAccount {
+		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
+			err := r.linkAccount(c, tempUser, at)
+			if err != nil {
+				// TODO: Error handling and return correct err
+				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 				return
 			}
-
-			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
-		}
-
-		err := r.deps.UserStorer.Save(u)
-		if err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
-			return
 		}
 	}
 

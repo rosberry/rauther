@@ -47,6 +47,8 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		return
 	}
 
+	var u user.User
+
 	var linkAccount bool
 
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
@@ -55,42 +57,41 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 			return
 		}
 
+		u, err = r.initAccountLinking(c, sessionInfo, at.Key, uid)
+		if err != nil {
+			// TODO: Error handling
+			log.Print(err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			return
+		}
+
 		linkAccount = true
 	}
 
-	// User exist. TODO: Merge if link account?
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
-	if err != nil {
-		log.Print(err)
-		var customErr CustomError
-		if errors.As(err, &customErr) {
-			customErrorResponse(c, customErr)
-			return
-		}
-	} else if u != nil {
-		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-		return
-	}
-
-	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
-		u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
-		u.(user.AuthableUser).SetUID(at.Key, uid)
-		u.(user.GuestUser).SetGuest(false)
-	} else if u == nil {
-		if linkAccount {
-			u = sessionInfo.User
-
-			if foundUID := u.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
-				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
-
+	if u == nil {
+		u, err = r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err != nil {
+			log.Print(err)
+			var customErr CustomError
+			if errors.As(err, &customErr) {
+				customErrorResponse(c, customErr)
 				return
 			}
+		} else if u != nil {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			return
+		}
+
+		if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+			u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
+			u.(user.GuestUser).SetGuest(false)
 		} else {
 			u = r.deps.UserStorer.Create()
 		}
-
-		u.(user.AuthableUser).SetUID(at.Key, uid)
 	}
+
+	u.(user.AuthableUser).SetUID(at.Key, uid)
 
 	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -130,16 +131,18 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		return
 	}
 
-	sessionInfo.Session.BindUser(u)
+	if !linkAccount {
+		sessionInfo.Session.BindUser(u)
+		c.Set(r.Config.ContextNames.User, u)
+	}
+
+	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 
 	err = r.deps.SessionStorer.Save(sessionInfo.Session)
 	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 		return
 	}
-
-	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
-	c.Set(r.Config.ContextNames.User, u)
 
 	respMap := gin.H{
 		"result": true,
@@ -202,6 +205,12 @@ func (r *Rauther) signInHandler(c *gin.Context) {
 	}
 
 	if u == nil {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+		return
+	}
+
+	if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
+		// TODO: Correct error about user is temporary?
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
 	}
