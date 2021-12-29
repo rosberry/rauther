@@ -38,17 +38,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		return
 	}
 
-	var linkAccount bool
-
-	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
-		if !r.Config.LinkAccount {
-			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
-			return
-		}
-
-		linkAccount = true
-	}
-
 	uid := request.GetUID()
 	if uid == "" {
 		log.Print("otp request handler: empty uid")
@@ -56,6 +45,22 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 		return
 	}
+
+	var linkAccount bool
+
+	var u user.User
+
+	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
+		if !r.Config.LinkAccount {
+			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		u, err = r.initAccountLinking(c, sessionInfo, at.Key, uid)
+		if err != nil {
+			// TODO: Error handling
+			log.Print(err)
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 	// Find user by UID
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
@@ -68,32 +73,34 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		}
 	}
 
-	// User not found
 	if u == nil {
-		u = r.deps.UserStorer.Create()
-
-		if r.Config.CreateGuestUser {
-			u.(user.GuestUser).SetGuest(true)
+		// Find user by UID
+		u, err = r.deps.UserStorer.LoadByUID(at.Key, uid)
+		if err != nil {
+			log.Print(err)
 		}
 
-		if linkAccount {
-			if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
-				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+		// User not found
+		if u == nil {
+			u = r.deps.UserStorer.Create()
 
-				return
+			if r.Config.CreateGuestUser {
+				u.(user.GuestUser).SetGuest(true)
 			}
+
+			if linkAccount {
+				if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
+					errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+
+					return
+				}
+			}
+
+			u.(user.AuthableUser).SetUID(at.Key, uid)
 		}
 
-		u.(user.AuthableUser).SetUID(at.Key, uid)
-	} else if linkAccount {
-		if confirmableUser, ok := u.(user.ConfirmableUser); ok {
-			if confirmableUser.GetConfirmed(at.Key) {
-				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-				return
-			}
-		} else {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-			return
+		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
+			tempUser.SetTemp(false)
 		}
 	}
 
@@ -120,6 +127,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	if err != nil {
 		log.Printf("send OTP code error: %v", err)
 		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+
 		return
 	}
 
@@ -197,6 +205,11 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
+	if r.Config.LinkAccount && !linkAccount && u.(user.TempUser).IsTemp() {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+		return
+	}
+
 	// Check user code (password)
 	userCode := u.(user.OTPAuth).GetOTP(at.Key)
 
@@ -219,7 +232,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	var isNew bool
 
 	// If current user is GUEST, and OTP user is guest (new user) - use current user as actual
-	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest && !linkAccount {
 		isNew = true
 		var removeUserID interface{}
 
@@ -238,30 +251,10 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		if err != nil {
 			log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 		}
-	} else if linkAccount {
-		isNew = true
-
-		sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
-
-		removeUserID := u.GetID()
-		u = sessionInfo.User
-
-		err := r.deps.Storage.UserRemover.RemoveByID(removeUserID)
-		if err != nil {
-			log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
-		}
 	}
 
 	if r.Modules.ConfirmableUser {
 		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
-	}
-
-	sessionInfo.Session.BindUser(u)
-
-	err = r.deps.SessionStorer.Save(sessionInfo.Session)
-	if err != nil {
-		errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
-		return
 	}
 
 	err = u.(user.OTPAuth).SetOTP(at.Key, "")
@@ -270,20 +263,39 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
-	if fieldableRequest, ok := request.(authtype.AuthRequestFieldable); ok {
-		if ok := r.fillFields(fieldableRequest, u); !ok {
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+	if r.Config.LinkAccount && linkAccount {
+		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
+			err := r.linkAccount(c, tempUser, at)
+			if err != nil {
+				// TODO: Error handling and return correct err
+				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+				return
+			}
+		}
+	} else {
+		sessionInfo.Session.BindUser(u)
+		err = r.deps.SessionStorer.Save(sessionInfo.Session)
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrSessionSave)
 			return
 		}
-	}
 
-	if err = r.deps.UserStorer.Save(u); err != nil {
-		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
-		return
+		if fieldableRequest, ok := request.(authtype.AuthRequestFieldable); ok {
+			if ok := r.fillFields(fieldableRequest, u); !ok {
+				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+				return
+			}
+		}
+
+		if err = r.deps.UserStorer.Save(u); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
+
+		c.Set(r.Config.ContextNames.User, u)
 	}
 
 	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
-	c.Set(r.Config.ContextNames.User, u)
 
 	respMap := gin.H{
 		"result": true,

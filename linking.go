@@ -31,6 +31,7 @@ func (r *Rauther) initAccountLinking(c *gin.Context, sessionInfo sessionInfo, au
 	if u == nil {
 		u = r.deps.UserStorer.Create()
 		u.(user.TempUser).SetTemp(true)
+		u.(user.AuthableUser).SetUID(authKey, uid)
 	}
 
 	// User found
