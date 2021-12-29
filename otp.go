@@ -64,7 +64,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 	// User not found
 	if u == nil {
-		if currentConfirmUser, ok := sessionInfo.User.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
+		if currentConfirmUser, ok := sessionInfo.User.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() && linkAccount {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 			return
 		}
