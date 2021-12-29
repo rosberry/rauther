@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -59,7 +60,14 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 
 	// User exist. TODO: Merge if link account?
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
-	if err == nil && u != nil {
+	if err != nil {
+		log.Print(err)
+		var customErr CustomError
+		if errors.As(err, &customErr) {
+			customErrorResponse(c, customErr)
+			return
+		}
+	} else if u != nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 		return
 	}
@@ -68,7 +76,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
 		u.(user.AuthableUser).SetUID(at.Key, uid)
 		u.(user.GuestUser).SetGuest(false)
-	} else {
+	} else if u == nil {
 		if linkAccount {
 			u = sessionInfo.User
 
@@ -185,6 +193,15 @@ func (r *Rauther) signInHandler(c *gin.Context) {
 
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 	if err != nil {
+		log.Print(err)
+		var customErr CustomError
+		if errors.As(err, &customErr) {
+			customErrorResponse(c, customErr)
+			return
+		}
+	}
+
+	if u == nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
 	}
@@ -257,9 +274,15 @@ func (r *Rauther) validateLoginField(c *gin.Context) {
 	}
 
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
-	if err == nil && u != nil {
+	if err != nil {
+		log.Print(err)
+		var customErr CustomError
+		if errors.As(err, &customErr) {
+			customErrorResponse(c, customErr)
+			return
+		}
+	} else if u != nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-
 		return
 	}
 

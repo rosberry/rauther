@@ -1,6 +1,8 @@
 package common
 
-import "time"
+import (
+	"time"
+)
 
 // Contain common errors
 type Err struct {
@@ -8,13 +10,13 @@ type Err struct {
 	Message string `json:"message"`
 }
 
+func (e Err) Error() string {
+	return e.Message
+}
+
 type ResendCodeErrInfo struct {
 	TimeoutSec      time.Duration `json:"timeoutSec"`
 	NextRequestTime string        `json:"nextRequestTime"`
-}
-
-func (e Err) Error() string {
-	return e.Message
 }
 
 type ErrTypes int
