@@ -41,12 +41,16 @@ type SocialAuthableUser interface {
 	SetUserDetails(authType string, userDetails SocialDetails)
 }
 
-type ConfirmableUser interface {
+type confirmedStatus interface {
 	AuthableUser
-	Confirmed() (ok bool)
 	GetConfirmed(authType string) (ok bool)
-	GetConfirmCode(authType string) (code string)
 	SetConfirmed(authType string, ok bool)
+}
+
+type ConfirmableUser interface {
+	confirmedStatus
+	Confirmed() (ok bool)
+	GetConfirmCode(authType string) (code string)
 	SetConfirmCode(authType, code string)
 }
 
@@ -64,7 +68,7 @@ type CodeSentTimeUser interface {
 }
 
 type OTPAuth interface {
-	AuthableUser
+	confirmedStatus
 	GetOTP(authType string) (code string)
 	SetOTP(authType string, code string) error
 }
