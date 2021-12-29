@@ -78,6 +78,11 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		u.(user.GuestUser).SetGuest(false)
 	} else if u == nil {
 		if linkAccount {
+			if currentConfirmUser, ok := sessionInfo.User.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
+				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+				return
+			}
+
 			u = sessionInfo.User
 
 			if foundUID := u.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
