@@ -21,13 +21,13 @@ func New(user user.User) *Checker {
 	return checker
 }
 
-// IsAuthableUser check implement user AuthableUser interface or not
+// IsAuthableUser checks if user implements AuthableUser interface
 func (c *Checker) IsAuthableUser(u user.User) (ok bool) {
 	_, ok = u.(user.AuthableUser)
 	return
 }
 
-// IsPasswordAuthableUser check implement user IsPasswordAuthableUser interface or not
+// IsPasswordAuthableUser checks if user implements IsPasswordAuthableUser interface
 func (c *Checker) IsPasswordAuthableUser(u user.User) (ok bool) {
 	_, ok = u.(user.PasswordAuthableUser)
 	return
@@ -38,7 +38,7 @@ func (c *Checker) IsGuest(u user.User) (ok bool) {
 	return
 }
 
-// IsConfirmableUser check implement user ConfirmableUser interface or not
+// IsConfirmableUser checks if user implements ConfirmableUser interface
 func (c *Checker) IsConfirmableUser(u user.User) (ok bool) {
 	_, ok = u.(user.ConfirmableUser)
 	return
