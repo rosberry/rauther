@@ -44,7 +44,7 @@ func (r *Rauther) authHandler() gin.HandlerFunc {
 		}
 
 		// Create new guest user if it enabled in config
-		if r.Modules.PasswordAuthableUser && r.Config.CreateGuestUser && session.GetUserID() == nil {
+		if r.Modules.PasswordAuthableUser && r.Modules.GuestUser && session.GetUserID() == nil {
 			user, errType := r.createGuestUser()
 			if errType != 0 {
 				errorResponse(c, http.StatusInternalServerError, errType)
@@ -122,7 +122,7 @@ func (r *Rauther) checkSession(c *gin.Context) (info sessionInfo, success bool) 
 	if currentUserID != nil {
 		currentUser, _ := r.deps.UserStorer.LoadByID(currentUserID)
 
-		if currentUser != nil && r.Config.CreateGuestUser {
+		if currentUser != nil && r.Modules.GuestUser {
 			currentUserIsGuest = currentUser.(user.GuestUser).IsGuest()
 		}
 

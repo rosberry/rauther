@@ -63,8 +63,6 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup, authRouter *g
 }
 
 func (r *Rauther) includeSocialAuthable(router *gin.RouterGroup) {
-	r.checkRemovableUser()
-
 	router.POST(r.Config.Routes.SocialSignIn, r.socialSignInHandler)
 }
 
@@ -78,15 +76,21 @@ func (r *Rauther) includeOTPAuthable(router *gin.RouterGroup) {
 }
 
 func (r *Rauther) checkRemovableUser() {
-	if r.Config.CreateGuestUser || (r.Config.LinkAccount && r.Modules.OTP) {
-		if r.deps.Storage.UserRemover == nil {
-			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
+	if r.Modules.GuestUser {
+		if !r.checker.Guest {
+			log.Fatal("Please, implement GuestUser interface for use guest user")
+		}
 
-			if !isRemovable {
-				log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+		if r.Config.LinkAccount && r.Modules.OTP {
+			if r.deps.Storage.UserRemover == nil {
+				userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
+
+				if !isRemovable {
+					log.Fatal("If config approve guest then user storer must implement RemovableUserStorer interface. Change it.")
+				}
+
+				r.deps.Storage.UserRemover = userRemover
 			}
-
-			r.deps.Storage.UserRemover = userRemover
 		}
 	}
 }
