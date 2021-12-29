@@ -32,7 +32,7 @@ func (r *Rauther) requestRecoveryHandler(c *gin.Context) {
 		return
 	}
 
-	u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
+	u, err := r.LoadByUID(at.Key, request.UID)
 	if err != nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
@@ -90,7 +90,7 @@ func (r *Rauther) validateRecoveryCodeHandler(c *gin.Context) {
 		return
 	}
 
-	u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
+	u, err := r.LoadByUID(at.Key, request.UID)
 	if err != nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
@@ -137,7 +137,7 @@ func (r *Rauther) recoveryHandler(c *gin.Context) {
 		return
 	}
 
-	u, err := r.deps.Storage.UserStorer.LoadByUID(at.Key, request.UID)
+	u, err := r.LoadByUID(at.Key, request.UID)
 	if err != nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return

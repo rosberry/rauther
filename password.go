@@ -59,7 +59,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 	}
 
 	// User exist. TODO: Merge if link account?
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+	u, err := r.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
 		var customErr CustomError
@@ -196,7 +196,7 @@ func (r *Rauther) signInHandler(c *gin.Context) {
 		return
 	}
 
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+	u, err := r.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
 		var customErr CustomError
@@ -278,7 +278,7 @@ func (r *Rauther) validateLoginField(c *gin.Context) {
 		return
 	}
 
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+	u, err := r.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
 		var customErr CustomError
