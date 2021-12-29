@@ -55,9 +55,6 @@ type Config struct {
 		Session string
 	}
 
-	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
-	CreateGuestUser bool
-
 	// LinkAccount
 	// LinkAccount bool
 

@@ -79,6 +79,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 				return
 			}
 		}
+
 		if u != nil {
 			if tempUser, ok := u.(user.TempUser); !ok || !tempUser.IsTemp() {
 				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
@@ -105,7 +106,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 			}
 		} else {
-			if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+			if r.Modules.GuestUser && sessionInfo.UserIsGuest {
 				u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
 				u.(user.GuestUser).SetGuest(false)
 			} else {
@@ -257,7 +258,7 @@ func (r *Rauther) signInHandler(c *gin.Context) {
 		return
 	}
 
-	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest {
+	if r.Modules.GuestUser && sessionInfo.UserIsGuest {
 		err := r.deps.Storage.UserRemover.RemoveByID(sessionInfo.UserID)
 		if err != nil {
 			log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)

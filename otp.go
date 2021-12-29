@@ -80,7 +80,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		if u == nil {
 			u = r.deps.UserStorer.Create()
 
-			if r.Config.CreateGuestUser {
+			if r.Modules.GuestUser {
 				u.(user.GuestUser).SetGuest(true)
 			}
 
@@ -225,11 +225,10 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
-	var isNew bool
+	isNew := !u.(user.OTPAuth).GetConfirmed(at.Key)
 
 	// If current user is GUEST, and OTP user is guest (new user) - use current user as actual
-	if r.Config.CreateGuestUser && sessionInfo.UserIsGuest && !linkAccount {
-		isNew = true
+	if r.Modules.GuestUser && sessionInfo.UserIsGuest && !linkAccount {
 		var removeUserID interface{}
 
 		if u.(user.GuestUser).IsGuest() {
@@ -249,8 +248,8 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		}
 	}
 
-	if r.Modules.ConfirmableUser {
-		u.(user.ConfirmableUser).SetConfirmed(at.Key, true)
+	if !u.(user.OTPAuth).GetConfirmed(at.Key) {
+		u.(user.OTPAuth).SetConfirmed(at.Key, true)
 	}
 
 	err = u.(user.OTPAuth).SetOTP(at.Key, "")

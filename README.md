@@ -16,11 +16,8 @@ You must implement the required interfaces for the library to work in your code,
 type SessionStorer interface {
 	// LoadById return Session or create new if not found
 	LoadByID(id string) session.Session
-
 	// FindByToken return Session or nil if not found
 	FindByToken(token string) session.Session
-
-	// Save Session
 	Save(session session.Session) error
 }
 
@@ -28,15 +25,16 @@ type SessionStorer interface {
 type UserStorer interface {
 	// Load return User by uid and auth type or return error if not found.
 	LoadByUID(authType, uid string) (user user.User, err error)
-
 	// Load return User by ID or return error if not found.
 	LoadByID(id interface{}) (user user.User, err error)
-
-	// Create create new User and set PID to him
 	Create() (user user.User)
-
-	// Save User
 	Save(user user.User) error
+}
+
+// SocialStorer - optional interface for social user which helps to use information from credentials from social networks for extended user binding
+// If the interface is not implemented, then LoadByUID will be used for social user
+type SocialStorer interface {
+	LoadBySocial(authType string, userDetails user.SocialDetails) (user user.User, err error)
 }
 
 // RemovableUserStorer interface (optional, for guest user)
@@ -54,47 +52,102 @@ type Session interface {
 	GetUserID() (userID interface{})
 
 	SetToken(token string)
+	// Add relation session <-> user
 	BindUser(u user.User)
+	// Remove relation session <-> user
 	UnbindUser()
 }
 ```
 
-3. Implement User (or extendable) interface in your User model
+3. Implement User (or extendable) interface in your User model. 
+
+Rauther consists of several user layers.
+
+- `User`. Base layer not use authable modules.
 
 ```go
 type User interface {
-	GetUID(authType string) (uid string)
-	SetUID(authType, uid string)
+	GetID() (id interface{})
 }
+```
 
+- `GuestUser`. Guest user layer allows you to create sessions with an already created user but without authorization. Although it is used as a separate layer, when enabled, it changes some behavior in all authorization types.
+
+```go
 type GuestUser interface {
+	User
 	IsGuest() bool
 	SetGuest(guest bool)
 }
+```
 
+- `AuthableUser`. Authable user allows you to authorize a user and use security routes.
+
+```go
 type AuthableUser interface {
 	User
-
-	GetPassword() (password string)
-	SetPassword(password string)
+	GetUID(authType string) (uid string)
+	SetUID(authType, uid string)
 }
+```
 
+Also rauther consists of 3 authentication modules for `AuthableUser`:
+- Password  (by email, phone, etc)
+
+```go
+type PasswordAuthableUser interface {
+	AuthableUser
+	GetPassword(authType string) (password string)
+	SetPassword(authType, password string)
+}
+```
+
+- Social (google, apple, etc)
+
+This interface may not be required for implementation in order for social networks to work, but adds the ability to process user information from social networks.
+
+```go
+type SocialAuthableUser interface {
+	AuthableUser
+	SetUserDetails(authType string, userDetails SocialDetails)
+}
+```
+
+- OTP (one time password)
+
+```go
+type OTPAuth interface {
+	AuthableUser
+	GetOTP(authType string) (code string)
+	SetOTP(authType string, code string) error
+}
+```
+
+Each needs its own interface. You can implement any number of them. The implementation of these interfaces, as well as other things, allows you to connect special modules. See the description of "Modules".
+
+Also `AuthableUser` modules make use additional interfaces.
+
+```go
 type ConfirmableUser interface {
-	User
-
+	AuthableUser
 	Confirmed() (ok bool)
 	GetConfirmed(authType string) (ok bool)
 	GetConfirmCode(authType string) (code string)
-
 	SetConfirmed(authType string, ok bool)
 	SetConfirmCode(authType, code string)
 }
 
 type RecoverableUser interface {
-	User
-
+	AuthableUser
 	GetRecoveryCode(authType string) (code string)
 	SetRecoveryCode(authType, code string)
+}
+
+// Interface for checking the interval during which confirmation codes cannot be sent
+type CodeSentTimeUser interface {
+	AuthableUser
+	GetCodeSentTime(authType string) *time.Time
+	SetCodeSentTime(authType string, t *time.Time)
 }
 
 type TempUser interface {
@@ -131,24 +184,44 @@ type Sender interface {
 OR use default email sender
 
 ```go
-type DefaultEmailSender struct{} // TODO
+import "github.com/rosberry/rauther/sender"
+// ...
+emailCredentials := sender.EmailCredentials{
+	Server:   cfg.Email.Host,
+	Port:     cfg.Email.Port,
+	From:     cfg.Email.From,
+	FromName: cfg.Email.FromName,
+	Pass:     cfg.Email.Password,
+	Timeout:  timeout * time.Second,
+}
+emailSender, err := sender.NewDefaultEmailSender(emailCredentials, nil, nil)
 ```
+`Timeout` - timeout for connection to email provider.
+
+2nd and 3nd argument - Subjects and messages templates. Uses defaults if not exists. They have a type `map[Event]string`. Type `Event` shoulde be either `sender.ConfirmationEvent` or `sender.PasswordRecoveryEvent`. For any event you make custom notification. For example see [defaultSender](./sender/sender.go#L55)
 
 6. Implement sign-up/sign-in request types
 
 ```go
+type (
 	// AuthRequest is basic sign-up/sign-in interface
-    type AuthRequest interface {
+	AuthRequest interface {
 		GetUID() (uid string)
 		GetPassword() (password string)
 	}
-
-	// AuthRequestFieldable is additional sign-up/sign-in interface for use additional fields
-	type AuthRequestFieldable interface {
-		AuthRequest
-
-		Fields() map[string]string
+	// For password module
+	CheckUserExistsRequest interface {
+		GetUID() (uid string)
 	}
+	// For social module
+	SocialAuthRequest interface {
+		GetToken() string
+	}
+	// AuthRequestFieldable is additional sign-up/sign-in interface for use additional fields
+	AuthRequestFieldable interface {
+		Fields() map[string]interface{}
+	}
+)
 ```
 
 OR use default struct
@@ -158,71 +231,117 @@ type SignUpRequestByEmail struct {
 	Email    string `json:"email" form:"email" binding:"required"`
 	Password string `json:"password" form:"password" binding:"required"`
 }
+type CheckLoginFieldRequestByEmail struct {
+	Email string `json:"email" form:"email" binding:"required"`
+}
+type SocialSignInRequest struct {
+	Token string `json:"token" binding:"required"`
+}
 ```
 
 7. Init gin engine
-8. Create new deps
+8. Init rauther
 
 ```go
-    d := deps.New(
-		group,
+    rauth := rauther.New(deps.New(
+		group, // gin group
 		deps.Storage{
 			SessionStorer: sessionStorer,
 			UserStorer:    userStorer,
 		},
-	)
+	))
 ```
 
-9. Determine one or more auth types (you can not transmit signUp/signIn request types, then will be use default )
+9. Determine one or more auth types.
+
+Rauther may add this with `AddAuthMethod` for simple adding or `AddAuthMethods` for adding group. Also we may use chaining with `AddAuthMethod` (`rauth.AddAuthMethod(...).AddAuthMethod(...)`)
+
+Password module example:
 
 ```go
-	d.AddAuthType("email", &fakeEmailSender{}, nil, nil).
-		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
+	rauth.AddAuthMethod(authtype.AuthMethod{
+		Key:                    "email",
+		Type:                   authtype.Password, // by default
+		Sender:                 emailSender,
+		SignUpRequest:          &models.SignUpRequest{},
+		SignInRequest:          &models.SignInRequest{},
+		CheckUserExistsRequest: &models.CheckLoginRequest{},
+	})
 ```
 
-OR add default sender, if you want not set sender for auth types
-
+Social module example:
 ```go
-	d.DefaultSender(&fakeEmailSender{})
-	d.AddAuthType("email", nil, nil, nil).
-		AddAuthType("phone", &fakeSmsSender{}, &phoneSignUp{}, &phoneSignIn{})
-
+	rauth.AddAuthMethod(authtype.AuthMethod{
+		Key:                 "google",
+		Type:                authtype.Social,
+		Sender:              emailSender,
+		SocialSignInRequest: &models.SocialSignInRequest{},
+		SocialAuthType:      authtype.SocialAuthTypeGoogle,
+	})
+```
+OTP module example:
+```go
+	rauth.AddAuthMethod(authtype.AuthMethod{
+		Key:           "otp",
+		Type:          authtype.OTP,
+		Sender:        emailSender,
+		SignUpRequest: &models.OTPSendCodeRequest{},
+		SignInRequest: &models.OTPSignInRequest{},
+	})
 ```
 
-- `AddAuthType(key, sender, signUpRequest, signInRequest)`
-  - `key` - key for ident auth type
-  - `sender` - sender is object, that can send confirm/recovery code to user. Should implement interface `Sender`
-  - `signUpRequest` - signUpRequest is object, that will use for sign up request. Should implement `SignUpRequest` interface or extendable
-  - `signInRequest` - signInRequest is object, that will use for sign in request. Should implement `SignUpRequest` interface or extendable
+Parameters:
+
+- `Key`. Key for ident auth type. For example "email", "phone", "email2", "google", etc.
+- `Type`. Indicates which of the 3 authorization modules we want to use. Variants: `authtype.Password`, `authtype.Social`, `authtype.OTP`. By default uses `authtype.Password`.
+- `Sender`. Parameter from step 5. Sender is object, that can send confirm/recovery code to user. Should implement interface `Sender` Add default sender, if you want not set sender for auth types
+- `SignUpRequest`, `SignInRequest`. This is objects, that will use for sign up/sign in requests. Should implement `SignUpRequest` interface or extendable (step 6). You can not transmit signUp/signIn request types, then will be use default.
+- `CheckUserExistsRequest`. Interface for password module.
 
 10. Set custom selector for auth types [optional]
 
+For example:
 ```go
-	d.AuthSelector(selector)
+	selector := func(c *gin.Context, t authtype.Type) (key string) {
+		if t == authtype.Social {
+			key = c.Param("type")
+		}
+
+		if key != "" {
+			return key
+		}
+
+		return authtype.DefaultSelector(c, t)
+	}
+
+	rauth.AuthSelector(selector)
 ```
 
 - `selector` - function with type `func(c *gin.Context) (senderKey string)` for "how select right auth type"
 
-11. Create new rauther usage deps
+11. Configure rauther usage Modules and Config
 
-```go
-rauth := rauther.New(d)
-```
-
-12. Configure rauther usage Modules and Config
+For example:
 
 ```go
 rauth.Modules.ConfirmableUser = false
+rauth.Modules.RecoverableUser = false
 rauth.Config.Routes.SignUp = "registration"
+rauth.Config.CreateGuestUser = true
+rauth.Config.LinkAccount = true
+rauth.Config.Password.CodeLifeTime = time.Minute * 30
+rauth.Config.OTP.CodeLifeTime = time.Minute * 5
 ```
 
-13. Init rauther handlers
+All configs parameters [here](./config/config.go#L79)
+
+12. Init rauther handlers
 
 ```go
 err := rauth.InitHandlers()
 ```
 
-14. Run your gin
+13. Run your gin
 
 ```go
 r.Run()
@@ -230,12 +349,16 @@ r.Run()
 
 ## Modules
 
-Library have some modules for differend work types. modules turn on automatically if all conditions are met. You can turn off each of them manually.
+Library have some modules for differend work types. modules turn on automatically if all conditions are met. Сonditions are formed from the found implemented interfaces and layers as well as the added types of authorizations in `AddAuthMethod`. You can turn off each of them manually in step 11. 
 
 - **Session** - main module ...
 - **AuthableUser** - module for auth user. Enable handlers ...
+- **PasswordAuthableUser** - module for enabled password authentication routes
+- **SocialAuthableUser** - module for enabled social authentication routes
+- **One Time Password** - module for enabled OTP authentication routes
 - **ConfirmableUser** - module for require confirm user contact (email, phone, etc). Enable handlers...
 - **RecoverableUser** - module for recovery user password. Enable handlers...
+- **CodeSentTimeUser** - module for expired confirmations
 - **LinkAccount** - module for link account feature. Allows you to create multiple auth identifiers for one user. Use sign-up methods (password sign-up, otp auth, social login) for an authorized user
 
 ## Examples
@@ -253,3 +376,19 @@ Requests-Responses...
 ## Diagrams
 
 [diags](./doc/diags/preview)
+
+## About interfaces
+
+### userID type negotiation
+Rauther has several methods that use the `interface{}` type `userID` as arguments. It is important that all these types that will be converted to `interface{}` are of the same type. For example `Session.GetUserID()` must return `(userID interface{})` which is then transferred to `UserStorer.LoadByID(userID interface{})`. In `GetUserID` we just return any type: `uint`, `int`, `uint32` and other. But when `userID` comes from arguments, then we must convert it to the same type that we previously sent to the session. For example `userID, ok := id.(int)`. Otherwise, not obvious type errors will occur. Be careful. This applies to such methods: `Session.GetUserID`,`UserStorer.LoadByID`,`RemovableUserStorer.RemoveByID`,`User.GetID`.
+### Creating and Saving
+In all methods like `LoadBy...`, `Get...`, `Find...` in interfaces is recommended to use only the logic of finding records. It is not recommended to create new records in the database if rows are not found inside methods. This can lead to unexpected consequences and unnecessary database queries.
+
+Also, the method `UserStorer.Create` should only return the initial data structure without creating any records in the database.
+
+All final saves are expected to be done in methods `SessionStorer.Save`, `UserStorer.Save`.
+
+If your user in the database uses external relations with other tables, for example, `authIdentities`, then sometimes it becomes difficult to get and save these related tables.
+You can load all dependencies in methods `LoadByID`, `LoadByUID`. Therefore, if unloaded dependencies are allowed in the methods `LoadBy...`, then the methods `Set...`, `Get...` for obtaining individual fields will have problems with access to these external fields and nil pointer errors. Accordingly, it is recommended that all changes with external tables be reflected in the total in `Save` method.
+
+`Session.LoadByID` assumes that if the session was not found, then it needs to be created in database.
