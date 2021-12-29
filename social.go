@@ -41,7 +41,7 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 	var linkAccount bool
 
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
-		if !r.Config.LinkAccount {
+		if !r.Modules.LinkAccount {
 			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}

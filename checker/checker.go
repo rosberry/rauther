@@ -11,6 +11,7 @@ type Checker struct {
 	Recoverable      bool
 	CodeSentTime     bool
 	OTPAuth          bool
+	LinkAccount      bool
 }
 
 func New(user user.User) *Checker {
@@ -53,6 +54,11 @@ func (c *Checker) IsOTPAuth(u user.User) (ok bool) {
 	return
 }
 
+func (c *Checker) IsLinkAccount(u user.User) (ok bool) {
+	_, ok = u.(user.TempUser)
+	return
+}
+
 func (c *Checker) checkAllInterfaces(u user.User) {
 	c.Authable = c.IsAuthableUser(u)
 	c.PasswordAuthable = c.IsPasswordAuthableUser(u)
@@ -60,4 +66,5 @@ func (c *Checker) checkAllInterfaces(u user.User) {
 	c.Recoverable = c.IsRecoverableUser(u)
 	c.CodeSentTime = c.IsCodeSentTimeUser(u)
 	c.OTPAuth = c.IsOTPAuth(u)
+	c.LinkAccount = c.IsLinkAccount(u)
 }

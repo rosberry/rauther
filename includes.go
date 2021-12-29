@@ -78,7 +78,7 @@ func (r *Rauther) includeOTPAuthable(router *gin.RouterGroup) {
 }
 
 func (r *Rauther) checkRemovableUser() {
-	if r.Config.CreateGuestUser || (r.Config.LinkAccount && r.Modules.OTP) {
+	if r.Config.CreateGuestUser || (r.Modules.LinkAccount && r.Modules.OTP) {
 		if r.deps.Storage.UserRemover == nil {
 			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
 
@@ -102,7 +102,7 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup, authRouter *gin.Ro
 
 	authRouter.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler)
 
-	if r.Config.LinkAccount {
+	if r.Modules.LinkAccount {
 		authRouter.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
 	} else {
 		router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)

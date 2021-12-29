@@ -51,7 +51,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	var u user.User
 
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
-		if !r.Config.LinkAccount {
+		if !r.Modules.LinkAccount {
 			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}
@@ -181,7 +181,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	var linkAccount bool
 
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
-		if !r.Config.LinkAccount {
+		if !r.Modules.LinkAccount {
 			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
 			return
 		}
@@ -205,7 +205,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
-	if r.Config.LinkAccount && !linkAccount && u.(user.TempUser).IsTemp() {
+	if r.Modules.LinkAccount && !linkAccount && u.(user.TempUser).IsTemp() {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
 	}
@@ -263,7 +263,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		return
 	}
 
-	if r.Config.LinkAccount && linkAccount {
+	if r.Modules.LinkAccount && linkAccount {
 		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
 			err := r.linkAccount(c, tempUser, at)
 			if err != nil {
