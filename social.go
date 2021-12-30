@@ -67,7 +67,7 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 	if socialStorer, ok := r.deps.UserStorer.(storage.SocialStorer); ok {
 		u, err = socialStorer.LoadBySocial(at.Key, user.SocialDetails(userInfo))
 	} else {
-		u, err = r.deps.UserStorer.LoadByUID(at.Key, userInfo.ID)
+		u, err = r.LoadByUID(at.Key, userInfo.ID)
 	}
 
 	if err != nil {

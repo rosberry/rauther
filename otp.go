@@ -58,7 +58,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	}
 
 	// Find user by UID
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+	u, err := r.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
 		var customErr CustomError
@@ -195,7 +195,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	}
 
 	// Find user by UID
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
+	u, err := r.LoadByUID(at.Key, uid)
 	if err != nil {
 		log.Print(err)
 		var customErr CustomError
