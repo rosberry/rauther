@@ -33,7 +33,7 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		return
 	}
 
-	u, err := r.deps.UserStorer.LoadByUID(at.Key, request.UID)
+	u, err := r.LoadByUID(at.Key, request.UID)
 	if err != nil || u == nil {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
