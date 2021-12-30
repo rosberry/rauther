@@ -59,9 +59,18 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 
 		u, err = r.initAccountLinking(c, sessionInfo, at.Key, uid)
 		if err != nil {
-			// TODO: Error handling
 			log.Print(err)
-			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+
+			switch {
+			case errors.Is(err, errAuthIdentityExists):
+				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+			case errors.Is(err, errCurrentUserNotConfirmed):
+				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+			case errors.Is(err, errUserAlreadyRegistered):
+				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			default:
+				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+			}
 
 			return
 		}
