@@ -430,6 +430,21 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       tags:
         - profile
+    delete:
+      consumes:
+        - application/json
+      description: Delete user
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/ProfileResponse"
+        "401":
+          description: Authorized user required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - profile
 
 definitions:
   Error:

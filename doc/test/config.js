@@ -7,7 +7,7 @@ switch (env) {
   case "local":
     // local
     baseUrl = "http://localhost:8080";
-    specFile = process.env.GOPATH + "/src/github.com/rosberry/rauther/doc/swagger.yaml";
+    specFile = "../swagger.yaml";
     break;
   default:
     // custom
@@ -22,8 +22,8 @@ switch (env) {
 }
 
 var config = {
-    baseUrl: baseUrl,
-    specFile: specFile
+  baseUrl: baseUrl,
+  specFile: specFile
 };
 
 console.log("Selected environment: " + env);

@@ -52,6 +52,8 @@ func UpdateProfile(c *gin.Context) {
 			"result":  false,
 			"message": "failed type assertion",
 		})
+
+		return
 	}
 
 	type updateRequest struct {
@@ -79,5 +81,44 @@ func UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"result": true,
 		"user":   user,
+	})
+}
+
+func Remove(c *gin.Context, ss *models.Sessioner, us *models.UserStorer) {
+	u, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{
+			"result":  false,
+			"message": "not found user in context",
+		})
+
+		return
+	}
+
+	user, ok := u.(*models.User)
+	if !ok {
+		log.Print("failed session type assertion")
+		c.JSON(http.StatusForbidden, gin.H{
+			"result":  false,
+			"message": "failed type assertion",
+		})
+
+		return
+	}
+
+	for _, ses := range ss.Sessions {
+		ses.UnbindUser()
+	}
+
+	if err := us.RemoveByID(user.ID); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"result": false,
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"result": true,
 	})
 }
