@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"errors"
 	"log"
 
 	"github.com/rosberry/rauther/authtype"
@@ -190,4 +191,15 @@ func (r *Rauther) generateCode(at *authtype.AuthMethod) string {
 	}
 
 	return at.CodeGenerator(length)
+}
+
+var errAuthTypeNotFound = errors.New("auth type not found")
+
+func (r *Rauther) LoadByUID(key, uid string) (user.User, error) {
+	u, err := r.deps.UserStorer.LoadByUID(key, uid)
+	if err == nil && u != nil && u.(user.AuthableUser).GetUID(key) != uid {
+		return u, errAuthTypeNotFound
+	}
+
+	return u, err
 }

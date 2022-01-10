@@ -55,11 +55,8 @@ type Config struct {
 		Session string
 	}
 
-	// CreateGuestUser is create or not guest empty user after /auth request. Default: false
-	CreateGuestUser bool
-
 	// LinkAccount
-	LinkAccount bool
+	// LinkAccount bool
 
 	// CodeLength is default code length for all auth methods (if not specified in auth method)
 	CodeLength int

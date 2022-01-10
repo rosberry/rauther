@@ -7,10 +7,12 @@ import (
 type Checker struct {
 	Authable         bool
 	PasswordAuthable bool
+	Guest            bool
 	Confirmable      bool
 	Recoverable      bool
 	CodeSentTime     bool
 	OTPAuth          bool
+	LinkAccount      bool
 }
 
 func New(user user.User) *Checker {
@@ -20,19 +22,24 @@ func New(user user.User) *Checker {
 	return checker
 }
 
-// IsAuthableUser check implement user AuthableUser interface or not
+// IsAuthableUser checks if user implements AuthableUser interface
 func (c *Checker) IsAuthableUser(u user.User) (ok bool) {
 	_, ok = u.(user.AuthableUser)
 	return
 }
 
-// IsPasswordAuthableUser check implement user IsPasswordAuthableUser interface or not
+// IsPasswordAuthableUser checks if user implements IsPasswordAuthableUser interface
 func (c *Checker) IsPasswordAuthableUser(u user.User) (ok bool) {
 	_, ok = u.(user.PasswordAuthableUser)
 	return
 }
 
-// IsConfirmableUser check implement user ConfirmableUser interface or not
+func (c *Checker) IsGuest(u user.User) (ok bool) {
+	_, ok = u.(user.GuestUser)
+	return
+}
+
+// IsConfirmableUser checks if user implements ConfirmableUser interface
 func (c *Checker) IsConfirmableUser(u user.User) (ok bool) {
 	_, ok = u.(user.ConfirmableUser)
 	return
@@ -53,11 +60,18 @@ func (c *Checker) IsOTPAuth(u user.User) (ok bool) {
 	return
 }
 
+func (c *Checker) IsLinkAccount(u user.User) (ok bool) {
+	_, ok = u.(user.TempUser)
+	return
+}
+
 func (c *Checker) checkAllInterfaces(u user.User) {
 	c.Authable = c.IsAuthableUser(u)
 	c.PasswordAuthable = c.IsPasswordAuthableUser(u)
+	c.Guest = c.IsGuest(u)
 	c.Confirmable = c.IsConfirmableUser(u)
 	c.Recoverable = c.IsRecoverableUser(u)
 	c.CodeSentTime = c.IsCodeSentTimeUser(u)
 	c.OTPAuth = c.IsOTPAuth(u)
+	c.LinkAccount = c.IsLinkAccount(u)
 }

@@ -63,8 +63,6 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup, authRouter *g
 }
 
 func (r *Rauther) includeSocialAuthable(router *gin.RouterGroup) {
-	r.checkRemovableUser()
-
 	router.POST(r.Config.Routes.SocialSignIn, r.socialSignInHandler)
 }
 
@@ -78,7 +76,15 @@ func (r *Rauther) includeOTPAuthable(router *gin.RouterGroup) {
 }
 
 func (r *Rauther) checkRemovableUser() {
-	if r.Config.CreateGuestUser || (r.Config.LinkAccount && r.Modules.OTP) {
+	if r.Modules.GuestUser && !r.checker.Guest {
+		log.Fatal("Please, implement GuestUser interface for use guest user")
+	}
+
+	if r.Modules.LinkAccount && !r.checker.LinkAccount {
+		log.Fatal("Please, implement TempUser interface for use linking")
+	}
+
+	if r.Modules.GuestUser || r.Modules.LinkAccount {
 		if r.deps.Storage.UserRemover == nil {
 			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
 
@@ -100,8 +106,13 @@ func (r *Rauther) includeConfirmable(router *gin.RouterGroup, authRouter *gin.Ro
 		log.Fatal(common.Errors[common.ErrSenderRequired])
 	}
 
-	router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
 	authRouter.POST(r.Config.Routes.ConfirmResend, r.resendCodeHandler)
+
+	if r.Modules.LinkAccount {
+		authRouter.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
+	} else {
+		router.POST(r.Config.Routes.ConfirmCode, r.confirmHandler)
+	}
 }
 
 func (r *Rauther) includeRecoverable(router *gin.RouterGroup) {
