@@ -83,15 +83,16 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		isNew = true
 		// create user if not exist
 		if linkAccount {
-			if currentConfirmUser, ok := sessionInfo.User.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
-				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
-				return
-			}
-
-			u = sessionInfo.User
-
-			if foundUID := u.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
-				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+			err := r.checkUserCanLinking(sessionInfo.User, at.Key)
+			if err != nil {
+				switch {
+				case errors.Is(err, errCurrentUserNotConfirmed):
+					errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+				case errors.Is(err, errAuthIdentityExists):
+					errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+				default:
+					errorResponse(c, http.StatusBadRequest, common.ErrUnknownError)
+				}
 
 				return
 			}

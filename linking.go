@@ -17,12 +17,9 @@ var (
 
 // FIXME: Not sessionInfo as argument?
 func (r *Rauther) initAccountLinking(c *gin.Context, sessionInfo sessionInfo, authKey string, uid string) (u user.User, err error) {
-	if currentConfirmUser, ok := sessionInfo.User.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
-		return nil, errCurrentUserNotConfirmed
-	}
-
-	if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(authKey); foundUID != "" {
-		return nil, errAuthIdentityExists
+	err = r.checkUserCanLinking(sessionInfo.User, authKey)
+	if err != nil {
+		return nil, err
 	}
 
 	u, _ = r.deps.UserStorer.LoadByUID(authKey, uid)
@@ -50,6 +47,11 @@ var errFailedLinkUser = errors.New("failed to link user")
 func (r *Rauther) linkAccount(c *gin.Context, linkingUser user.User, at *authtype.AuthMethod) error {
 	sessionInfo, success := r.checkSession(c)
 
+	err := r.checkUserCanLinking(sessionInfo.User, at.Key)
+	if err != nil {
+		return err
+	}
+
 	switch {
 	case !success:
 		return errFailedLinkUser
@@ -76,9 +78,21 @@ func (r *Rauther) linkAccount(c *gin.Context, linkingUser user.User, at *authtyp
 		sessionInfo.User.(user.ConfirmableUser).SetConfirmed(at.Key, confirmed)
 	}
 
-	err := r.deps.UserRemover.RemoveByID(linkingUser.GetID())
+	err = r.deps.UserRemover.RemoveByID(linkingUser.GetID())
 	if err != nil {
 		return fmt.Errorf("failed to remove user: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Rauther) checkUserCanLinking(currentUser user.User, authKey string) error {
+	if currentConfirmUser, ok := currentUser.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
+		return errCurrentUserNotConfirmed
+	}
+
+	if foundUID := currentUser.(user.AuthableUser).GetUID(authKey); foundUID != "" {
+		return errAuthIdentityExists
 	}
 
 	return nil
