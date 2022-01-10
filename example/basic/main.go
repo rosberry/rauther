@@ -70,6 +70,9 @@ func main() { // nolint
 		{
 			Key:    "email",
 			Sender: &fakeEmailSender{},
+			CodeGenerator: func(l int) string {
+				return "456123"
+			},
 		},
 		{
 			Key:                    "phone",

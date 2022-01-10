@@ -25,6 +25,7 @@ var apiToken = "";
 var uid = "";
 var code = "";
 var recoveryCode = "";
+var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT || 20000;
 
 describe("phone auth:", function () {
   this.timeout(10000); // very large swagger files may take a few seconds to parse
@@ -324,7 +325,7 @@ describe("phone auth:", function () {
       });
 
       it("should return result true", function (done) {
-        this.timeout(20000);
+        this.timeout(sentCodeTimeout + 1000);
         setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
@@ -341,7 +342,7 @@ describe("phone auth:", function () {
               expect(res).to.not.have.property("error");
               done.apply(null, arguments);
             });
-        }, 16000);
+        }, sentCodeTimeout);
       });
     });
 
@@ -440,8 +441,11 @@ describe("phone auth:", function () {
             expect(res).to.have.property("result").that.is.true;
             expect(res).to.not.have.property("error");
             expect(res).to.have.property("user").that.is.an("object");
-            expect(res.user).to.have.property("recoveryCode");
-            recoveryCode = res.user.recoveryCode;
+            expect(res.user).to.have.property("auths").that.is.an("object");
+            expect(res.user.auths).to.have.property("phone").that.is.an("object");
+            expect(res.user.auths.phone).to.have.property("recoveryCode");
+
+            recoveryCode = res.user.auths.phone.recoveryCode;
             done.apply(null, arguments);
           });
       });
@@ -471,7 +475,7 @@ describe("phone auth:", function () {
       });
 
       it("should return result true", function (done) {
-        this.timeout(20000);
+        this.timeout(sentCodeTimeout + 1000);
         setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
@@ -488,7 +492,7 @@ describe("phone auth:", function () {
               expect(res).to.not.have.property("error");
               done.apply(null, arguments);
             });
-        }, 16000);
+        }, sentCodeTimeout);
       });
     });
 
@@ -504,8 +508,11 @@ describe("phone auth:", function () {
             expect(res).to.have.property("result").that.is.true;
             expect(res).to.not.have.property("error");
             expect(res).to.have.property("user").that.is.an("object");
-            expect(res.user).to.have.property("recoveryCode").that.is.not.equal(recoveryCode);
-            recoveryCode = res.user.recoveryCode;
+            expect(res.user).to.have.property("auths").that.is.an("object");
+            expect(res.user.auths).to.have.property("phone").that.is.an("object");
+            expect(res.user.auths.phone).to.have.property("recoveryCode").that.is.not.equal(recoveryCode);
+
+            recoveryCode = res.user.auths.phone.recoveryCode;
             done.apply(null, arguments);
           });
       });

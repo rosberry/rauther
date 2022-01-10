@@ -198,10 +198,50 @@ describe("apple auth:", function () {
             .end(function (err, raw, res) {
               expect(res).to.have.property("result").that.is.true;
               expect(res).to.not.have.property("error");
+              expect(res).to.have.property("token");
+
+              apiToken = res.token;
               done.apply(null, arguments);
             });
         });
       });
+
+      describe("social login", function () {
+        it("should return result true", function (done) {
+          hippie(spec)
+            .header("Authorization", "Bearer " + apiToken)
+            .base(baseUrl)
+            .post("/social/login")
+            .json()
+            .send({
+              type: "apple",
+              token: appleToken
+            })
+            .expectStatus(200)
+            .end(function (err, raw, res) {
+              expect(res).to.have.property("result").that.is.true;
+              expect(res).to.not.have.property("error");
+              done.apply(null, arguments);
+            });
+        });
+      });
+
+      describe("remove user", function () {
+        it("should return result true", function (done) {
+          hippie(spec)
+            .header("Authorization", "Bearer " + apiToken)
+            .base(baseUrl)
+            .url("/profile")
+            .method("DELETE")
+            .json()
+            .expectStatus(200)
+            .end(function (err, raw, res) {
+              expect(res).to.have.property("result").that.is.true
+              expect(res).to.not.have.property("error")
+              done.apply(null, arguments)
+            })
+        })
+      })
     }); // apple login
   } // if appleToken
 }); // testing

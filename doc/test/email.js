@@ -5,6 +5,7 @@ var parser = new SwaggerParser();
 var hippie = require("hippie-swagger");
 var expect = require("chai").expect;
 var chai = require("chai");
+chai.use(require('chai-datetime'));
 var chaihttp = require("chai-http")
 let should = chai.should();
 var spec;
@@ -25,6 +26,8 @@ var apiToken = "";
 var uid = "";
 var code = "";
 var recoveryCode = "";
+var lastCodeSentTime = ""
+var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT || 20000;
 
 describe("email auth:", function () {
   this.timeout(10000); // very large swagger files may take a few seconds to parse
@@ -275,7 +278,9 @@ describe("email auth:", function () {
             expect(res.user).to.have.property("auths").that.is.an("object");
             expect(res.user.auths).to.have.property("email").that.is.an("object");
             expect(res.user.auths.email).to.have.property("confirmed").that.is.false;
+
             code = res.user.auths.email.confirmCode;
+            lastCodeSentTime = res.user.auths.email.sentAt;
             done.apply(null, arguments);
           });
       });
@@ -324,7 +329,7 @@ describe("email auth:", function () {
       });
 
       it("should return result true", function (done) {
-        this.timeout(20000);
+        this.timeout(sentCodeTimeout + 1000);
         setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
@@ -341,7 +346,7 @@ describe("email auth:", function () {
               expect(res).to.not.have.property("error");
               done.apply(null, arguments);
             });
-        }, 16000);
+        }, sentCodeTimeout);
       });
     });
 
@@ -360,8 +365,14 @@ describe("email auth:", function () {
             expect(res.user).to.have.property("auths").that.is.an("object");
             expect(res.user.auths).to.have.property("email").that.is.an("object");
             expect(res.user.auths.email).to.have.property("confirmed").that.is.false;
-            expect(res.user.auths.email).to.have.property("confirmCode").that.is.not.equal(code);
+            expect(res.user.auths.email).to.have.property("confirmCode")
+
+            const newSentAt = new Date(Date.parse(res.user.auths.email.sentAt))
+            const oldSentAt = new Date(Date.parse(lastCodeSentTime))
+            expect(newSentAt).afterTime(oldSentAt)
+
             code = res.user.auths.email.confirmCode;
+            lastCodeSentTime = res.user.auths.email.sentAt;
             done.apply(null, arguments);
           });
       });
@@ -440,8 +451,11 @@ describe("email auth:", function () {
             expect(res).to.have.property("result").that.is.true;
             expect(res).to.not.have.property("error");
             expect(res).to.have.property("user").that.is.an("object");
-            expect(res.user).to.have.property("recoveryCode");
-            recoveryCode = res.user.recoveryCode;
+            expect(res.user.auths).to.have.property("email").that.is.an("object");
+            expect(res.user.auths.email).to.have.property("recoveryCode")
+
+            lastCodeSentTime = res.user.auths.email.sentAt;
+            recoveryCode = res.user.auths.email.recoveryCode;
             done.apply(null, arguments);
           });
       });
@@ -471,7 +485,7 @@ describe("email auth:", function () {
       });
 
       it("should return result true", function (done) {
-        this.timeout(20000);
+        this.timeout(sentCodeTimeout + 1000);
         setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
@@ -488,7 +502,7 @@ describe("email auth:", function () {
               expect(res).to.not.have.property("error");
               done.apply(null, arguments);
             });
-        }, 16000);
+        }, sentCodeTimeout);
       });
     });
 
@@ -504,8 +518,15 @@ describe("email auth:", function () {
             expect(res).to.have.property("result").that.is.true;
             expect(res).to.not.have.property("error");
             expect(res).to.have.property("user").that.is.an("object");
-            expect(res.user).to.have.property("recoveryCode").that.is.not.equal(recoveryCode);
-            recoveryCode = res.user.recoveryCode;
+            expect(res.user.auths).to.have.property("email").that.is.an("object");
+            expect(res.user.auths.email).to.have.property("recoveryCode")
+
+            const newSentAt = new Date(Date.parse(res.user.auths.email.sentAt))
+            const oldSentAt = new Date(Date.parse(lastCodeSentTime))
+            expect(newSentAt).afterTime(oldSentAt)
+
+            lastCodeSentTime = res.user.auths.email.sentAt;
+            recoveryCode = res.user.auths.email.recoveryCode;
             done.apply(null, arguments);
           });
       });

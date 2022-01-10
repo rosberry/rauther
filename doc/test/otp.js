@@ -24,6 +24,7 @@ var userName2 = "Name 2";
 var device_id = "test" + (Math.floor(Math.random() * 99999));
 var apiToken = "";
 var code = "123321";
+var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT || 20000;
 
 describe("otp auth:", function () {
   this.timeout(10000); // very large swagger files may take a few seconds to parse
@@ -441,7 +442,7 @@ describe("otp auth:", function () {
       });
 
       it("should return result true", function (done) {
-        this.timeout(20000);
+        this.timeout(sentCodeTimeout + 1000);
         setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
@@ -460,7 +461,7 @@ describe("otp auth:", function () {
               expect(res).to.not.have.property("error");
               done.apply(null, arguments);
             });
-        }, 16000);
+        }, sentCodeTimeout);
       });
     });
 

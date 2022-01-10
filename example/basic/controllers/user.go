@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther/example/basic/models"
+	"github.com/rs/zerolog/log"
 )
 
 func Profile(c *gin.Context) {
@@ -109,6 +109,8 @@ func Remove(c *gin.Context, ss *models.Sessioner, us *models.UserStorer) {
 	for _, ses := range ss.Sessions {
 		ses.UnbindUser()
 	}
+
+	log.Info().Uint("userID", user.ID).Msg("Try delete user")
 
 	if err := us.RemoveByID(user.ID); err != nil {
 		c.JSON(http.StatusOK, gin.H{

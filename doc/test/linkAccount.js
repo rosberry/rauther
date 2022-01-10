@@ -29,7 +29,8 @@ var email = "test" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
 var email2 = "test2" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
 var phone = "+7" + (Math.floor(Math.random() * 999999999))
 var phone2 = "8" + (Math.floor(Math.random() * 999999999))
-var code = "123321";
+var confirmEmailCode = "456123";
+var confirmOTPCode = "123321";
 
 var apiToken = ""
 
@@ -64,7 +65,13 @@ const otpRegCreds2 = {
 
 const otpLoginCreds = {
   phone: phone,
-  code: code
+  code: confirmOTPCode
+}
+
+const passwordConfirmCreds = {
+  type: "email",
+  uid: email,
+  code: confirmEmailCode
 }
 
 describe("link account:", function () {
@@ -86,48 +93,71 @@ describe("link account:", function () {
   describe("password positive scenario", function () {
     auth()
     passwordRegister()
-    // TODO: confirm
-    socialLogin()
+    passwordConfirm()
+    // adding auth identities
+    if (googleToken !== "") {
+      socialLogin()
+    }
+    otpGetCode()
     otpLogin()
-    profile()
+    profile(["email", "google", "telegram"])
     logout()
-    socialLogin()
-    logout()
+    // check enter auth identities
+    if (googleToken !== "") {
+      socialLogin()
+      logout()
+    }
+    otpGetCode()
     otpLogin()
     remove()
   });
 
-  describe("social positive scenario", function () {
-    auth()
-    socialLogin()
-    passwordRegister()
-    otpLogin()
-    profile()
-    logout()
-    // TODO: confirm
-    passwordLogin()
-    logout()
-    otpLogin()
-    remove()
-  });
+  if (googleToken !== "") {
+    describe("social positive scenario", function () {
+      auth()
+      socialLogin()
+      // adding auth identities
+      passwordRegister()
+      passwordConfirm()
+      otpGetCode()
+      otpLogin()
+      profile(["email", "google", "telegram"])
+      logout()
+      // check enter auth identities
+      passwordLogin()
+      logout()
+      otpGetCode()
+      otpLogin()
+      remove()
+    });
+  }
 
   describe("otp positive scenario", function () {
     auth()
+    otpGetCode()
     otpLogin()
+    // adding auth identities
     passwordRegister()
-    socialLogin()
-    profile()
+    passwordConfirm()
+    if (googleToken !== "") {
+      socialLogin()
+    }
+    profile(["email", "google", "telegram"])
     logout()
-    // TODO: confirm
+    // check enter auth identities
     passwordLogin()
-    logout()
-    socialLogin()
+    if (googleToken !== "") {
+      logout()
+      socialLogin()
+    }
     remove()
   });
 
   describe("password negative scenario", function () {
     auth()
     passwordRegister()
+    passwordConfirm()
+
     describe("duplicate password register", function () {
       it("should return error auth identity exists", function (done) {
         request("/register", "post", emailRegCreds2, function (err, raw, res) {
@@ -162,6 +192,7 @@ describe("link account:", function () {
 
   describe("otp negative scenario", function () {
     auth()
+    otpGetCode()
     otpLogin()
     describe("duplicate otp register", function () {
       it("should return error auth identity exists", function (done) {
@@ -249,6 +280,18 @@ function passwordRegister() {
   });
 }
 
+function passwordConfirm() {
+  describe("password confirm", function () {
+    it("should return result true", function (done) {
+      request("/confirm", "post", passwordConfirmCreds, function (err, raw, res) {
+        expect(res).to.have.property("result").that.is.true;
+        expect(res).to.not.have.property("error");
+        done.apply(null, arguments);
+      });
+    });
+  });
+}
+
 function passwordLogin() {
   describe("password login", function () {
     it("should return uid", function (done) {
@@ -261,9 +304,10 @@ function passwordLogin() {
   });
 }
 
-function profile() {
+function profile(scope) {
   describe("profile", function () {
-    it("should return all adding auth identities", function (done) {
+    const scopeStr = scope.join(", ")
+    it(`should return ${scopeStr} adding auth identities`, function (done) {
       request("/profile", "get", null, function (err, raw, res) {
         expect(res).to.have.property("result").that.is.true
         expect(res).to.not.have.property("error")
@@ -272,11 +316,18 @@ function profile() {
         expect(res.user).to.have.property("guest").that.is.false
         expect(res.user).to.have.property("auths").that.is.an("object")
 
-        expect(res.user.auths).to.have.property("email").that.is.an("object")
-        if (googleToken !== "") {
+        if (scope.indexOf("email") !== -1) {
+          expect(res.user.auths).to.have.property("email").that.is.an("object")
+        }
+
+        if (scope.indexOf("google") !== -1 && googleToken !== "") {
           expect(res.user.auths).to.have.property("google").that.is.an("object")
         }
-        expect(res.user.auths).to.have.property("telegram").that.is.an("object")
+
+        if (scope.indexOf("telegram") !== -1) {
+          expect(res.user.auths).to.have.property("telegram").that.is.an("object")
+        }
+
         done.apply(null, arguments);
       });
     });
@@ -311,7 +362,7 @@ function socialLogin() {
   }
 }
 
-function otpLogin() {
+function otpGetCode() {
   describe("get otp code", function () {
     it("should return result true", function (done) {
       request("/otp/{key}/code", "post", otpRegCreds, function (err, raw, res) {
@@ -322,7 +373,9 @@ function otpLogin() {
       }, { pathParams: { key: "telegram" } })
     })
   })
+}
 
+function otpLogin() {
   describe("otp login", function () {
     it("should return result true", function (done) {
       request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
