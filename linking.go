@@ -22,7 +22,13 @@ func (r *Rauther) initAccountLinking(c *gin.Context, sessionInfo sessionInfo, au
 		return nil, err
 	}
 
-	u, _ = r.deps.UserStorer.LoadByUID(authKey, uid)
+	u, err = r.deps.UserStorer.LoadByUID(authKey, uid)
+	if err != nil {
+		var customErr CustomError
+		if errors.As(err, &customErr) {
+			return nil, customErr
+		}
+	}
 
 	// User not found
 	if u == nil {

@@ -60,6 +60,8 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		if err != nil {
 			log.Print(err)
 
+			var customErr CustomError
+
 			switch {
 			case errors.Is(err, errAuthIdentityExists):
 				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
@@ -67,6 +69,8 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 			case errors.Is(err, errUserAlreadyRegistered):
 				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			case errors.As(err, &customErr):
+				customErrorResponse(c, customErr)
 			default:
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			}
