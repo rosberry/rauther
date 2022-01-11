@@ -171,9 +171,8 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 	if !linkAccount {
 		sessionInfo.Session.BindUser(u)
 		c.Set(r.Config.ContextNames.User, u)
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	}
-
-	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 
 	err = r.deps.SessionStorer.Save(sessionInfo.Session)
 	if err != nil {

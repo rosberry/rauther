@@ -303,9 +303,8 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		}
 
 		c.Set(r.Config.ContextNames.User, u)
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	}
-
-	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 
 	respMap := gin.H{
 		"result": true,
