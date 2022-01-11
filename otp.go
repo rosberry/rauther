@@ -77,9 +77,11 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 			return
 		}
+
+		linkAccount = true
 	}
 
-	if u == nil {
+	if !linkAccount {
 		// Find user by UID
 		u, err = r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
@@ -97,14 +99,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 			if r.Modules.GuestUser {
 				u.(user.GuestUser).SetGuest(true)
-			}
-
-			if linkAccount {
-				if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
-					errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
-
-					return
-				}
 			}
 
 			u.(user.AuthableUser).SetUID(at.Key, uid)

@@ -82,7 +82,8 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		linkAccount = true
 	}
 
-	if u == nil {
+	if !linkAccount {
+		// Find user by UID
 		u, err = r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
 			log.Print(err)
@@ -93,42 +94,29 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 			}
 		}
 
+		// User exists
 		if u != nil {
-			if tempUser, ok := u.(user.TempUser); !ok || !tempUser.IsTemp() {
+			if tempUser, ok := u.(user.TempUser); !(ok && tempUser.IsTemp()) {
 				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 				return
 			}
 
 			var removeUserID interface{}
-
-			if u.(user.GuestUser).IsGuest() {
-				sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
-				sessionInfo.User.(user.GuestUser).SetGuest(false)
-
-				removeUserID = u.GetID()
-
-				u = sessionInfo.User
-			} else {
-				removeUserID = sessionInfo.UserID
-			}
-
-			u.(user.TempUser).SetTemp(false)
-
 			err := r.deps.Storage.UserRemover.RemoveByID(removeUserID)
 			if err != nil {
 				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 			}
-		} else {
-			if r.Modules.GuestUser && sessionInfo.UserIsGuest {
-				u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
-				u.(user.GuestUser).SetGuest(false)
-			} else {
-				u = r.deps.UserStorer.Create()
-			}
 		}
-	}
 
-	u.(user.AuthableUser).SetUID(at.Key, uid)
+		if r.Modules.GuestUser && sessionInfo.UserIsGuest {
+			u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
+			u.(user.GuestUser).SetGuest(false)
+		} else {
+			u = r.deps.UserStorer.Create()
+		}
+
+		u.(user.AuthableUser).SetUID(at.Key, uid)
+	}
 
 	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
