@@ -101,15 +101,14 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 				return
 			}
 
-			var removeUserID interface{}
-			err := r.deps.Storage.UserRemover.RemoveByID(removeUserID)
+			err := r.deps.Storage.UserRemover.RemoveByID(u.GetID())
 			if err != nil {
 				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 			}
 		}
 
 		if r.Modules.GuestUser && sessionInfo.UserIsGuest {
-			u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
+			u = sessionInfo.User
 			u.(user.GuestUser).SetGuest(false)
 		} else {
 			u = r.deps.UserStorer.Create()
