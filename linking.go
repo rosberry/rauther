@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/user"
 )
@@ -13,11 +12,11 @@ var (
 	errUserAlreadyRegistered   = errors.New("user already registered")
 	errCurrentUserNotConfirmed = errors.New("current user not confirmed")
 	errAuthIdentityExists      = errors.New("auth identity already exists")
+	errFailedLinkUser          = errors.New("failed to link user")
 )
 
-// FIXME: Not sessionInfo as argument?
-func (r *Rauther) initAccountLinking(c *gin.Context, sessionInfo sessionInfo, authKey string, uid string) (u user.User, err error) {
-	err = r.checkUserCanLinking(sessionInfo.User, authKey)
+func (r *Rauther) initLinkAccount(sessionInfo sessionInfo, authKey string, uid string) (u user.User, err error) {
+	err = r.checkUserCanLinkAccount(sessionInfo.User, authKey)
 	if err != nil {
 		return nil, err
 	}
@@ -48,19 +47,25 @@ func (r *Rauther) initAccountLinking(c *gin.Context, sessionInfo sessionInfo, au
 	return u, nil
 }
 
-var errFailedLinkUser = errors.New("failed to link user")
+func (r *Rauther) checkUserCanLinkAccount(currentUser user.User, authKey string) error {
+	if currentConfirmUser, ok := currentUser.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
+		return errCurrentUserNotConfirmed
+	}
 
-func (r *Rauther) linkAccount(c *gin.Context, linkingUser user.User, at *authtype.AuthMethod) error {
-	sessionInfo, success := r.checkSession(c)
+	if foundUID := currentUser.(user.AuthableUser).GetUID(authKey); foundUID != "" {
+		return errAuthIdentityExists
+	}
 
-	err := r.checkUserCanLinking(sessionInfo.User, at.Key)
+	return nil
+}
+
+func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at *authtype.AuthMethod) error {
+	err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key)
 	if err != nil {
 		return err
 	}
 
 	switch {
-	case !success:
-		return errFailedLinkUser
 	case sessionInfo.User == nil:
 		return errFailedLinkUser
 	case sessionInfo.UserIsGuest:
@@ -87,18 +92,6 @@ func (r *Rauther) linkAccount(c *gin.Context, linkingUser user.User, at *authtyp
 	err = r.deps.UserRemover.RemoveByID(linkingUser.GetID())
 	if err != nil {
 		return fmt.Errorf("failed to remove user: %w", err)
-	}
-
-	return nil
-}
-
-func (r *Rauther) checkUserCanLinking(currentUser user.User, authKey string) error {
-	if currentConfirmUser, ok := currentUser.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
-		return errCurrentUserNotConfirmed
-	}
-
-	if foundUID := currentUser.(user.AuthableUser).GetUID(authKey); foundUID != "" {
-		return errAuthIdentityExists
 	}
 
 	return nil

@@ -76,7 +76,12 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 
 	if r.Modules.LinkAccount {
 		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
-			err := r.linkAccount(c, tempUser, at)
+			sessionInfo, success := r.checkSession(c)
+			if !success {
+				return
+			}
+
+			err := r.linkAccount(sessionInfo, tempUser, at)
 			if err != nil {
 				// TODO: Error handling and return correct err
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)

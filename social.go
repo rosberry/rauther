@@ -83,7 +83,7 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		isNew = true
 		// create user if not exist
 		if linkAccount {
-			err := r.checkUserCanLinking(sessionInfo.User, at.Key)
+			err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key)
 			if err != nil {
 				switch {
 				case errors.Is(err, errCurrentUserNotConfirmed):

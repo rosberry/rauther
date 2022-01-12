@@ -56,7 +56,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			return
 		}
 
-		u, err = r.initAccountLinking(c, sessionInfo, at.Key, uid)
+		u, err = r.initLinkAccount(sessionInfo, at.Key, uid)
 		if err != nil {
 			log.Print(err)
 
@@ -269,7 +269,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 
 	if r.Modules.LinkAccount && linkAccount {
 		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
-			err := r.linkAccount(c, tempUser, at)
+			err := r.linkAccount(sessionInfo, tempUser, at)
 			if err != nil {
 				// TODO: Error handling and return correct err
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)

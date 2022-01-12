@@ -57,7 +57,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 			return
 		}
 
-		u, err = r.initAccountLinking(c, sessionInfo, at.Key, uid)
+		u, err = r.initLinkAccount(sessionInfo, at.Key, uid)
 		if err != nil {
 			log.Print(err)
 
