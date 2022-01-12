@@ -84,40 +84,19 @@ func UpdateProfile(c *gin.Context) {
 	})
 }
 
-func Remove(c *gin.Context, ss *models.Sessioner, us *models.UserStorer) {
-	u, ok := c.Get("user")
-	if !ok {
-		c.JSON(http.StatusForbidden, gin.H{
-			"result":  false,
-			"message": "not found user in context",
-		})
-
-		return
-	}
-
-	user, ok := u.(*models.User)
-	if !ok {
-		log.Print("failed session type assertion")
-		c.JSON(http.StatusForbidden, gin.H{
-			"result":  false,
-			"message": "failed type assertion",
-		})
-
-		return
-	}
-
+func RemoveAll(c *gin.Context, ss *models.Sessioner, us *models.UserStorer) {
 	for _, ses := range ss.Sessions {
-		ses.UnbindUser()
+		err := ss.RemoveByID(ses.GetID())
+		if err != nil {
+			log.Print(err)
+		}
 	}
 
-	log.Info().Uint("userID", user.ID).Msg("Try delete user")
-
-	if err := us.RemoveByID(user.ID); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"result": false,
-		})
-
-		return
+	for _, user := range us.Users {
+		err := us.RemoveByID(user.ID)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

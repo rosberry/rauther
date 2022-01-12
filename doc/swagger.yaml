@@ -430,19 +430,21 @@ paths:
             $ref: "#/definitions/ErrorResponse"
       tags:
         - profile
+
+  /clearAll:
     delete:
       consumes:
         - application/json
-      description: Delete user
+      description: Delete all users and sessions
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/ProfileResponse"
-        "401":
-          description: Authorized user required
-          schema:
-            $ref: "#/definitions/ErrorResponse"
+            type: object
+            properties:
+              result:
+                example: true
+                type: boolean
       tags:
         - profile
 
