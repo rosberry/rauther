@@ -202,10 +202,12 @@ type otpRequest struct {
 	Phone string  `json:"phone" binding:"required"`
 	Code  string  `json:"code"`
 	Name  *string `json:"name"`
+	Merge bool    `json:"merge"`
 }
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
+func (r *otpRequest) MergeConfirm() bool             { return r.Merge }
 
 func (r *otpRequest) Fields() map[string]interface{} {
 	return map[string]interface{}{

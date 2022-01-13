@@ -53,6 +53,7 @@ const (
 	ErrCodeExpired
 	ErrInvalidCode
 	ErrUserNotConfirmed
+	ErrMergeWarning
 )
 
 var Errors = map[ErrTypes]Err{
@@ -87,4 +88,5 @@ var Errors = map[ErrTypes]Err{
 	ErrCodeExpired:                      {"code_expired", "Code expired"},
 	ErrInvalidCode:                      {"invalid_code", "Invalid code"},
 	ErrUserNotConfirmed:                 {"user_not_confirmed", "User not confirmed"},
+	ErrMergeWarning:                     {"merge_warning", "Users will be merged"},
 }

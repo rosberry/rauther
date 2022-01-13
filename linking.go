@@ -1,8 +1,10 @@
 package rauther
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/user"
@@ -13,6 +15,9 @@ var (
 	errCurrentUserNotConfirmed = errors.New("current user not confirmed")
 	errAuthIdentityExists      = errors.New("auth identity already exists")
 	errFailedLinkUser          = errors.New("failed to link user")
+	errMergeWarning            = errors.New("merge warning")
+	errAuthMethodExist         = errors.New("auth method already exists")
+	errAuthMethodNotConfirmed  = errors.New("auth method not confirmed")
 )
 
 func (r *Rauther) initLinkAccount(sessionInfo sessionInfo, authKey string, uid string) (u user.User, err error) {
@@ -39,9 +44,9 @@ func (r *Rauther) initLinkAccount(sessionInfo sessionInfo, authKey string, uid s
 	// User found
 	// User !temp
 	if !u.(user.TempUser).IsTemp() {
-		// Linked user not temp
-		// TODO: Merge users
-		return nil, errUserAlreadyRegistered
+		if !r.Modules.MergeAccount {
+			return nil, errUserAlreadyRegistered
+		}
 	}
 
 	return u, nil
@@ -59,7 +64,7 @@ func (r *Rauther) checkUserCanLinkAccount(currentUser user.User, authKey string)
 	return nil
 }
 
-func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at *authtype.AuthMethod) error {
+func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at *authtype.AuthMethod, mergeConfirm bool) error {
 	err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key)
 	if err != nil {
 		return err
@@ -75,6 +80,19 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at
 	uid := linkingUser.(user.AuthableUser).GetUID(at.Key)
 	if uid == "" {
 		return errFailedLinkUser
+	}
+
+	if !linkingUser.(user.TempUser).IsTemp() {
+		if r.Modules.MergeAccount {
+			err = r.mergeUsers(sessionInfo.User, linkingUser, mergeConfirm)
+			if err != nil {
+				return fmt.Errorf("merge error: %w", err)
+			}
+
+			return nil
+		}
+
+		return errUserAlreadyRegistered
 	}
 
 	sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
@@ -95,4 +113,132 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at
 	}
 
 	return nil
+}
+
+func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool) error {
+	// move all auth identities from link user to current user
+	err := r.moveAuthIdentities(current, link, mergeConfirm)
+	if err != nil {
+		if !errors.Is(err, errMergeWarning) || !mergeConfirm {
+			return fmt.Errorf("failed to move auth identities: %w", err)
+		}
+	}
+
+	err = current.(user.MergeUser).Merge(link)
+	if err != nil {
+		return fmt.Errorf("failed to run merge function: %w", err)
+	}
+
+	if !mergeConfirm {
+		return newMergeError(nil)
+	}
+
+	return nil
+}
+
+func (r *Rauther) moveAuthIdentities(current, link user.User, mergeConfirm bool) error {
+	failedMethods := []authDescrip{}
+
+	for key, at := range r.methods.List {
+		uid := link.(user.AuthableUser).GetUID(key)
+		if uid == "" {
+			continue
+		}
+
+		if current.(user.AuthableUser).GetUID(key) != "" {
+			log.Printf("Skip auth method %q: current type exists in current user", key)
+
+			failedMethods = append(failedMethods, authDescrip{
+				Key: key,
+				UID: uid,
+				Err: errAuthMethodExist,
+			})
+
+			continue
+		}
+
+		if !link.(user.ConfirmableUser).GetConfirmed(key) {
+			log.Printf("Skip move unconfirmed auth method %q: %s", key, uid)
+
+			failedMethods = append(failedMethods, authDescrip{
+				Key: key,
+				UID: uid,
+				Err: errAuthMethodNotConfirmed,
+			})
+
+			continue
+		}
+
+		if mergeConfirm {
+			switch at.Type {
+			case authtype.Password:
+				password := link.(user.PasswordAuthableUser).GetPassword(key)
+
+				current.(user.PasswordAuthableUser).SetUID(key, uid)
+				current.(user.PasswordAuthableUser).SetPassword(key, password)
+			case authtype.Social:
+				current.(user.AuthableUser).SetUID(key, uid)
+			case authtype.OTP:
+				current.(user.AuthableUser).SetUID(key, uid)
+			default:
+				log.Printf("unknown auth type: %v", at.Type)
+			}
+
+			if r.Modules.ConfirmableUser {
+				current.(user.ConfirmableUser).SetConfirmed(key,
+					link.(user.ConfirmableUser).GetConfirmed(key),
+				)
+			}
+		}
+	}
+
+	if len(failedMethods) > 0 {
+		return newMergeError(failedMethods)
+	}
+
+	return nil
+}
+
+type (
+	MergeError struct {
+		e                 error
+		removeAuthMethods []authDescrip
+	}
+
+	authDescrip struct {
+		Key string `json:"type"`
+		UID string `json:"uid"`
+		Err error  `json:"err"`
+	}
+)
+
+func newMergeError(authMethods []authDescrip) MergeError {
+	return MergeError{
+		e:                 errMergeWarning,
+		removeAuthMethods: authMethods,
+	}
+}
+
+func (err MergeError) MarshalJSON() ([]byte, error) {
+	type lostAuth struct {
+		Type  string `json:"type"`
+		UID   string `json:"uid"`
+		Error string `json:"error"`
+	}
+
+	lostAuths := make([]lostAuth, len(err.removeAuthMethods))
+
+	for i := range err.removeAuthMethods {
+		lostAuths[i] = lostAuth{
+			Type:  err.removeAuthMethods[i].Key,
+			UID:   err.removeAuthMethods[i].UID,
+			Error: err.removeAuthMethods[i].Err.Error(),
+		}
+	}
+
+	return json.Marshal(lostAuths)
+}
+
+func (err MergeError) Error() string {
+	return fmt.Sprintf("merge error: %s", err.e.Error())
 }

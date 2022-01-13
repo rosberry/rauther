@@ -66,6 +66,10 @@ type (
 	AuthRequestFieldable interface {
 		Fields() map[string]interface{}
 	}
+
+	MergeConfirmRequest interface {
+		MergeConfirm() bool
+	}
 )
 
 const (

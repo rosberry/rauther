@@ -122,10 +122,28 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 			return
 		}
 	} else if linkAccount {
-		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-		return
+		if r.Modules.MergeAccount {
+			var mergeConfirm bool
+
+			requestWithMergeConfirm, canCheckMerge := request.(authtype.MergeConfirmRequest)
+			if canCheckMerge {
+				mergeConfirm = requestWithMergeConfirm.MergeConfirm()
+			}
+
+			err := r.mergeUsers(sessionInfo.User, u, mergeConfirm)
+			if err != nil {
+				var mergeErr MergeError
+
+				if errors.As(err, &mergeErr) {
+					mergeErrorResponse(c, mergeErr)
+					return
+				}
+			}
+		} else {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			return
+		}
 	}
-	// User exist. TODO: Merge if link account?
 
 	sessionInfo.Session.BindUser(u)
 

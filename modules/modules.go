@@ -17,6 +17,7 @@ type Modules struct {
 	CodeSentTimeUser     bool
 	OTP                  bool
 	LinkAccount          bool
+	MergeAccount         bool
 }
 
 func (m Modules) String() string {
@@ -30,7 +31,8 @@ func (m Modules) String() string {
 	- RecoverableUser: %v
 	- CodeSentTimeUser: %v
 	- One Time Password: %v
-	- Link account: %v`,
+	- Link account: %v
+	- Merge account: %v`,
 		m.Session,
 		m.AuthableUser,
 		m.GuestUser,
@@ -41,6 +43,7 @@ func (m Modules) String() string {
 		m.CodeSentTimeUser,
 		m.OTP,
 		m.LinkAccount,
+		m.MergeAccount,
 	)
 }
 
@@ -56,5 +59,6 @@ func New(checker *checker.Checker) *Modules {
 		CodeSentTimeUser:     checker.CodeSentTime,
 		OTP:                  checker.OTPAuth,
 		LinkAccount:          checker.LinkAccount,
+		MergeAccount:         checker.MergeAccount,
 	}
 }

@@ -151,6 +151,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "409":
+          description: Conflict. Merge account
+          schema:
+            $ref: "#/definitions/ErrorResponse"
       tags:
         - auth
       security:
@@ -221,6 +225,10 @@ paths:
             $ref: "#/definitions/ErrorResponse"
         "401":
           description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "409":
+          description: Conflict. Merge account
           schema:
             $ref: "#/definitions/ErrorResponse"
       tags:

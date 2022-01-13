@@ -27,7 +27,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 	err := c.ShouldBindBodyWith(request, binding.JSON)
 	if err != nil {
-		log.Print("OTP auth handler:", err)
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 		return
@@ -40,7 +39,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 	uid := request.GetUID()
 	if uid == "" {
-		log.Print("otp request handler: empty uid")
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 		return
@@ -161,7 +159,6 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	// Check request data
 	err := c.ShouldBindBodyWith(request, binding.JSON)
 	if err != nil {
-		log.Print("OTP auth handler:", err)
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 		return
@@ -170,7 +167,6 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	uid, code := request.GetUID(), request.GetPassword()
 
 	if uid == "" || code == "" {
-		log.Print("otp handler: empty uid or code")
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 		return
@@ -215,11 +211,6 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 
 		if isTempUser && !linkAccount {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
-			return
-		}
-
-		if !isTempUser && linkAccount {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			return
 		}
 	}
@@ -270,20 +261,26 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		u.(user.OTPAuth).SetConfirmed(at.Key, true)
 	}
 
-	err = u.(user.OTPAuth).SetOTP(at.Key, "")
-	if err != nil {
-		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
-		return
-	}
+	if linkAccount {
+		var mergeConfirm bool
 
-	if r.Modules.LinkAccount && linkAccount {
-		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
-			err := r.linkAccount(sessionInfo, tempUser, at)
-			if err != nil {
-				// TODO: Error handling and return correct err
+		requestWithMergeConfirm, canCheckMerge := request.(authtype.MergeConfirmRequest)
+		if canCheckMerge {
+			mergeConfirm = requestWithMergeConfirm.MergeConfirm()
+		}
+
+		err := r.linkAccount(sessionInfo, u, at, mergeConfirm)
+		if err != nil {
+			var mergeErr MergeError
+
+			switch {
+			case errors.As(err, &mergeErr):
+				mergeErrorResponse(c, mergeErr)
+			default:
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-				return
 			}
+
+			return
 		}
 	} else {
 		sessionInfo.Session.BindUser(u)
@@ -298,6 +295,12 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 				return
 			}
+		}
+
+		err = u.(user.OTPAuth).SetOTP(at.Key, "")
+		if err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+			return
 		}
 
 		if err = r.deps.UserStorer.Save(u); err != nil {

@@ -100,7 +100,8 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 				return
 			}
 
-			err := r.linkAccount(sessionInfo, tempUser, at)
+			var mergeConfirm bool // FIXME
+			err := r.linkAccount(sessionInfo, tempUser, at, mergeConfirm)
 			if err != nil {
 				// TODO: Error handling and return correct err
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)

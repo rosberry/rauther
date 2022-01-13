@@ -79,6 +79,11 @@ type TempUser interface {
 	SetTemp(temp bool)
 }
 
+type MergeUser interface {
+	User
+	Merge(u User) error
+}
+
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")
 
 const notFoundFieldErrText = "field %s does not exist within the provided item"

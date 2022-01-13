@@ -157,6 +157,12 @@ func (u *User) SetTemp(temp bool) {
 	u.Temp = temp
 }
 
+func (u *User) Merge(additionalUser user.User) error {
+	log.Printf("Merge %+v", additionalUser)
+
+	return nil
+}
+
 type UserStorer struct {
 	Users map[uint]*User
 }

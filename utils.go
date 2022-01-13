@@ -1,6 +1,7 @@
 package rauther
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -62,6 +63,29 @@ func errorCodeTimeoutResponse(c *gin.Context, resendTime, curTime time.Time) {
 			TimeoutSec:      interval,
 			NextRequestTime: nextRequestTime,
 		},
+	})
+}
+
+func mergeErrorResponse(c *gin.Context, err error) {
+	var mergeError MergeError
+	if errors.As(err, &mergeError) {
+		log.Printf("mergeError list: %v", mergeError.removeAuthMethods)
+		c.JSON(http.StatusConflict, gin.H{
+			"result": false,
+			"error":  common.Errors[common.ErrMergeWarning],
+			"info": struct {
+				Lost interface{} `json:"lost"`
+			}{
+				Lost: mergeError,
+			},
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusBadRequest, gin.H{
+		"result": false,
+		"error":  common.Errors[common.ErrUnknownError],
 	})
 }
 
