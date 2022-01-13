@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "default": "ENV=local mocha .",
+    "default": "ENV=local TEST_ENV=true mocha .",
     "test": "mocha ."
   },
   "dependencies": {

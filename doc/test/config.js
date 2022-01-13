@@ -1,4 +1,6 @@
 var env = process.env.ENV || "";
+var testEnv = process.env.TEST_ENV ? process.env.TEST_ENV === 'true' : false;
+var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT ? Number(process.env.SENT_CODE_TIMEOUT) : 20000;
 
 var baseUrl;
 var specFile;
@@ -22,10 +24,13 @@ switch (env) {
 }
 
 var config = {
+  env: env,
+  testEnv: testEnv,
   baseUrl: baseUrl,
-  specFile: specFile
+  specFile: specFile,
+  sentCodeTimeout: sentCodeTimeout,
 };
 
-console.log("Selected environment: " + env);
+console.log("Settings: ", config);
 
 module.exports = config

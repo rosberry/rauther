@@ -7,15 +7,18 @@ var expect = require("chai").expect;
 var chai = require("chai");
 chai.use(require('chai-datetime'));
 var chaihttp = require("chai-http")
-let should = chai.should();
 var spec;
 
 var config = require("./config.js");
+if (!config.testEnv) {
+  return
+}
 
 chai.use(chaihttp);
 
 var baseUrl = config.baseUrl;
 var specFile = config.specFile;
+var sentCodeTimeout = config.sentCodeTimeout;
 
 var email = "test" + (Math.floor(Math.random() * 99999)) + "@rosberry.com";
 var userPassword = "password1";
@@ -27,7 +30,6 @@ var uid = "";
 var code = "";
 var recoveryCode = "";
 var lastCodeSentTime = ""
-var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT || 20000;
 
 describe("email auth:", function () {
   this.timeout(10000); // very large swagger files may take a few seconds to parse

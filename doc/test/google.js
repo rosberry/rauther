@@ -6,10 +6,12 @@ var hippie = require("hippie-swagger");
 var expect = require("chai").expect;
 var chai = require("chai");
 var chaihttp = require("chai-http")
-let should = chai.should();
 var spec;
 
 var config = require("./config.js");
+if (!config.testEnv) {
+  return
+}
 
 chai.use(chaihttp);
 

@@ -182,10 +182,6 @@ func (s *UserStorer) LoadByID(id interface{}) (user user.User, err error) {
 	}
 
 	if user, ok := s.Users[userID]; ok {
-		for k, u := range s.Users {
-			log.Info().Interface(fmt.Sprintf("%v", k), u).Msg("LoadByID")
-		}
-
 		return user, nil
 	}
 
@@ -231,7 +227,6 @@ func (s *UserStorer) RemoveByUID(authType, uid string) error {
 }
 
 func (s *UserStorer) RemoveByID(id interface{}) error {
-	log.Info().Uint("RemoveByID", id.(uint)).Msg("")
 	delete(s.Users, id.(uint))
 
 	log.Info().Int("all users", len(s.Users)).Msg("After delete")

@@ -6,15 +6,18 @@ var hippie = require("hippie-swagger");
 var expect = require("chai").expect;
 var chai = require("chai");
 var chaihttp = require("chai-http")
-let should = chai.should();
 var spec;
 
 var config = require("./config.js");
+if (!config.testEnv) {
+  return
+}
 
 chai.use(chaihttp);
 
 var baseUrl = config.baseUrl;
 var specFile = config.specFile;
+var sentCodeTimeout = config.sentCodeTimeout;
 
 var phone = "+7" + (Math.floor(Math.random() * 999999999));
 var phone2 = "+7" + (Math.floor(Math.random() * 999999999));
@@ -24,7 +27,6 @@ var userName2 = "Name 2";
 var device_id = "test" + (Math.floor(Math.random() * 99999));
 var apiToken = "";
 var code = "123321";
-var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT || 20000;
 
 describe("otp auth:", function () {
   this.timeout(10000); // very large swagger files may take a few seconds to parse

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,9 @@ import (
 func main() { // nolint
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Print("It's basic example for rauther lib")
+
+	testEnv := os.Getenv("TEST_ENV")
+	testMod, _ := strconv.ParseBool(testEnv)
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -145,9 +149,11 @@ func main() { // nolint
 	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 	r.POST("/profile", rauth.AuthMiddleware(), controllers.UpdateProfile)
 	// test route for truncate accounts
-	r.DELETE("/clearAll", func(c *gin.Context) {
-		controllers.RemoveAll(c, ss, us)
-	})
+	if testMod {
+		r.DELETE("/clearAll", func(c *gin.Context) {
+			controllers.RemoveAll(c, ss, us)
+		})
+	}
 
 	err := rauth.InitHandlers()
 	if err != nil {
