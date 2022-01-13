@@ -16,6 +16,7 @@ type Modules struct {
 	RecoverableUser      bool
 	CodeSentTimeUser     bool
 	OTP                  bool
+	LinkAccount          bool
 }
 
 func (m Modules) String() string {
@@ -28,7 +29,8 @@ func (m Modules) String() string {
 	- ConfirmableUser: %v
 	- RecoverableUser: %v
 	- CodeSentTimeUser: %v
-	- One Time Password: %v`,
+	- One Time Password: %v
+	- Link account: %v`,
 		m.Session,
 		m.AuthableUser,
 		m.GuestUser,
@@ -37,7 +39,9 @@ func (m Modules) String() string {
 		m.ConfirmableUser,
 		m.RecoverableUser,
 		m.CodeSentTimeUser,
-		m.OTP)
+		m.OTP,
+		m.LinkAccount,
+	)
 }
 
 func New(checker *checker.Checker) *Modules {
@@ -51,5 +55,6 @@ func New(checker *checker.Checker) *Modules {
 		RecoverableUser:      checker.Recoverable,
 		CodeSentTimeUser:     checker.CodeSentTime,
 		OTP:                  checker.OTPAuth,
+		LinkAccount:          checker.LinkAccount,
 	}
 }

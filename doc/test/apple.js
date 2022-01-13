@@ -21,7 +21,7 @@ if (appleToken == "") {
   console.log('ATTENTION! No APPLE_TOKEN provided, so apple login tests are skipped.');
 }
 
-var device_id = "test"+(Math.floor(Math.random()*99999));
+var device_id = "test" + (Math.floor(Math.random() * 99999));
 var apiToken = "";
 
 describe("apple auth:", function () {
@@ -162,26 +162,6 @@ describe("apple auth:", function () {
               expect(res).to.not.have.property("error");
               done.apply(null, arguments);
             });
-        });
-
-        it("should return error already authorized", function (done) {
-          hippie(spec)
-            .header("Authorization", "Bearer " + apiToken)
-            .base(baseUrl)
-            .post("/social/login")
-            .json()
-            .send({
-              type: "apple",
-              token: appleToken
-            })
-          .expectStatus(400)
-          .end(function (err, raw, res) {
-            expect(res).to.have.property("result").that.is.false;
-            expect(res).to.have.property("error");
-            expect(res.error).to.have.property("code").that.equals("already_auth");
-            expect(res).to.not.have.property("uid");
-            done.apply(null, arguments);
-          });
         });
       });
 

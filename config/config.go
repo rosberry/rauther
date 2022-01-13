@@ -56,7 +56,7 @@ type Config struct {
 	}
 
 	// LinkAccount
-	LinkAccount bool
+	// LinkAccount bool
 
 	// CodeLength is default code length for all auth methods (if not specified in auth method)
 	CodeLength int

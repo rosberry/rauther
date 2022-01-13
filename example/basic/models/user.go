@@ -26,6 +26,7 @@ type (
 		LastName  string `auth:"lname" json:"lastName"`
 
 		RecoveryCode string `json:"recoveryCode"`
+		Temp         bool   `json:"-"`
 	}
 
 	AuthIdentities struct {
@@ -146,6 +147,14 @@ func (u *User) SetOTP(authType string, code string) error {
 	u.Auths[authType] = at
 
 	return nil
+}
+
+func (u *User) IsTemp() bool {
+	return u.Temp
+}
+
+func (u *User) SetTemp(temp bool) {
+	u.Temp = temp
 }
 
 type UserStorer struct {

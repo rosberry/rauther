@@ -149,6 +149,12 @@ type CodeSentTimeUser interface {
 	GetCodeSentTime(authType string) *time.Time
 	SetCodeSentTime(authType string, t *time.Time)
 }
+
+type TempUser interface {
+	User
+	IsTemp() bool
+	SetTemp(temp bool)
+}
 ```
 
 4. Use the 'auth' tag to match the fields in the model and fields returned in the Fields() request method
@@ -353,6 +359,7 @@ Library have some modules for differend work types. modules turn on automaticall
 - **ConfirmableUser** - module for require confirm user contact (email, phone, etc). Enable handlers...
 - **RecoverableUser** - module for recovery user password. Enable handlers...
 - **CodeSentTimeUser** - module for expired confirmations
+- **LinkAccount** - module for link account feature. Allows you to create multiple auth identifiers for one user. Use sign-up methods (password sign-up, otp auth, social login) for an authorized user
 
 ## Examples
 
