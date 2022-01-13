@@ -93,7 +93,7 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		return
 	}
 
-	if r.Modules.LinkAccount && linkAccount {
+	if linkAccount {
 		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
 			sessionInfo, success := r.checkSession(c)
 			if !success {
