@@ -74,7 +74,7 @@ type OTPAuth interface {
 }
 
 type TempUser interface {
-	User
+	confirmedStatus
 	IsTemp() bool
 	SetTemp(temp bool)
 }
