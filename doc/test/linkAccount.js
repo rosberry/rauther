@@ -9,10 +9,6 @@ var chaihttp = require("chai-http")
 var spec
 
 var config = require("./config.js")
-if (!config.testEnv) {
-  return
-}
-
 chai.use(chaihttp)
 
 var baseUrl = config.baseUrl
@@ -342,6 +338,7 @@ describe("link account:", function () {
       "should return result true and password auth identity should exists",
       (res) => {
         expect(res.user.auths).to.have.property(authTypes.password)
+        expect(res.user.auths).to.have.property(authTypes.otp)
       }
     )
 
@@ -431,7 +428,17 @@ describe("link account:", function () {
     logout({ session: 2 })
     passwordLogin({ session: 2 })
     // user 1
-    passwordConfirm()
+    describe("password confirm for user 1", function () {
+      it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
+        request("/confirm", "post", passwordConfirmCreds, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false;
+          expect(res).to.have.property("error");
+          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          done.apply(null, arguments);
+
+        }, { status: 400 });
+      });
+    });
 
     profile(
       "should return result true and password auth identity should not exists",
@@ -533,8 +540,17 @@ describe("link account:", function () {
       }
     )
     // user 2
-    // TODO Change to error after edit lib
-    passwordConfirm({ session: 2 })
+    describe("password confirm for user 2", function () {
+      it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
+        request("/confirm", "post", passwordConfirmCreds, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false;
+          expect(res).to.have.property("error");
+          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          done.apply(null, arguments);
+
+        }, { status: 400, token: apiToken2 });
+      });
+    });
 
     profile(
       "should return result true and password auth identity should not exists",
@@ -593,8 +609,17 @@ describe("link account:", function () {
       { session: 2 }
     )
     // user 1
-    // TODO Change to error after edit lib
-    passwordConfirm()
+    describe("password confirm for user 1", function () {
+      it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
+        request("/confirm", "post", passwordConfirmCreds, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false;
+          expect(res).to.have.property("error");
+          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          done.apply(null, arguments);
+
+        }, { status: 400 });
+      });
+    });
 
     profile(
       "should return result true and password auth identity should not exists",

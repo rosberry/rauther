@@ -10,10 +10,6 @@ var chaihttp = require("chai-http")
 var spec;
 
 var config = require("./config.js");
-if (!config.testEnv) {
-  return
-}
-
 chai.use(chaihttp);
 
 var baseUrl = config.baseUrl;

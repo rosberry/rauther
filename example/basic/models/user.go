@@ -229,7 +229,6 @@ func (s *UserStorer) RemoveByUID(authType, uid string) error {
 func (s *UserStorer) RemoveByID(id interface{}) error {
 	delete(s.Users, id.(uint))
 
-	log.Info().Int("all users", len(s.Users)).Msg("After delete")
 	for k, u := range s.Users {
 		log.Info().Interface(fmt.Sprintf("%v", k), u).Msg("")
 	}

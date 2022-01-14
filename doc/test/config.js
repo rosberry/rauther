@@ -23,6 +23,12 @@ switch (env) {
     }
 }
 
+if (!testEnv) {
+  console.error('Please set TEST_ENV to true for start testing');
+  process.exit();
+  return;
+}
+
 var config = {
   env: env,
   testEnv: testEnv,
