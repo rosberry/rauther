@@ -39,6 +39,25 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		return
 	}
 
+	var linkAccount bool
+
+	if r.Modules.LinkAccount {
+		sessionInfo, success := r.checkSession(c)
+		if !success {
+			return
+		}
+
+		if sessionInfo.User != nil &&
+			sessionInfo.User.GetID() != u.GetID() {
+			if !u.(user.TempUser).IsTemp() {
+				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
+				return
+			}
+
+			linkAccount = true
+		}
+	}
+
 	if u.(user.ConfirmableUser).GetConfirmed(at.Key) {
 		c.JSON(http.StatusOK, gin.H{
 			"result": true,
@@ -74,9 +93,14 @@ func (r *Rauther) confirmHandler(c *gin.Context) {
 		return
 	}
 
-	if r.Modules.LinkAccount {
+	if linkAccount {
 		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
-			err := r.linkAccount(c, tempUser, at)
+			sessionInfo, success := r.checkSession(c)
+			if !success {
+				return
+			}
+
+			err := r.linkAccount(sessionInfo, tempUser, at)
 			if err != nil {
 				// TODO: Error handling and return correct err
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)

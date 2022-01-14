@@ -57,9 +57,11 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 			return
 		}
 
-		u, err = r.initAccountLinking(c, sessionInfo, at.Key, uid)
+		u, err = r.initLinkAccount(sessionInfo, at.Key, uid)
 		if err != nil {
 			log.Print(err)
+
+			var customErr CustomError
 
 			switch {
 			case errors.Is(err, errAuthIdentityExists):
@@ -68,6 +70,8 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 			case errors.Is(err, errUserAlreadyRegistered):
 				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			case errors.As(err, &customErr):
+				customErrorResponse(c, customErr)
 			default:
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			}
@@ -78,7 +82,8 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		linkAccount = true
 	}
 
-	if u == nil {
+	if !linkAccount {
+		// Find user by UID
 		u, err = r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
 			log.Print(err)
@@ -89,42 +94,28 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 			}
 		}
 
+		// User exists
 		if u != nil {
-			if tempUser, ok := u.(user.TempUser); !ok || !tempUser.IsTemp() {
+			if tempUser, ok := u.(user.TempUser); !(ok && tempUser.IsTemp()) {
 				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 				return
 			}
 
-			var removeUserID interface{}
-
-			if u.(user.GuestUser).IsGuest() {
-				sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
-				sessionInfo.User.(user.GuestUser).SetGuest(false)
-
-				removeUserID = u.GetID()
-
-				u = sessionInfo.User
-			} else {
-				removeUserID = sessionInfo.UserID
-			}
-
-			u.(user.TempUser).SetTemp(false)
-
-			err := r.deps.Storage.UserRemover.RemoveByID(removeUserID)
+			err := r.deps.Storage.UserRemover.RemoveByID(u.GetID())
 			if err != nil {
 				log.Printf("Failed delete guest user %v: %v", sessionInfo.UserID, err)
 			}
-		} else {
-			if r.Modules.GuestUser && sessionInfo.UserIsGuest {
-				u, _ = r.deps.UserStorer.LoadByID(sessionInfo.UserID)
-				u.(user.GuestUser).SetGuest(false)
-			} else {
-				u = r.deps.UserStorer.Create()
-			}
 		}
-	}
 
-	u.(user.AuthableUser).SetUID(at.Key, uid)
+		if r.Modules.GuestUser && sessionInfo.UserIsGuest {
+			u = sessionInfo.User
+			u.(user.GuestUser).SetGuest(false)
+		} else {
+			u = r.deps.UserStorer.Create()
+		}
+
+		u.(user.AuthableUser).SetUID(at.Key, uid)
+	}
 
 	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -167,9 +158,8 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 	if !linkAccount {
 		sessionInfo.Session.BindUser(u)
 		c.Set(r.Config.ContextNames.User, u)
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	}
-
-	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 
 	err = r.deps.SessionStorer.Save(sessionInfo.Session)
 	if err != nil {

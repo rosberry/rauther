@@ -56,9 +56,11 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			return
 		}
 
-		u, err = r.initAccountLinking(c, sessionInfo, at.Key, uid)
+		u, err = r.initLinkAccount(sessionInfo, at.Key, uid)
 		if err != nil {
 			log.Print(err)
+
+			var customErr CustomError
 
 			switch {
 			case errors.Is(err, errAuthIdentityExists):
@@ -67,15 +69,19 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 			case errors.Is(err, errUserAlreadyRegistered):
 				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			case errors.As(err, &customErr):
+				customErrorResponse(c, customErr)
 			default:
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			}
 
 			return
 		}
+
+		linkAccount = true
 	}
 
-	if u == nil {
+	if !linkAccount {
 		// Find user by UID
 		u, err = r.deps.UserStorer.LoadByUID(at.Key, uid)
 		if err != nil {
@@ -93,14 +99,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 
 			if r.Modules.GuestUser {
 				u.(user.GuestUser).SetGuest(true)
-			}
-
-			if linkAccount {
-				if foundUID := sessionInfo.User.(user.AuthableUser).GetUID(at.Key); foundUID != "" {
-					errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
-
-					return
-				}
 			}
 
 			u.(user.AuthableUser).SetUID(at.Key, uid)
@@ -271,7 +269,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 
 	if r.Modules.LinkAccount && linkAccount {
 		if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
-			err := r.linkAccount(c, tempUser, at)
+			err := r.linkAccount(sessionInfo, tempUser, at)
 			if err != nil {
 				// TODO: Error handling and return correct err
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
@@ -299,9 +297,8 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		}
 
 		c.Set(r.Config.ContextNames.User, u)
+		c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 	}
-
-	c.Set(r.Config.ContextNames.Session, sessionInfo.Session)
 
 	respMap := gin.H{
 		"result": true,
