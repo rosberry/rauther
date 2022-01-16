@@ -24,16 +24,21 @@ if (googleToken2 == "") {
   console.log('ATTENTION! No GOOGLE_TOKEN2 provided, so google login negative tests are skipped.')
 }
 
-var email = "test" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
-var email2 = "test2" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
-var phone = "+7" + (Math.floor(Math.random() * 999999999))
-var phone2 = "8" + (Math.floor(Math.random() * 999999999))
-var confirmEmailCode = "456123";
-var confirmOTPCode = "123321";
-var userID = null
-var userID2 = null
-var apiToken = ""
-var apiToken2 = ""
+const email = "test" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
+const phone = "+7" + (Math.floor(Math.random() * 999999999))
+const password = "password"
+
+const email2 = "test2" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
+const phone2 = "8" + (Math.floor(Math.random() * 999999999))
+const password2 = "password2"
+
+const confirmEmailCode = "456123";
+const confirmOTPCode = "123321";
+
+let userID = null
+let userID2 = null
+let apiToken = ""
+let apiToken2 = ""
 
 const authTypes = {
   password: "email",
@@ -45,13 +50,37 @@ const emailRegCreds = {
   type: authTypes.password,
   name: "Test1",
   email: email,
-  password: "password",
+  password: password,
 }
 const emailRegCreds2 = {
   type: authTypes.password,
   name: "Test2",
   email: email2,
-  password: "password2",
+  password: password2,
+}
+
+const passwordInitLinkingCreds = {
+  type: authTypes.password,
+  uid: email,
+}
+
+const passwordInitLinkingCreds2 = {
+  type: authTypes.password,
+  uid: email2,
+}
+
+const passwordLinkCreds = {
+  type: authTypes.password,
+  uid: email,
+  password: password,
+  code: confirmEmailCode,
+}
+
+const passwordLinkCreds2 = {
+  type: authTypes.password,
+  uid: email2,
+  password: password2,
+  code: confirmEmailCode,
 }
 
 const googleRegCreds = {
@@ -154,8 +183,8 @@ describe("link account:", function () {
       auth()
       socialLogin()
       // adding auth identities
-      passwordRegister()
-      passwordConfirm()
+      passwordInitLink()
+      passwordLink()
       otpGetCode()
       otpLogin()
       profile(
@@ -181,8 +210,8 @@ describe("link account:", function () {
     otpGetCode()
     otpLogin()
     // adding auth identities
-    passwordRegister()
-    passwordConfirm()
+    passwordInitLink()
+    passwordLink()
     if (googleToken !== "") {
       socialLogin()
     }
@@ -211,13 +240,12 @@ describe("link account:", function () {
     passwordRegister()
     passwordConfirm()
 
-    describe("duplicate password register", function () {
+    describe("link password account with already existing auth type", function () {
       it(`should return result false and error: ${errors.authIdentityAlreadyExists}`, function (done) {
-        request("/register", "post", emailRegCreds2, function (err, raw, res) {
+        request("/initLink", "post", passwordInitLinkingCreds2, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false;
           expect(res).to.have.property("error");
           expect(res.error).to.have.property("code").that.equals(errors.authIdentityAlreadyExists);
-          expect(res).to.not.have.property("uid");
           done.apply(null, arguments);
         }, { status: 400 });
       });
@@ -306,7 +334,7 @@ describe("link account:", function () {
     auth()
     otpGetCode()
     otpLogin()
-    passwordRegister()
+    passwordInitLink()
 
     profile(
       "should return result true and password auth identity should not exists",
@@ -330,7 +358,7 @@ describe("link account:", function () {
 
     otpGetCode()
     otpLogin()
-    passwordConfirm()
+    passwordLink()
     logout()
     passwordLogin()
 
@@ -356,7 +384,7 @@ describe("link account:", function () {
     // user 1
     describe("link password reserved account", function () {
       it(`should return result false and error: ${errors.alreadyAuth}`, function (done) {
-        request("/register", "post", emailRegCreds, function (err, raw, res) {
+        request("/initLink", "post", passwordInitLinkingCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
           expect(res.error).to.have.property("code").that.equals(errors.alreadyAuth);
@@ -381,7 +409,7 @@ describe("link account:", function () {
     // user 1
     describe("link password reserved account", function () {
       it(`should return result false and error: ${errors.alreadyAuth}`, function (done) {
-        request("/register", "post", emailRegCreds, function (err, raw, res) {
+        request("/initLink", "post", passwordInitLinkingCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
           expect(res.error).to.have.property("code").that.equals(errors.alreadyAuth);
@@ -399,7 +427,7 @@ describe("link account:", function () {
     auth()
     otpGetCode()
     otpLogin()
-    passwordRegister()
+    passwordInitLink()
 
     profile(
       "should return result true and password auth identity should not exists",
@@ -428,9 +456,9 @@ describe("link account:", function () {
     logout({ session: 2 })
     passwordLogin({ session: 2 })
     // user 1
-    describe("password confirm for user 1", function () {
+    describe("password link account for user 1", function () {
       it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
-        request("/confirm", "post", passwordConfirmCreds, function (err, raw, res) {
+        request("/link", "post", passwordLinkCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false;
           expect(res).to.have.property("error");
           expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
@@ -526,11 +554,11 @@ describe("link account:", function () {
     otpGetCode({ session: 2, creds: 2 })
     otpLogin({ session: 2, creds: 2 })
     // user 1
-    passwordRegister()
+    passwordInitLink()
     // user 2
-    passwordRegister({ session: 2 })
+    passwordInitLink({ session: 2 })
     // user 1
-    passwordConfirm()
+    passwordLink()
 
     profile(
       "should return result true and password auth identity should exists",
@@ -540,9 +568,9 @@ describe("link account:", function () {
       }
     )
     // user 2
-    describe("password confirm for user 2", function () {
+    describe("password link account for user 2", function () {
       it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
-        request("/confirm", "post", passwordConfirmCreds, function (err, raw, res) {
+        request("/link", "post", passwordLinkCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false;
           expect(res).to.have.property("error");
           expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
@@ -591,14 +619,14 @@ describe("link account:", function () {
     otpGetCode()
     otpLogin()
 
-    passwordRegister()
+    passwordInitLink()
     // user 2
     auth({ session: 2 })
     otpGetCode({ session: 2, creds: 2 })
     otpLogin({ session: 2, creds: 2 })
 
-    passwordRegister({ session: 2 })
-    passwordConfirm({ session: 2 })
+    passwordInitLink({ session: 2 })
+    passwordLink({ session: 2 })
 
     profile(
       "should return result true and password auth identity should exists",
@@ -609,9 +637,9 @@ describe("link account:", function () {
       { session: 2 }
     )
     // user 1
-    describe("password confirm for user 1", function () {
+    describe("password link account for user 1", function () {
       it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
-        request("/confirm", "post", passwordConfirmCreds, function (err, raw, res) {
+        request("/link", "post", passwordLinkCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false;
           expect(res).to.have.property("error");
           expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
@@ -959,6 +987,64 @@ function passwordLogin(params) {
       request("/login", "post", creds, function (err, raw, res) {
         expect(res).to.have.property("result").that.is.true
         expect(res).to.not.have.property("error")
+        done.apply(null, arguments);
+
+      }, { token: getSession(params)[0] });
+    });
+  });
+}
+
+function passwordInitLink(params) {
+  describe(`init linking password account for user ${getSession(params)[1]}`, function () {
+    it("should return result true", function (done) {
+      let credsNum = 1
+      let creds
+      if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
+        credsNum = params.creds
+      }
+
+      switch (credsNum) {
+        case 1:
+          creds = passwordInitLinkingCreds
+          break;
+        case 2:
+          creds = passwordInitLinkingCreds2
+          break;
+      }
+
+      request("/initLink", "post", creds, function (err, raw, res) {
+        expect(res).to.have.property("result").that.is.true
+        expect(res).to.not.have.property("error")
+        expect(res).to.have.property("uid")
+        done.apply(null, arguments);
+
+      }, { token: getSession(params)[0] });
+    });
+  });
+}
+
+function passwordLink(params) {
+  describe(`link password account for user ${getSession(params)[1]}`, function () {
+    it("should return result true", function (done) {
+      let credsNum = 1
+      let creds
+      if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
+        credsNum = params.creds
+      }
+
+      switch (credsNum) {
+        case 1:
+          creds = passwordLinkCreds
+          break;
+        case 2:
+          creds = passwordLinkCreds2
+          break;
+      }
+
+      request("/link", "post", creds, function (err, raw, res) {
+        expect(res).to.have.property("result").that.is.true
+        expect(res).to.not.have.property("error")
+        expect(res).to.have.property("uid")
         done.apply(null, arguments);
 
       }, { token: getSession(params)[0] });
