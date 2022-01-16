@@ -93,7 +93,62 @@ paths:
         - auth
       security:
         - authtoken: []
-
+  /initLink:
+    post:
+      consumes:
+        - application/json
+      summary: Init linking password account
+      parameters:
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/CheckLoginFieldRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/EmptyResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - auth
+      security:
+        - authtoken: []
+  /link:
+    post:
+      consumes:
+        - application/json
+      summary: Link password account
+      parameters:
+        - description: Request body
+          in: body
+          name: body
+          schema:
+            $ref: "#/definitions/PasswordLinkAccountRequest"
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/EmptyResponse"
+        "400":
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "401":
+          description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      tags:
+        - auth
+      security:
+        - authtoken: []
   /login:
     post:
       consumes:
@@ -517,6 +572,30 @@ definitions:
         example: example@mailer.com
         type: string
     type: object
+
+  PasswordLinkAccountRequest:
+    type: object
+    properties:
+      type:
+        type: string
+        example: email
+        enum:
+          - email
+          - phone
+      uid:
+        example: example@mailer.com
+        type: string
+      password:
+        example: mypass333example
+        type: string
+      code:
+        example: "1285"
+        type: string
+    required:
+      - type
+      - uid
+      - password
+      - code
 
   SignInRequest:
     properties:

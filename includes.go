@@ -60,6 +60,14 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup, authRouter *g
 	if r.Modules.RecoverableUser {
 		r.includeRecoverable(authRouter)
 	}
+
+	if r.checker.LinkAccount {
+		withUser := authRouter.Group("", r.authUserMiddleware())
+		{
+			withUser.POST(r.Config.Routes.InitLink, r.initLinkingPasswordAccount)
+			withUser.POST(r.Config.Routes.Link, r.linkPasswordAccount)
+		}
+	}
 }
 
 func (r *Rauther) includeSocialAuthable(router *gin.RouterGroup) {
