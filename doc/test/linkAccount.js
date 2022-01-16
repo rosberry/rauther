@@ -482,11 +482,11 @@ describe("link account:", function () {
     otpLogin({ session: 2 })
     // user 1
     describe("otp login", function () {
-      it(`should return result false and error: ${errors.invalidCode}`, function (done) {
+      it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
-          expect(res.error).to.have.property("code").that.equals(errors.invalidCode);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments)
 
         }, { status: 400, pathParams: { key: authTypes.otp } })
@@ -678,11 +678,11 @@ describe("link account:", function () {
     )
     // user 2
     describe("otp login for user 2", function () {
-      it(`should return result false and error: ${errors.invalidRequest}`, function (done) {
+      it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
-          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments)
 
         }, { status: 400, token: apiToken2, pathParams: { key: authTypes.otp } })
@@ -749,11 +749,11 @@ describe("link account:", function () {
     )
     // user 1
     describe("otp login for user 1", function () {
-      it(`should return result false and error: ${errors.invalidRequest}`, function (done) {
+      it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
-          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments)
 
         }, { status: 400, pathParams: { key: authTypes.otp } })
