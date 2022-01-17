@@ -61,12 +61,12 @@ const emailRegCreds2 = {
 
 const passwordInitLinkingCreds = {
   type: authTypes.password,
-  uid: email,
+  email: email,
 }
 
 const passwordInitLinkingCreds2 = {
   type: authTypes.password,
-  uid: email2,
+  email: email2,
 }
 
 const passwordLinkCreds = {
@@ -1044,7 +1044,6 @@ function passwordLink(params) {
       request("/link", "post", creds, function (err, raw, res) {
         expect(res).to.have.property("result").that.is.true
         expect(res).to.not.have.property("error")
-        expect(res).to.have.property("uid")
         done.apply(null, arguments);
 
       }, { token: getSession(params)[0] });
