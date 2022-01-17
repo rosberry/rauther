@@ -61,12 +61,12 @@ const emailRegCreds2 = {
 
 const passwordInitLinkingCreds = {
   type: authTypes.password,
-  email: email,
+  uid: email,
 }
 
 const passwordInitLinkingCreds2 = {
   type: authTypes.password,
-  email: email2,
+  uid: email2,
 }
 
 const passwordLinkCreds = {
@@ -383,11 +383,11 @@ describe("link account:", function () {
     passwordRegister({ session: 2 })
     // user 1
     describe("link password reserved account", function () {
-      it(`should return result false and error: ${errors.alreadyAuth}`, function (done) {
+      it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/initLink", "post", passwordInitLinkingCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
-          expect(res.error).to.have.property("code").that.equals(errors.alreadyAuth);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments);
 
         }, { status: 400 });
@@ -408,11 +408,11 @@ describe("link account:", function () {
     logout({ session: 2 })
     // user 1
     describe("link password reserved account", function () {
-      it(`should return result false and error: ${errors.alreadyAuth}`, function (done) {
+      it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/initLink", "post", passwordInitLinkingCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
-          expect(res.error).to.have.property("code").that.equals(errors.alreadyAuth);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments);
 
         }, { status: 400 });
@@ -457,11 +457,11 @@ describe("link account:", function () {
     passwordLogin({ session: 2 })
     // user 1
     describe("password link account for user 1", function () {
-      it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
+      it(`should return result false with error: ${errors.userExist}`, function (done) {
         request("/link", "post", passwordLinkCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false;
           expect(res).to.have.property("error");
-          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments);
 
         }, { status: 400 });
@@ -569,11 +569,11 @@ describe("link account:", function () {
     )
     // user 2
     describe("password link account for user 2", function () {
-      it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
+      it(`should return result false with error: ${errors.userExist}`, function (done) {
         request("/link", "post", passwordLinkCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false;
           expect(res).to.have.property("error");
-          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments);
 
         }, { status: 400, token: apiToken2 });
@@ -638,11 +638,11 @@ describe("link account:", function () {
     )
     // user 1
     describe("password link account for user 1", function () {
-      it(`should return result false with error: ${errors.invalidRequest}`, function (done) {
+      it(`should return result false with error: ${errors.userExist}`, function (done) {
         request("/link", "post", passwordLinkCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false;
           expect(res).to.have.property("error");
-          expect(res.error).to.have.property("code").that.equals(errors.invalidRequest);
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments);
 
         }, { status: 400 });
@@ -1015,7 +1015,6 @@ function passwordInitLink(params) {
       request("/initLink", "post", creds, function (err, raw, res) {
         expect(res).to.have.property("result").that.is.true
         expect(res).to.not.have.property("error")
-        expect(res).to.have.property("uid")
         done.apply(null, arguments);
 
       }, { token: getSession(params)[0] });
