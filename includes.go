@@ -88,8 +88,14 @@ func (r *Rauther) checkRemovableUser() {
 		log.Fatal("Please, implement GuestUser interface for use guest user")
 	}
 
-	if r.Modules.LinkAccount && !r.checker.LinkAccount {
-		log.Fatal("Please, implement TempUser interface for use linking")
+	if r.Modules.LinkAccount {
+		if !r.Modules.ConfirmableUser {
+			log.Fatal("Please, enable ConfirmableUser module for use linking")
+		}
+
+		if !r.checker.LinkAccount {
+			log.Fatal("Please, implement TempUser interface for use linking")
+		}
 	}
 
 	if r.Modules.GuestUser || r.Modules.LinkAccount {
