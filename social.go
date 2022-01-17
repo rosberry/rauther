@@ -96,9 +96,8 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 
 				return
 			}
-		} else {
-			u = r.deps.UserStorer.Create()
 		}
+		u = r.deps.UserStorer.Create()
 
 		u.(user.AuthableUser).SetUID(at.Key, userInfo.ID)
 

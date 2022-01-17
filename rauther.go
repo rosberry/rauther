@@ -2,7 +2,9 @@ package rauther
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/checker"
@@ -108,6 +110,20 @@ func (r *Rauther) checkAuthMethods(user user.User) bool {
 
 		for k, v := range badFields {
 			log.Printf("Fields %v for '%v' not found in user model", v, k)
+		}
+	}
+
+	if r.Modules.MergeAccount {
+		ok, failed := r.methods.CheckMergeModuleSupport()
+		if !ok {
+			sb := &strings.Builder{}
+			sb.WriteString("\nPlease, check `MergeConfirmRequest` implementations in request struct for auth methods:\n")
+
+			for atKey, requestStructType := range failed {
+				sb.WriteString(fmt.Sprintf("	- %v (%v)\n", atKey, requestStructType))
+			}
+
+			log.Fatal(sb.String())
 		}
 	}
 

@@ -4,6 +4,7 @@ package authtype
 
 import (
 	"log"
+	"reflect"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/auth"
@@ -246,6 +247,33 @@ func (a *AuthMethods) CheckFieldsDefine(u user.User) (ok bool, badFields map[str
 
 	if len(failFields) > 0 {
 		return false, failFields
+	}
+
+	return true, nil
+}
+
+func (a *AuthMethods) CheckMergeModuleSupport() (ok bool, badAuthMethods map[string]string) {
+	badAuthMethods = map[string]string{}
+
+	for _, at := range a.List {
+		switch at.Type {
+		case Password:
+			if _, ok := at.SignUpRequest.(MergeConfirmRequest); !ok {
+				badAuthMethods[at.Key] = reflect.TypeOf(at.SignUpRequest).String()
+			}
+		case OTP:
+			if _, ok := at.SignUpRequest.(MergeConfirmRequest); !ok {
+				badAuthMethods[at.Key] = reflect.TypeOf(at.SignUpRequest).String()
+			}
+		case Social:
+			if _, ok := at.SocialSignInRequest.(MergeConfirmRequest); !ok {
+				badAuthMethods[at.Key] = reflect.TypeOf(at.SocialSignInRequest).String()
+			}
+		}
+	}
+
+	if len(badAuthMethods) > 0 {
+		return false, badAuthMethods
 	}
 
 	return true, nil

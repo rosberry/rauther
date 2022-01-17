@@ -121,6 +121,7 @@ func main() { // nolint
 	rauth.AuthSelector(customAuthTypeSelector)
 
 	rauth.Modules.LinkAccount = true
+	// rauth.Modules.MergeAccount = false
 	rauth.Modules.GuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
@@ -174,6 +175,7 @@ type phoneSignUp struct {
 	Phone    string `json:"phone" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Name     string `json:"name" binding:"required"`
+	Merge    bool   `json:"merge"`
 }
 
 func (r *phoneSignUp) GetUID() (uid string)           { return r.Phone }
@@ -183,6 +185,7 @@ func (r *phoneSignUp) Fields() map[string]string {
 		"username": r.Name,
 	}
 }
+func (r *phoneSignUp) MergeConfirm() bool { return r.Merge }
 
 type phoneSignIn struct {
 	Phone    string `json:"phone" binding:"required"`
@@ -207,7 +210,7 @@ type otpRequest struct {
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
-func (r *otpRequest) MergeConfirm() bool             { return r.Merge }
+func (r *otpRequest) MergeConfirm1() bool            { return r.Merge }
 
 func (r *otpRequest) Fields() map[string]interface{} {
 	return map[string]interface{}{
@@ -224,6 +227,7 @@ func (r *otpRequest) Fields() map[string]interface{} {
 type CustomSocialSignInRequest struct {
 	Name  string `json:"name"`
 	Token string `json:"token" binding:"required"`
+	Merge bool   `json:"merge"`
 }
 
 func (r *CustomSocialSignInRequest) Fields() map[string]interface{} {
@@ -235,3 +239,5 @@ func (r *CustomSocialSignInRequest) Fields() map[string]interface{} {
 func (r *CustomSocialSignInRequest) GetToken() string {
 	return r.Token
 }
+
+func (r *CustomSocialSignInRequest) MergeConfirm() bool { return r.Merge }
