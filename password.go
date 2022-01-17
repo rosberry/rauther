@@ -98,19 +98,7 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 	}
 
 	if r.Modules.ConfirmableUser {
-		confirmCode := r.generateCode(at)
-
-		u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
-
-		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-			curTime := time.Now()
-			u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
-		}
-
-		err := sendConfirmCode(at.Sender, uid, confirmCode)
-		if err != nil {
-			log.Printf("failed send confirm code %v: %v", uid, err)
-		}
+		r.setAndSendConfirmCode(at, u, uid)
 	}
 
 	if err = r.deps.UserStorer.Save(u); err != nil {
@@ -293,17 +281,20 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 		return
 	}
 
-	request := clone(at.CheckUserExistsRequest).(authtype.CheckUserExistsRequest)
+	type linkAccountRequest struct {
+		UID string `json:"uid" binding:"required"`
+	}
+	var request linkAccountRequest
 
-	err := c.ShouldBindBodyWith(request, binding.JSON)
+	err := c.ShouldBindBodyWith(&request, binding.JSON)
 	if err != nil {
-		log.Print("sign up handler:", err)
+		log.Print("init linking password account:", err)
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
 		return
 	}
 
-	uid := request.GetUID()
+	uid := request.UID
 
 	if uid == "" {
 		log.Print("init linking password account handler: empty uid")
@@ -329,7 +320,7 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 		case errors.Is(err, errCurrentUserNotConfirmed):
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 		case errors.Is(err, errUserAlreadyRegistered):
-			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 		case errors.As(err, &customErr):
 			customErrorResponse(c, customErr)
 		default:
@@ -340,18 +331,22 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 	}
 
 	// confirmation
-	confirmCode := r.generateCode(at)
-
-	u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+	var isOldCode bool
 
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-		curTime := time.Now()
-		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
+		lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
+		if lastCodeSentTime != nil {
+			resendTime := lastCodeSentTime.Add(r.Config.Password.ResendDelay)
+
+			curTime := time.Now()
+			if !curTime.After(resendTime) {
+				isOldCode = true
+			}
+		}
 	}
 
-	err = sendConfirmCode(at.Sender, uid, confirmCode)
-	if err != nil {
-		log.Printf("failed send confirm code %v: %v", uid, err)
+	if !isOldCode {
+		r.setAndSendConfirmCode(at, u, uid)
 	}
 
 	if err = r.deps.UserStorer.Save(u); err != nil {
@@ -367,12 +362,10 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 
 	respMap := gin.H{
 		"result": true,
-		"uid":    uid,
 	}
 
-	if r.hooks.AfterPasswordSignUp != nil {
-		// TODO: Add AfterLinkPasswordAccount hook?
-		r.hooks.AfterPasswordSignUp(respMap, sessionInfo.Session, u, at.Key)
+	if isOldCode {
+		respMap["info"] = "No new confirmation code generated"
 	}
 
 	c.JSON(http.StatusOK, respMap)
@@ -413,16 +406,8 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 
 	laUser := u.(user.TempUser)
 
-	if sessionInfo.User.GetID() != laUser.GetID() && !laUser.IsTemp() {
-		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-		return
-	}
-
-	if laUser.GetConfirmed(at.Key) {
-		c.JSON(http.StatusOK, gin.H{
-			"result": true,
-		})
-
+	if !laUser.IsTemp() {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 		return
 	}
 
@@ -465,16 +450,43 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		return
 	}
 
-	if laUser.IsTemp() {
-		err := r.linkAccount(sessionInfo, laUser, at)
-		if err != nil {
-			// TODO: Error handling and return correct err
+	err = r.linkAccount(sessionInfo, laUser, at)
+	if err != nil {
+		var customErr CustomError
+
+		switch {
+		case errors.Is(err, errAuthIdentityExists):
+			errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+		case errors.Is(err, errCurrentUserNotConfirmed):
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+		case errors.Is(err, errUserAlreadyRegistered):
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		case errors.As(err, &customErr):
+			customErrorResponse(c, customErr)
+		default:
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
-			return
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"result": true,
 	})
+}
+
+func (r *Rauther) setAndSendConfirmCode(at *authtype.AuthMethod, u user.User, uid string) error {
+	confirmCode := r.generateCode(at)
+
+	u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
+
+	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+		curTime := time.Now()
+		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
+	}
+
+	err := sendConfirmCode(at.Sender, uid, confirmCode)
+	if err != nil {
+		log.Printf("failed send confirm code %v: %v", uid, err)
+	}
+
+	return err
 }
