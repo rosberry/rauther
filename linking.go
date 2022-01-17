@@ -64,7 +64,7 @@ func (r *Rauther) checkUserCanLinkAccount(currentUser user.User, authKey string)
 	return nil
 }
 
-func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at *authtype.AuthMethod, mergeConfirm bool) error {
+func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *authtype.AuthMethod, mergeConfirm bool) error {
 	err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key)
 	if err != nil {
 		return err
@@ -77,14 +77,14 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at
 		return errFailedLinkUser
 	}
 
-	uid := linkingUser.(user.AuthableUser).GetUID(at.Key)
+	uid := link.(user.AuthableUser).GetUID(at.Key)
 	if uid == "" {
 		return errFailedLinkUser
 	}
 
-	if !linkingUser.(user.TempUser).IsTemp() {
+	if !link.(user.TempUser).IsTemp() {
 		if r.Modules.MergeAccount {
-			err = r.mergeUsers(sessionInfo.User, linkingUser, mergeConfirm)
+			err = r.mergeUsers(sessionInfo.User, link, mergeConfirm)
 			if err != nil {
 				return fmt.Errorf("merge error: %w", err)
 			}
@@ -98,16 +98,16 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, linkingUser user.User, at
 	sessionInfo.User.(user.AuthableUser).SetUID(at.Key, uid)
 
 	if at.Type == authtype.Password {
-		password := linkingUser.(user.PasswordAuthableUser).GetPassword(at.Key)
+		password := link.(user.PasswordAuthableUser).GetPassword(at.Key)
 		sessionInfo.User.(user.PasswordAuthableUser).SetPassword(at.Key, password)
 	}
 
-	if confirmableUser, ok := linkingUser.(user.ConfirmableUser); ok {
+	if confirmableUser, ok := link.(user.ConfirmableUser); ok {
 		confirmed := confirmableUser.GetConfirmed(at.Key)
 		sessionInfo.User.(user.ConfirmableUser).SetConfirmed(at.Key, confirmed)
 	}
 
-	err = r.deps.UserRemover.RemoveByID(linkingUser.GetID())
+	err = r.deps.UserRemover.RemoveByID(link.GetID())
 	if err != nil {
 		return fmt.Errorf("failed to remove user: %w", err)
 	}
