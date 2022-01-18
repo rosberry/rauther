@@ -466,6 +466,8 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		default:
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 		}
+
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
