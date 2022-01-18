@@ -147,6 +147,8 @@ describe("link account:", function () {
     });
   });
 
+  // mono session group
+  // base positive flow
   describe("password positive scenario", function () {
     auth()
     passwordRegister()
@@ -235,6 +237,7 @@ describe("link account:", function () {
     remove()
   });
 
+  // duplicate auth flow
   describe("password negative scenario with duplicate register auth identity", function () {
     auth()
     passwordRegister()
@@ -289,6 +292,7 @@ describe("link account:", function () {
     remove()
   });
 
+  // not confirmed flow
   describe("password negative scenario with not confirmed base auth identity", function () {
     auth()
     passwordRegister()
@@ -373,16 +377,18 @@ describe("link account:", function () {
     remove()
   });
 
-  describe("password negative scenario with linking account which already reserved by another user", function () {
-    // user 1
+  // multi session group
+  // link already registered account flow
+  describe("password negative scenario with linking account which already register by another user", function () {
+    // user 1: password register
     auth()
-    otpGetCode()
-    otpLogin()
-    // user 2
+    passwordRegister()
+    // user 2: otp register
     auth({ session: 2 })
-    passwordRegister({ session: 2 })
-    // user 1
-    describe("link password reserved account", function () {
+    otpGetCode({ session: 2 })
+    otpLogin({ session: 2 })
+    // user 2: start password link
+    describe("link already register password account", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/initLink", "post", passwordInitLinkingCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
@@ -390,24 +396,24 @@ describe("link account:", function () {
           expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments);
 
-        }, { status: 400 });
+        }, { token: apiToken2, status: 400 });
       });
     });
     // remove all
     remove()
   });
 
-  describe("password negative scenario with linking account which already reserved by another user with logout", function () {
-    // user 1
+  describe("password negative scenario with linking account which already register by another user with logout", function () {
+    // user 1: password register
     auth()
-    otpGetCode()
-    otpLogin()
-    // user 2
+    passwordRegister()
+    logout()
+    // user 2: otp register
     auth({ session: 2 })
-    passwordRegister({ session: 2 })
-    logout({ session: 2 })
-    // user 1
-    describe("link password reserved account", function () {
+    otpGetCode({ session: 2 })
+    otpLogin({ session: 2 })
+    // user 2: start password link
+    describe("link already register password account", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/initLink", "post", passwordInitLinkingCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
@@ -415,23 +421,26 @@ describe("link account:", function () {
           expect(res.error).to.have.property("code").that.equals(errors.userExist);
           done.apply(null, arguments);
 
-        }, { status: 400 });
+        }, { token: apiToken2, status: 400 });
       });
     });
     // remove all
     remove()
   });
 
-  describe("password scenario with register account which already linked and not confirmed by another user", function () {
-    // user 1
+  // inject register after link init flow
+  describe("password scenario with inject registration by another user after start linking and before end linking", function () {
+    // user 1: otp register
     auth()
     otpGetCode()
     otpLogin()
+    // user 1: start password link
     passwordInitLink()
 
     profile(
       "should return result true and password auth identity should not exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         expect(res.user.auths).to.not.have.property(authTypes.password)
         userID = res.user.id
       }
@@ -440,7 +449,7 @@ describe("link account:", function () {
     // user 2
     auth({ session: 2 })
 
-    describe("password login for another user", function () {
+    describe("password login for another user (temp user)", function () {
       it(`should return result false with error: ${errors.userNotFound}`, function (done) {
         request("/login", "post", emailRegCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
@@ -452,10 +461,10 @@ describe("link account:", function () {
       });
     });
 
+    // user 2: password register
     passwordRegister({ session: 2 })
-    logout({ session: 2 })
-    passwordLogin({ session: 2 })
-    // user 1
+
+    // user 1: end password link
     describe("password link account for user 1", function () {
       it(`should return result false with error: ${errors.userExist}`, function (done) {
         request("/link", "post", passwordLinkCreds, function (err, raw, res) {
@@ -471,44 +480,48 @@ describe("link account:", function () {
     profile(
       "should return result true and password auth identity should not exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         expect(res.user.auths).to.not.have.property(authTypes.password)
       }
     )
-
+    // user 1: password login result
     logout()
     passwordLogin()
 
     profile(
-      "should return result true and auth identities should exists password type, not of otp type and user id not equals of base user",
+      "should return result true and auth identities should exists password type, not of otp type and user id not equals user 1",
       (res) => {
         expect(res.user.id).to.not.equal(userID)
         expect(res.user.auths).to.not.have.property(authTypes.otp)
         expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
       }
     )
+    // user 2: password login not needed
     // remove all
     remove()
   });
 
-  describe("otp negative scenario with linking account which already reserved by another user", function () {
-    // user 1
+  describe("otp scenario with inject registration by another user after start linking and before end linking", function () {
+    // user 1: password register
     auth()
     passwordRegister()
     passwordConfirm()
+    // user 1: start otp link
     otpGetCode()
 
     profile(
       "should return result true and otp auth identity should not exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
         expect(res.user.auths).to.not.have.property(authTypes.otp)
         userID = res.user.id
       }
     )
-    // user 2
+    // user 2: otp register
     auth({ session: 2 })
     otpGetCode({ session: 2 })
     otpLogin({ session: 2 })
-    // user 1
+    // user 1: end otp link
     describe("otp login", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
@@ -527,47 +540,49 @@ describe("link account:", function () {
         expect(res.user.auths).to.not.have.property(authTypes.otp)
       }
     )
-
+    // user 1: otp login result
     logout()
     otpGetCode()
     otpLogin()
 
     profile(
-      "should return result true and auth identities should exists otp type, not of password type and user id not equals of base user",
+      "should return result true and auth identities should exists otp type, not of password type and user id not equals of user 1",
       (res) => {
         expect(res.user.id).to.not.equal(userID)
         expect(res.user.auths).to.not.have.property(authTypes.password)
         expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
       }
     )
+    // user 2: otp login not needed
     // remove all
     remove()
   });
 
+  // link accoont by 2 users
   describe("password scenario with link account by 2 users. The first user confirms earlier", function () {
-    // user 1
+    // auth users
     auth()
     otpGetCode()
     otpLogin()
-    // user 2
     auth({ session: 2 })
     otpGetCode({ session: 2, creds: 2 })
     otpLogin({ session: 2, creds: 2 })
-    // user 1
+    // user 1: start link
     passwordInitLink()
-    // user 2
+    // user 2: start link
     passwordInitLink({ session: 2 })
-    // user 1
+    // user 1: end link
     passwordLink()
 
     profile(
       "should return result true and password auth identity should exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
         expect(res.user.auths).to.have.property(authTypes.password)
         userID = res.user.id
       }
     )
-    // user 2
+    // user 2: end link
     describe("password link account for user 2", function () {
       it(`should return result false with error: ${errors.userExist}`, function (done) {
         request("/link", "post", passwordLinkCreds, function (err, raw, res) {
@@ -583,28 +598,33 @@ describe("link account:", function () {
     profile(
       "should return result true and password auth identity should not exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
         expect(res.user.auths).to.not.have.property(authTypes.password)
         userID2 = res.user.id
       },
       { session: 2 }
     )
-    // user 1
+    // user 1: login result
     logout()
     passwordLogin()
 
     profile(
       "should return result true and userID matches the first user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
+        expect(res.user.auths).to.have.property(authTypes.password)
         expect(res.user.id).to.equal(userID)
       }
     )
-    // user 2
+    // user 2: login result
     logout({ session: 2 })
     passwordLogin({ session: 2 })
 
     profile(
       "should return result true and userID matches the first user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
+        expect(res.user.auths).to.have.property(authTypes.password)
         expect(res.user.id).to.equal(userID)
       },
       { session: 2 }
@@ -614,29 +634,29 @@ describe("link account:", function () {
   });
 
   describe("password scenario with link account by 2 users. The second user confirms earlier", function () {
-    // user 1
+    // auth users
     auth()
     otpGetCode()
     otpLogin()
-
-    passwordInitLink()
-    // user 2
     auth({ session: 2 })
     otpGetCode({ session: 2, creds: 2 })
     otpLogin({ session: 2, creds: 2 })
-
+    // user 1: start link
+    passwordInitLink()
+    // user 2: start & end link
     passwordInitLink({ session: 2 })
     passwordLink({ session: 2 })
 
     profile(
       "should return result true and password auth identity should exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
         expect(res.user.auths).to.have.property(authTypes.password)
         userID2 = res.user.id
       },
       { session: 2 }
     )
-    // user 1
+    // user 1: login result
     describe("password link account for user 1", function () {
       it(`should return result false with error: ${errors.userExist}`, function (done) {
         request("/link", "post", passwordLinkCreds, function (err, raw, res) {
@@ -652,27 +672,32 @@ describe("link account:", function () {
     profile(
       "should return result true and password auth identity should not exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
         expect(res.user.auths).to.not.have.property(authTypes.password)
         userID = res.user.id
       }
     )
-
+    // user 1: login result
     logout()
     passwordLogin()
 
     profile(
       "should return result true and userID matches the second user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
+        expect(res.user.auths).to.have.property(authTypes.password)
         expect(res.user.id).to.equal(userID2)
       }
     )
-    // user 2
+    // user 2: login result
     logout({ session: 2 })
     passwordLogin({ session: 2 })
 
     profile(
       "should return result true and userID matches the second user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp)
+        expect(res.user.auths).to.have.property(authTypes.password)
         expect(res.user.id).to.equal(userID2)
       },
       { session: 2 }
@@ -682,29 +707,29 @@ describe("link account:", function () {
   });
 
   describe("otp scenario with link account by 2 users. The first user confirms earlier", function () {
-    // user 1
+    // auth users
     auth()
     passwordRegister()
     passwordConfirm()
-    // user 2
     auth({ session: 2 })
     passwordRegister({ session: 2, creds: 2 })
     passwordConfirm({ session: 2, creds: 2 })
-    // user 1
+    // user 1: start link
     otpGetCode()
-    // user 2
+    // user 2: start link
     otpGetCode({ session: 2 })
-    // user 1
+    // user 1: end link
     otpLogin()
 
     profile(
       "should return result true and password auth identity should exists",
       (res) => {
-        expect(res.user.auths).to.have.property(authTypes.otp)
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         userID = res.user.id
       }
     )
-    // user 2
+    // user 2: end link
     describe("otp login for user 2", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
@@ -720,12 +745,13 @@ describe("link account:", function () {
     profile(
       "should return result true and password auth identity should not exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
         expect(res.user.auths).to.not.have.property(authTypes.otp)
         userID2 = res.user.id
       },
       { session: 2 }
     )
-    // user 1
+    // user 1: login result
     logout()
     otpGetCode()
     otpLogin()
@@ -733,10 +759,12 @@ describe("link account:", function () {
     profile(
       "should return result true and userID matches the first user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         expect(res.user.id).to.equal(userID)
       }
     )
-    // user 2
+    // user 2: login result
     logout({ session: 2 })
     otpGetCode({ session: 2 })
     otpLogin({ session: 2 })
@@ -744,6 +772,8 @@ describe("link account:", function () {
     profile(
       "should return result true and userID matches the first user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.otp)
         expect(res.user.id).to.equal(userID)
       },
       { session: 2 }
@@ -753,29 +783,29 @@ describe("link account:", function () {
   });
 
   describe("otp scenario with link account by 2 users. The second user confirms earlier", function () {
-    // user 1
+    // auth users
     auth()
     passwordRegister()
     passwordConfirm()
-
-    otpGetCode()
-    // user 2
     auth({ session: 2 })
     passwordRegister({ session: 2, creds: 2 })
     passwordConfirm({ session: 2, creds: 2 })
-
+    // user 1: start link
+    otpGetCode()
+    // user 2: start & end link
     otpGetCode({ session: 2 })
     otpLogin({ session: 2 })
 
     profile(
       "should return result true and password auth identity should exists",
       (res) => {
-        expect(res.user.auths).to.have.property(authTypes.otp)
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         userID2 = res.user.id
       },
       { session: 2 }
     )
-    // user 1
+    // user 1: end link
     describe("otp login for user 1", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
@@ -791,11 +821,12 @@ describe("link account:", function () {
     profile(
       "should return result true and password auth identity should not exists",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
         expect(res.user.auths).to.not.have.property(authTypes.otp)
         userID = res.user.id
       }
     )
-
+    // user 1: login result
     logout()
     otpGetCode()
     otpLogin()
@@ -803,10 +834,12 @@ describe("link account:", function () {
     profile(
       "should return result true and userID matches the second user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         expect(res.user.id).to.equal(userID2)
       }
     )
-    // user 2
+    // user 2: login result
     logout({ session: 2 })
     otpGetCode({ session: 2 })
     otpLogin({ session: 2 })
@@ -814,6 +847,8 @@ describe("link account:", function () {
     profile(
       "should return result true and userID matches the second user",
       (res) => {
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         expect(res.user.id).to.equal(userID2)
       },
       { session: 2 }
