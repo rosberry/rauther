@@ -1346,27 +1346,30 @@ function passwordLogin(params) {
 function passwordInitLink(params) {
   describe(`init linking password account for user ${getSession(params)[1]}`, function () {
     it("should return result true", function (done) {
-      let credsNum = 1
-      let creds
-      if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
-        credsNum = params.creds
-      }
+      this.timeout(sentCodeTimeout + 1000);
+      setTimeout(function () {
+        let credsNum = 1
+        let creds
+        if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
+          credsNum = params.creds
+        }
 
-      switch (credsNum) {
-        case 1:
-          creds = passwordInitLinkingCreds
-          break;
-        case 2:
-          creds = passwordInitLinkingCreds2
-          break;
-      }
+        switch (credsNum) {
+          case 1:
+            creds = passwordInitLinkingCreds
+            break;
+          case 2:
+            creds = passwordInitLinkingCreds2
+            break;
+        }
 
-      request("/initLink", "post", creds, function (err, raw, res) {
-        expect(res).to.have.property("result").that.is.true
-        expect(res).to.not.have.property("error")
-        done.apply(null, arguments);
+        request("/initLink", "post", creds, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.true
+          expect(res).to.not.have.property("error")
+          done.apply(null, arguments);
 
-      }, { token: getSession(params)[0] });
+        }, { token: getSession(params)[0] });
+      }, sentCodeTimeout)
     });
   });
 }
