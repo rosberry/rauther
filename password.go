@@ -331,23 +331,17 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 	}
 
 	// confirmation
-	var isOldCode bool
-
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-		lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
-		if lastCodeSentTime != nil {
-			resendTime := lastCodeSentTime.Add(r.Config.Password.ResendDelay)
-
-			curTime := time.Now()
-			if !curTime.After(resendTime) {
-				isOldCode = true
-			}
+		curTime := time.Now()
+		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
+			errorCodeTimeoutResponse(c, *resendTime, curTime)
+			return
 		}
+
+		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 	}
 
-	if !isOldCode {
-		r.setAndSendConfirmCode(at, u, uid)
-	}
+	r.setAndSendConfirmCode(at, u, uid)
 
 	if err = r.deps.UserStorer.Save(u); err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
@@ -362,10 +356,6 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 
 	respMap := gin.H{
 		"result": true,
-	}
-
-	if isOldCode {
-		respMap["info"] = "No new confirmation code generated"
 	}
 
 	c.JSON(http.StatusOK, respMap)
@@ -466,6 +456,8 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		default:
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 		}
+
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
