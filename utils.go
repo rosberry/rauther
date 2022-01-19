@@ -13,6 +13,7 @@ import (
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/common"
 	"github.com/rosberry/rauther/sender"
+	"github.com/rosberry/rauther/user"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -139,4 +140,27 @@ func calcExpiredAt(t *time.Time, d time.Duration) time.Time {
 	tm := *t
 
 	return tm.Add(d)
+}
+
+func (r *Rauther) checkResendTime(u user.User, curTime time.Time, authMethod *authtype.AuthMethod) (resendTime *time.Time, ok bool) {
+	lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(authMethod.Key)
+
+	if lastCodeSentTime != nil {
+		var resendInterval time.Duration
+
+		switch authMethod.Type { // nolint:exhaustive
+		case authtype.Password:
+			resendInterval = r.Config.Password.ResendDelay
+		case authtype.OTP:
+			resendInterval = r.Config.OTP.ResendDelay
+		}
+
+		resendTime := lastCodeSentTime.Add(resendInterval)
+
+		if !curTime.After(resendTime) {
+			return &resendTime, false
+		}
+	}
+
+	return nil, true
 }

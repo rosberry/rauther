@@ -115,6 +115,8 @@ func (r *Rauther) resendCodeHandler(c *gin.Context) {
 			errorCodeTimeoutResponse(c, *resendTime, curTime)
 			return
 		}
+
+		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 	}
 
 	u.(user.ConfirmableUser).SetConfirmCode(at.Key, confirmCode)
