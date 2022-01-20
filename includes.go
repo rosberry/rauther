@@ -27,6 +27,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup, authRouter *gin.Route
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
+	r.linkingCheck()
 	r.checkRemovableUser()
 
 	authRouter.POST(r.Config.Routes.SignOut, r.signOutHandler)
@@ -61,7 +62,7 @@ func (r *Rauther) includePasswordAuthable(router *gin.RouterGroup, authRouter *g
 		r.includeRecoverable(authRouter)
 	}
 
-	if r.checker.LinkAccount {
+	if r.Modules.LinkAccount {
 		withUser := authRouter.Group("", r.authUserMiddleware())
 		{
 			withUser.POST(r.Config.Routes.InitLink, r.initLinkingPasswordAccount)
@@ -88,16 +89,6 @@ func (r *Rauther) checkRemovableUser() {
 		log.Fatal("Please, implement GuestUser interface for use guest user")
 	}
 
-	if r.Modules.LinkAccount {
-		if !r.Modules.ConfirmableUser {
-			log.Fatal("Please, enable ConfirmableUser module for use linking")
-		}
-
-		if !r.checker.LinkAccount {
-			log.Fatal("Please, implement TempUser interface for use linking")
-		}
-	}
-
 	if r.Modules.GuestUser || r.Modules.LinkAccount {
 		if r.deps.Storage.UserRemover == nil {
 			userRemover, isRemovable := r.deps.Storage.UserStorer.(storage.RemovableUserStorer)
@@ -107,6 +98,18 @@ func (r *Rauther) checkRemovableUser() {
 			}
 
 			r.deps.Storage.UserRemover = userRemover
+		}
+	}
+}
+
+func (r *Rauther) linkingCheck() {
+	if r.Modules.LinkAccount {
+		if !r.Modules.ConfirmableUser {
+			log.Fatal("Please, enable ConfirmableUser module for use linking")
+		}
+
+		if !r.checker.LinkAccount {
+			log.Fatal("Please, implement TempUser interface for use linking")
 		}
 	}
 }
