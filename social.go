@@ -96,6 +96,8 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 
 				return
 			}
+
+			u = sessionInfo.User
 		} else {
 			u = r.deps.UserStorer.Create()
 		}
