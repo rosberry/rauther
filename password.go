@@ -337,8 +337,6 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 			errorCodeTimeoutResponse(c, *resendTime, curTime)
 			return
 		}
-
-		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, &curTime)
 	}
 
 	r.setAndSendConfirmCode(at, u, uid)
