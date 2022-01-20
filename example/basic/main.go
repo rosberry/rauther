@@ -210,7 +210,7 @@ type otpRequest struct {
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
-func (r *otpRequest) MergeConfirm1() bool            { return r.Merge }
+func (r *otpRequest) MergeConfirm() bool             { return r.Merge }
 
 func (r *otpRequest) Fields() map[string]interface{} {
 	return map[string]interface{}{

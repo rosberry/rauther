@@ -79,24 +79,13 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		}
 	}
 
+	if linkAccount && !r.Modules.MergeAccount && u != nil {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		return
+	}
+
 	if u == nil {
 		isNew = true
-		// create user if not exist
-		if linkAccount {
-			err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key)
-			if err != nil {
-				switch {
-				case errors.Is(err, errCurrentUserNotConfirmed):
-					errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
-				case errors.Is(err, errAuthIdentityExists):
-					errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
-				default:
-					errorResponse(c, http.StatusBadRequest, common.ErrUnknownError)
-				}
-
-				return
-			}
-		}
 		u = r.deps.UserStorer.Create()
 
 		u.(user.AuthableUser).SetUID(at.Key, userInfo.ID)
@@ -115,33 +104,35 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 				return
 			}
 		}
+	}
 
-		if err = r.deps.UserStorer.Save(u); err != nil {
-			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
-			return
+	if linkAccount {
+		var mergeConfirm bool
+
+		if requestWithMergeConfirm, ok := request.(authtype.MergeConfirmRequest); ok {
+			mergeConfirm = requestWithMergeConfirm.MergeConfirm()
 		}
-	} else if linkAccount {
-		if r.Modules.MergeAccount {
-			var mergeConfirm bool
 
-			requestWithMergeConfirm, canCheckMerge := request.(authtype.MergeConfirmRequest)
-			if canCheckMerge {
-				mergeConfirm = requestWithMergeConfirm.MergeConfirm()
+		err := r.linkAccount(sessionInfo, u, at, mergeConfirm)
+		if err != nil {
+			var mergeErr MergeError
+
+			switch {
+			case errors.As(err, &mergeErr):
+				mergeErrorResponse(c, mergeErr)
+			default:
+				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			}
 
-			err := r.mergeUsers(sessionInfo.User, u, mergeConfirm)
-			if err != nil {
-				var mergeErr MergeError
-
-				if errors.As(err, &mergeErr) {
-					mergeErrorResponse(c, mergeErr)
-					return
-				}
-			}
-		} else {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			return
 		}
+
+		u = sessionInfo.User
+	}
+
+	if err = r.deps.UserStorer.Save(u); err != nil {
+		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+		return
 	}
 
 	sessionInfo.Session.BindUser(u)

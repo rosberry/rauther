@@ -119,18 +119,16 @@ func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool) error {
 	// move all auth identities from link user to current user
 	err := r.moveAuthIdentities(current, link, mergeConfirm)
 	if err != nil {
-		if !errors.Is(err, errMergeWarning) || !mergeConfirm {
-			return fmt.Errorf("failed to move auth identities: %w", err)
-		}
+		return fmt.Errorf("failed to move auth identities: %w", err)
+	}
+
+	if !mergeConfirm {
+		return newMergeError(nil)
 	}
 
 	err = current.(user.MergeUser).Merge(link)
 	if err != nil {
 		return fmt.Errorf("failed to run merge function: %w", err)
-	}
-
-	if !mergeConfirm {
-		return newMergeError(nil)
 	}
 
 	return nil
@@ -157,6 +155,8 @@ func (r *Rauther) moveAuthIdentities(current, link user.User, mergeConfirm bool)
 			continue
 		}
 
+		// It is expected that all auth identities are already confirmed,
+		// but we check it twice, if the linking process changes
 		if !link.(user.ConfirmableUser).GetConfirmed(key) {
 			log.Printf("Skip move unconfirmed auth method %q: %s", key, uid)
 
@@ -192,7 +192,7 @@ func (r *Rauther) moveAuthIdentities(current, link user.User, mergeConfirm bool)
 		}
 	}
 
-	if len(failedMethods) > 0 {
+	if len(failedMethods) > 0 && !mergeConfirm {
 		return newMergeError(failedMethods)
 	}
 

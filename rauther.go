@@ -114,12 +114,12 @@ func (r *Rauther) checkAuthMethods(user user.User) bool {
 	}
 
 	if r.Modules.MergeAccount {
-		ok, failed := r.methods.CheckMergeModuleSupport()
+		ok, failedMethods := r.methods.CheckMergeModuleSupport()
 		if !ok {
 			sb := &strings.Builder{}
 			sb.WriteString("\nPlease, check `MergeConfirmRequest` implementations in request struct for auth methods:\n")
 
-			for atKey, requestStructType := range failed {
+			for atKey, requestStructType := range failedMethods {
 				sb.WriteString(fmt.Sprintf("	- %v (%v)\n", atKey, requestStructType))
 			}
 

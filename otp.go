@@ -264,8 +264,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	if linkAccount {
 		var mergeConfirm bool
 
-		requestWithMergeConfirm, canCheckMerge := request.(authtype.MergeConfirmRequest)
-		if canCheckMerge {
+		if requestWithMergeConfirm, ok := request.(authtype.MergeConfirmRequest); ok {
 			mergeConfirm = requestWithMergeConfirm.MergeConfirm()
 		}
 
