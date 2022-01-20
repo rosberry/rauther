@@ -17,23 +17,36 @@ var sentCodeTimeout = config.sentCodeTimeout;
 
 var googleToken = process.env.GOOGLE_TOKEN || ""
 var googleToken2 = process.env.GOOGLE_TOKEN2 || ""
+var appleToken = process.env.APPLE_TOKEN || ""
 if (googleToken == "") {
-  console.log('ATTENTION! No GOOGLE_TOKEN provided, so google login tests are skipped.')
+  console.log('ATTENTION! No GOOGLE_TOKEN provided, so social tests are skipped.')
 }
 if (googleToken2 == "") {
-  console.log('ATTENTION! No GOOGLE_TOKEN2 provided, so google login negative tests are skipped.')
+  console.log('ATTENTION! No GOOGLE_TOKEN2 provided, so some google tests are skipped.')
+}
+if (appleToken == "") {
+  console.log('ATTENTION! No GOOGLE_TOKEN2 provided, so some apple tests are skipped.')
 }
 
 const email = "test" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
-const phone = "+7" + (Math.floor(Math.random() * 999999999))
-const password = "password"
-
 const email2 = "test2" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
-const phone2 = "8" + (Math.floor(Math.random() * 999999999))
-const password2 = "password2"
+const email3 = "test3" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
+const email4 = "test4" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
 
-const confirmEmailCode = "456123";
+const password = "password"
+const password2 = "password2"
+const password3 = "password3"
+const password4 = "password4"
+
+const otpPhone = "+7" + (Math.floor(Math.random() * 999999999))
+const otpPhone2 = "+8" + (Math.floor(Math.random() * 999999999))
+const otpPhone3 = "+9" + (Math.floor(Math.random() * 999999999))
+const otpPhone4 = "+0" + (Math.floor(Math.random() * 999999999))
+
+const confirmPasswordCode = "456123";
+const confirmPasswordCode2 = "098765";
 const confirmOTPCode = "123321";
+const confirmOTPCode2 = "565656";
 
 let userID = null
 let userID2 = null
@@ -44,6 +57,9 @@ const authTypes = {
   password: "email",
   social: "google",
   otp: "telegram",
+
+  password2: "email2",
+  otp2: "telegram2",
 }
 
 const emailRegCreds = {
@@ -63,24 +79,42 @@ const passwordInitLinkingCreds = {
   type: authTypes.password,
   uid: email,
 }
-
 const passwordInitLinkingCreds2 = {
   type: authTypes.password,
   uid: email2,
+}
+const password2InitLinkingCreds = {
+  type: authTypes.password2,
+  uid: email3,
+}
+const password2InitLinkingCreds2 = {
+  type: authTypes.password2,
+  uid: email4,
 }
 
 const passwordLinkCreds = {
   type: authTypes.password,
   uid: email,
   password: password,
-  code: confirmEmailCode,
+  code: confirmPasswordCode,
 }
-
 const passwordLinkCreds2 = {
   type: authTypes.password,
   uid: email2,
   password: password2,
-  code: confirmEmailCode,
+  code: confirmPasswordCode,
+}
+const password2LinkCreds = {
+  type: authTypes.password2,
+  uid: email3,
+  password: password3,
+  code: confirmPasswordCode2,
+}
+const password2LinkCreds2 = {
+  type: authTypes.password2,
+  uid: email4,
+  password: password4,
+  code: confirmPasswordCode2,
 }
 
 const googleRegCreds = {
@@ -93,32 +127,44 @@ const googleRegCreds2 = {
 }
 
 const otpRegCreds = {
-  phone: phone
+  phone: otpPhone
 }
 const otpRegCreds2 = {
-  phone: phone2
+  phone: otpPhone2
+}
+const otp2RegCreds = {
+  phone: otpPhone3
+}
+const otp2RegCreds2 = {
+  phone: otpPhone4
 }
 
 const otpLoginCreds = {
-  phone: phone,
+  phone: otpPhone,
   code: confirmOTPCode
 }
-
 const otpLoginCreds2 = {
-  phone: phone2,
+  phone: otpPhone2,
   code: confirmOTPCode
+}
+const otp2LoginCreds = {
+  phone: otpPhone3,
+  code: confirmOTPCode2
+}
+const otp2LoginCreds2 = {
+  phone: otpPhone4,
+  code: confirmOTPCode2
 }
 
 const passwordConfirmCreds = {
   type: authTypes.password,
   uid: email,
-  code: confirmEmailCode
+  code: confirmPasswordCode
 }
-
 const passwordConfirmCreds2 = {
   type: authTypes.password,
   uid: email2,
-  code: confirmEmailCode
+  code: confirmPasswordCode
 }
 
 const errors = {
@@ -156,10 +202,10 @@ describe("link account:", function () {
     passwordConfirm()
     // adding auth identities
     if (googleToken !== "") {
-      socialLogin()
+      socialLink()
     }
-    otpGetCode()
-    otpLogin()
+    otpInitLink()
+    otpLink()
     profile(
       `should return result true and exists ${authTypes.password}, ${authTypes.social}, ${authTypes.otp} auth identities`,
       (res) => {
@@ -188,8 +234,8 @@ describe("link account:", function () {
       // adding auth identities
       passwordInitLink()
       passwordLink()
-      otpGetCode()
-      otpLogin()
+      otpInitLink()
+      otpLink()
       profile(
         `should return result true and exists ${authTypes.password}, ${authTypes.social}, ${authTypes.otp} auth identities`,
         (res) => {
@@ -216,7 +262,7 @@ describe("link account:", function () {
     passwordInitLink()
     passwordLink()
     if (googleToken !== "") {
-      socialLogin()
+      socialLink()
     }
     profile(
       `should return result true and exists ${authTypes.password}, ${authTypes.social}, ${authTypes.otp} auth identities`,
@@ -279,7 +325,38 @@ describe("link account:", function () {
     remove()
   });
 
-  // duplicate auth identity key flow
+  // linking with the same auth identity type, but with a different auth identity key
+  describe("scenario of linking with the same password type, but with a different auth identity key", function () {
+    auth()
+    passwordRegister()
+    passwordConfirm()
+    // adding auth identities
+    passwordInitLink({ authType: authTypes.password2 })
+    passwordLink({ authType: authTypes.password2 })
+    remove()
+  });
+
+  describe("scenario of linking with the same password type, but with a different auth identity key", function () {
+    auth()
+    otpGetCode()
+    otpLogin()
+    // adding auth identities
+    otpInitLink({ authType: authTypes.otp2 })
+    otpLink({ authType: authTypes.otp2 })
+    remove()
+  });
+
+  if (googleToken !== "" && appleToken !== "") {
+    describe("scenario of linking with the same social type, but with a different auth identity key", function () {
+      auth()
+      socialLogin()
+      // adding auth identities
+      socialLink({ authType: authTypes.otp2 })
+      remove()
+    });
+  }
+
+  // linking with the same auth identity key and auth identity type
   describe("password negative scenario with linking account whose auth identity key is already exists", function () {
     auth()
     passwordRegister()
@@ -492,7 +569,7 @@ describe("link account:", function () {
     passwordRegister()
     passwordConfirm()
     // user 1: start otp link
-    otpGetCode()
+    otpInitLink()
 
     profile(
       "should return result true and otp auth identity should not exists",
@@ -550,8 +627,8 @@ describe("link account:", function () {
     passwordRegister()
     passwordConfirm()
     // user 1: otp link
-    otpGetCode()
-    otpLogin()
+    otpInitLink()
+    otpLink()
 
     profile(
       "should return result true and otp auth identity should not exists",
@@ -585,7 +662,7 @@ describe("link account:", function () {
       passwordRegister()
       passwordConfirm()
       // user 1: social link
-      socialLogin()
+      socialLink()
 
       profile(
         "should return result true and social auth identity should not exists",
@@ -605,7 +682,7 @@ describe("link account:", function () {
     })
   }
 
-  // inject register after link init flow
+  // inject register after link init flow (without social)
   describe("password scenario with inject registration by another user after start linking and before end linking", function () {
     // user 1: otp register
     auth()
@@ -669,7 +746,7 @@ describe("link account:", function () {
     passwordRegister()
     passwordConfirm()
     // user 1: start otp link
-    otpGetCode()
+    otpInitLink()
 
     profile(
       "should return result true and otp auth identity should not exists",
@@ -721,7 +798,7 @@ describe("link account:", function () {
     remove()
   });
 
-  // link account by 2 users
+  // link account by 2 users (without social)
   describe("password scenario with link account by 2 users. The first user confirms earlier", function () {
     // auth users
     auth()
@@ -878,11 +955,11 @@ describe("link account:", function () {
     passwordRegister({ session: 2, creds: 2 })
     passwordConfirm({ session: 2, creds: 2 })
     // user 1: start link
-    otpGetCode()
+    otpInitLink()
     // user 2: start link
-    otpGetCode({ session: 2 })
+    otpInitLink({ session: 2 })
     // user 1: end link
-    otpLogin()
+    otpLink()
 
     profile(
       "should return result true and password auth identity should exists",
@@ -954,10 +1031,10 @@ describe("link account:", function () {
     passwordRegister({ session: 2, creds: 2 })
     passwordConfirm({ session: 2, creds: 2 })
     // user 1: start link
-    otpGetCode()
+    otpInitLink()
     // user 2: start & end link
-    otpGetCode({ session: 2 })
-    otpLogin({ session: 2 })
+    otpInitLink({ session: 2 })
+    otpLink({ session: 2 })
 
     profile(
       "should return result true and password auth identity should exists",
@@ -1020,7 +1097,7 @@ describe("link account:", function () {
     remove()
   });
 
-  // link account by 2 users without init by another user
+  // link account by 2 users without init by another user (without social)
   describe("password scenario with link account by 2 users without link init by another user. The first user initializes and the second user confirms", function () {
     // auth users
     auth()
@@ -1102,9 +1179,9 @@ describe("link account:", function () {
     passwordRegister({ session: 2, creds: 2 })
     passwordConfirm({ session: 2, creds: 2 })
     // user 1: start link
-    otpGetCode()
+    otpInitLink()
     // user 2: end link
-    otpLogin({ session: 2 })
+    otpLink({ session: 2 })
     // user 1: end link
     describe("otp login for user 1", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
@@ -1345,18 +1422,39 @@ function passwordInitLink(params) {
     it("should return result true", function (done) {
       this.timeout(sentCodeTimeout + 1000);
       setTimeout(function () {
+        let authType = authTypes.password
         let credsNum = 1
         let creds
-        if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
-          credsNum = params.creds
+
+        if (typeof params !== "undefined") {
+          if (typeof params.authType !== "undefined") {
+            authType = params.authType
+          }
+          if (typeof params.creds !== "undefined") {
+            credsNum = params.creds
+          }
         }
 
-        switch (credsNum) {
-          case 1:
-            creds = passwordInitLinkingCreds
+        switch (authType) {
+          case authTypes.password:
+            switch (credsNum) {
+              case 1:
+                creds = passwordInitLinkingCreds
+                break;
+              case 2:
+                creds = passwordInitLinkingCreds2
+                break;
+            }
             break;
-          case 2:
-            creds = passwordInitLinkingCreds2
+          case authTypes.password2:
+            switch (credsNum) {
+              case 1:
+                creds = password2InitLinkingCreds
+                break;
+              case 2:
+                creds = password2InitLinkingCreds2
+                break;
+            }
             break;
         }
 
@@ -1374,18 +1472,39 @@ function passwordInitLink(params) {
 function passwordLink(params) {
   describe(`link password account for user ${getSession(params)[1]}`, function () {
     it("should return result true", function (done) {
+      let authType = authTypes.password
       let credsNum = 1
       let creds
-      if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
-        credsNum = params.creds
+
+      if (typeof params !== "undefined") {
+        if (typeof params.authType !== "undefined") {
+          authType = params.authType
+        }
+        if (typeof params.creds !== "undefined") {
+          credsNum = params.creds
+        }
       }
 
-      switch (credsNum) {
-        case 1:
-          creds = passwordLinkCreds
+      switch (authType) {
+        case authTypes.password:
+          switch (credsNum) {
+            case 1:
+              creds = passwordLinkCreds
+              break;
+            case 2:
+              creds = passwordLinkCreds2
+              break;
+          }
           break;
-        case 2:
-          creds = passwordLinkCreds2
+        case authTypes.password2:
+          switch (credsNum) {
+            case 1:
+              creds = password2LinkCreds
+              break;
+            case 2:
+              creds = password2LinkCreds2
+              break;
+          }
           break;
       }
 
@@ -1444,7 +1563,12 @@ function logout(params) {
 
 function socialLogin(params) {
   if (googleToken !== "") {
-    describe(`social login ${getSession(params)[1]}`, function () {
+    let title = "social login"
+    if (typeof params !== "undefined" && typeof params.title !== "undefined") {
+      title = params.title
+    }
+
+    describe(`${title} for user ${getSession(params)[1]}`, function () {
       it("should return result true", function (done) {
         request("/social/login", "post", googleRegCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.true
@@ -1457,61 +1581,133 @@ function socialLogin(params) {
   }
 }
 
+function socialLink(params) {
+  const titleObj = { title: "social link" }
+  params = typeof params !== "undefined" ? Object.assign(params, titleObj) : titleObj
+  socialLogin(params)
+}
+
 function otpGetCode(params) {
-  describe(`get otp code for user ${getSession(params)[1]}`, function () {
+  let title = "get otp code"
+  if (typeof params !== "undefined" && typeof params.title !== "undefined") {
+    title = params.title
+  }
+
+  describe(`${title} for user ${getSession(params)[1]}`, function () {
     it("should return result true", function (done) {
       this.timeout(sentCodeTimeout + 1000);
       setTimeout(function () {
+        let authType = authTypes.otp
         let credsNum = 1
         let creds
-        if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
-          credsNum = params.creds
+
+        if (typeof params !== "undefined") {
+          if (typeof params.authType !== "undefined") {
+            authType = params.authType
+          }
+          if (typeof params.creds !== "undefined") {
+            credsNum = params.creds
+          }
         }
 
-        switch (credsNum) {
-          case 1:
-            creds = otpRegCreds
+        switch (authType) {
+          case authTypes.otp:
+            switch (credsNum) {
+              case 1:
+                creds = otpRegCreds
+                break;
+              case 2:
+                creds = otpRegCreds2
+                break;
+            }
             break;
-          case 2:
-            creds = otpRegCreds2
+          case authTypes.otp2:
+            switch (credsNum) {
+              case 1:
+                creds = otp2RegCreds
+                break;
+              case 2:
+                creds = otp2RegCreds2
+                break;
+            }
             break;
         }
+
         request("/otp/{key}/code", "post", creds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.true
           expect(res).to.not.have.property("error")
           done.apply(null, arguments)
 
-        }, { token: getSession(params)[0], pathParams: { key: authTypes.otp } })
+        }, { token: getSession(params)[0], pathParams: { key: authType } })
       }, sentCodeTimeout)
     })
   })
 }
 
+function otpInitLink(params) {
+  const titleObj = { title: "init linking otp account" }
+  params = typeof params !== "undefined" ? Object.assign(params, titleObj) : titleObj
+  otpGetCode(params)
+}
+
 function otpLogin(params) {
-  describe(`otp login for user ${getSession(params)[1]}`, function () {
+  let title = "otp login"
+  if (typeof params !== "undefined" && typeof params.title !== "undefined") {
+    title = params.title
+  }
+
+  describe(`${title} for user ${getSession(params)[1]}`, function () {
     it("should return result true", function (done) {
+      let authType = authTypes.otp
       let credsNum = 1
       let creds
-      if (typeof params !== "undefined" && typeof params.creds !== "undefined") {
-        credsNum = params.creds
+
+      if (typeof params !== "undefined") {
+        if (typeof params.authType !== "undefined") {
+          authType = params.authType
+        }
+        if (typeof params.creds !== "undefined") {
+          credsNum = params.creds
+        }
       }
 
-      switch (credsNum) {
-        case 1:
-          creds = otpLoginCreds
+      switch (authType) {
+        case authTypes.otp:
+          switch (credsNum) {
+            case 1:
+              creds = otpLoginCreds
+              break;
+            case 2:
+              creds = otpLoginCreds2
+              break;
+          }
           break;
-        case 2:
-          creds = otpLoginCreds2
+        case authTypes.otp2:
+          switch (credsNum) {
+            case 1:
+              creds = otp2LoginCreds
+              break;
+            case 2:
+              creds = otp2LoginCreds2
+              break;
+          }
           break;
       }
+
       request("/otp/{key}/auth", "post", creds, function (err, raw, res) {
         expect(res).to.have.property("result").that.is.true
         expect(res).to.not.have.property("error")
         done.apply(null, arguments)
 
-      }, { token: getSession(params)[0], pathParams: { key: authTypes.otp } })
+      }, { token: getSession(params)[0], pathParams: { key: authType } })
     })
   })
+}
+
+function otpLink(params) {
+  const titleObj = { title: "link otp account" }
+  params = typeof params !== "undefined" ? Object.assign(params, titleObj) : titleObj
+  otpLogin(params)
 }
 
 function remove() {

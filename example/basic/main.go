@@ -70,12 +70,24 @@ func main() { // nolint
 
 	rauth.DefaultSender(&fakeEmailSender{})
 
+	confirmPasswordCode := "456123"
+	confirmPasswordCode2 := "098765"
+	confirmOTPCode := "123321"
+	confirmOTPCode2 := "565656"
+
 	rauth.AddAuthMethods([]authtype.AuthMethod{
 		{
 			Key:    "email",
 			Sender: &fakeEmailSender{},
 			CodeGenerator: func(l int) string {
-				return "456123"
+				return confirmPasswordCode
+			},
+		},
+		{
+			Key:    "email2",
+			Sender: &fakeEmailSender{},
+			CodeGenerator: func(l int) string {
+				return confirmPasswordCode2
 			},
 		},
 		{
@@ -101,7 +113,17 @@ func main() { // nolint
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
 			CodeGenerator: func(l int) string {
-				return "123321"
+				return confirmOTPCode
+			},
+		},
+		{
+			Key:           "telegram2",
+			Type:          authtype.OTP,
+			Sender:        &fakeTelegramSender{},
+			SignUpRequest: &otpRequest{},
+			SignInRequest: &otpRequest{},
+			CodeGenerator: func(l int) string {
+				return confirmOTPCode2
 			},
 		},
 		{
