@@ -163,8 +163,7 @@ describe("link account:", function () {
     profile(
       `should return result true and exists ${authTypes.password}, ${authTypes.social}, ${authTypes.otp} auth identities`,
       (res) => {
-        // TODO: fix error
-        // expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
         expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         if (googleToken !== "") {
           expect(res.user.auths).to.have.property(authTypes.social).that.is.an("object")
@@ -222,9 +221,8 @@ describe("link account:", function () {
     profile(
       `should return result true and exists ${authTypes.password}, ${authTypes.social}, ${authTypes.otp} auth identities`,
       (res) => {
-        // TODO: fix error
-        // expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
-        // expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
         if (googleToken !== "") {
           expect(res.user.auths).to.have.property(authTypes.social).that.is.an("object")
         }
@@ -592,8 +590,7 @@ describe("link account:", function () {
       profile(
         "should return result true and social auth identity should not exists",
         (res) => {
-          // TODO: fix error
-          // expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+          expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
           expect(res.user.auths).to.have.property(authTypes.social).that.is.an("object")
         }
       )
