@@ -66,7 +66,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			case errors.Is(err, errCurrentUserNotConfirmed):
 				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 			case errors.Is(err, errUserAlreadyRegistered):
-				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			case errors.As(err, &customErr):
 				customErrorResponse(c, customErr)
 			default:
@@ -324,29 +324,4 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, respMap)
-}
-
-func (r *Rauther) checkResendTime(u user.User, curTime time.Time, authMethod *authtype.AuthMethod) (resendTime *time.Time, ok bool) {
-	lastCodeSentTime := u.(user.CodeSentTimeUser).GetCodeSentTime(authMethod.Key)
-
-	if lastCodeSentTime != nil {
-		var resendInterval time.Duration
-
-		switch authMethod.Type { // nolint:exhaustive
-		case authtype.Password:
-			resendInterval = r.Config.Password.ResendDelay
-		case authtype.OTP:
-			resendInterval = r.Config.OTP.ResendDelay
-		}
-
-		resendTime := lastCodeSentTime.Add(resendInterval)
-
-		if !curTime.After(resendTime) {
-			return &resendTime, false
-		}
-	}
-
-	u.(user.CodeSentTimeUser).SetCodeSentTime(authMethod.Key, &curTime)
-
-	return nil, true
 }

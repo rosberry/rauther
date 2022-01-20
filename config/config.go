@@ -44,6 +44,12 @@ type Config struct {
 
 		// OTPCheckCode is gin route path for One Time Password auth - code validation (sign-in)
 		OTPCheckCode string
+
+		// InitLink is gin route path for initialisation linking password account
+		InitLink string
+
+		// Link is gin route path for linking password account
+		Link string
 	}
 
 	// Context Names is group for setup how save data in context
@@ -102,4 +108,7 @@ func (c *Config) Default() {
 
 	c.Routes.OTPRequestCode = "otp/code"
 	c.Routes.OTPCheckCode = "otp/auth"
+
+	c.Routes.InitLink = "initLink"
+	c.Routes.Link = "link"
 }
