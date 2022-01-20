@@ -68,7 +68,7 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			case errors.Is(err, errCurrentUserNotConfirmed):
 				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 			case errors.Is(err, errUserAlreadyRegistered):
-				errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			case errors.As(err, &customErr):
 				customErrorResponse(c, customErr)
 			default:
