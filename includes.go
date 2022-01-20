@@ -27,7 +27,7 @@ func (r *Rauther) includeAuthable(router *gin.RouterGroup, authRouter *gin.Route
 		log.Fatal(common.Errors[common.ErrAuthableUserNotImplement])
 	}
 
-	r.linkingCheck()
+	r.checkLink()
 	r.checkRemovableUser()
 
 	authRouter.POST(r.Config.Routes.SignOut, r.signOutHandler)
@@ -102,7 +102,7 @@ func (r *Rauther) checkRemovableUser() {
 	}
 }
 
-func (r *Rauther) linkingCheck() {
+func (r *Rauther) checkLink() {
 	if r.Modules.LinkAccount {
 		if !r.Modules.ConfirmableUser {
 			log.Fatal("Please, enable ConfirmableUser module for use linking")
