@@ -438,7 +438,7 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		return
 	}
 
-	err = r.linkAccount(sessionInfo, laUser, at)
+	err = r.linkAccount(sessionInfo, laUser, at, false)
 	if err != nil {
 		var customErr CustomError
 
