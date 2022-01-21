@@ -176,6 +176,7 @@ const errors = {
   invalidRequest: "req_invalid",
   invalidCode: "invalid_code",
   codeExpired: "code_expired",
+  incorrectPassword: "incorrect_password",
 }
 
 describe("link account:", function () {
@@ -593,6 +594,170 @@ describe("link account:", function () {
         }, { status: 400, token: apiToken2, pathParams: { key: authTypes.otp } })
       })
     })
+    // remove all
+    remove()
+  });
+
+  // password recovery
+  describe("password scenario with recovery of only initialized linking account by another user", function () {
+    // user 1: otp register
+    auth()
+    otpGetCode()
+    otpLogin()
+    // user 1: start password link
+    passwordInitLink()
+
+    profile(
+      "should return result true and password auth identity should not exists",
+      (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
+        expect(res.user.auths).to.not.have.property(authTypes.password)
+      }
+    )
+    // user 2: password recovery
+    auth({ session: 2 })
+
+    describe("recovery for user 2 (temp user)", function () {
+      it(`should return result false with error: ${errors.userNotFound}`, function (done) {
+        this.timeout(sentCodeTimeout + 1000);
+        setTimeout(function () {
+          const data = {
+            type: authTypes.password,
+            uid: email
+          }
+          request("/recover", "post", data, function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false
+            expect(res).to.have.property("error")
+            expect(res.error).to.have.property("code").that.equals(errors.userNotFound);
+            done.apply(null, arguments);
+
+          }, { status: 400, token: apiToken2 });
+        }, sentCodeTimeout)
+      });
+    });
+
+    describe("recovery validate for user 2 (temp user)", function () {
+      it(`should return result false with error: ${errors.userNotFound}`, function (done) {
+        const data = {
+          type: authTypes.password,
+          uid: email,
+          code: confirmPasswordCode,
+        }
+        request("/recover/validate", "post", data, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false
+          expect(res).to.have.property("error")
+          expect(res.error).to.have.property("code").that.equals(errors.userNotFound);
+          done.apply(null, arguments);
+
+        }, { status: 400, token: apiToken2 });
+      });
+    });
+
+    describe("reset password for user 2 (temp user)", function () {
+      it(`should return result false with error: ${errors.userNotFound}`, function (done) {
+        const data = {
+          type: authTypes.password,
+          uid: email,
+          code: confirmPasswordCode,
+          password: password2,
+        }
+        request("/recover/reset", "post", data, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false
+          expect(res).to.have.property("error")
+          expect(res.error).to.have.property("code").that.equals(errors.userNotFound);
+          done.apply(null, arguments);
+
+        }, { status: 400, token: apiToken2 });
+      });
+    });
+    // remove all
+    remove()
+  });
+
+  describe("password scenario with recovery of linked account by another user", function () {
+    // user 1: otp register
+    auth()
+    otpGetCode()
+    otpLogin()
+    // user 1: start & end password link
+    passwordInitLink()
+    passwordLink()
+
+    profile(
+      "should return result true and password auth identity should exists",
+      (res) => {
+        expect(res.user.auths).to.have.property(authTypes.otp).that.is.an("object")
+        expect(res.user.auths).to.have.property(authTypes.password).that.is.an("object")
+      }
+    )
+    // user 2: password recovery
+    auth({ session: 2 })
+
+    describe("recovery for user 2 (temp user)", function () {
+      it("should return result true", function (done) {
+        this.timeout(sentCodeTimeout + 1000);
+        setTimeout(function () {
+          const data = {
+            type: authTypes.password,
+            uid: email
+          }
+          request("/recover", "post", data, function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.true
+            expect(res).to.not.have.property("error")
+            done.apply(null, arguments);
+
+          }, { status: 200, token: apiToken2 });
+        }, sentCodeTimeout)
+      });
+    });
+
+    describe("recovery validate for user 2 (temp user)", function () {
+      it("should return result true", function (done) {
+        const data = {
+          type: authTypes.password,
+          uid: email,
+          code: confirmPasswordCode,
+        }
+        request("/recover/validate", "post", data, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.true
+          expect(res).to.not.have.property("error")
+          done.apply(null, arguments);
+
+        }, { status: 200, token: apiToken2 });
+      });
+    });
+
+    describe("reset password for user 2 (temp user)", function () {
+      it("should return result true", function (done) {
+        const data = {
+          type: authTypes.password,
+          uid: email,
+          code: confirmPasswordCode,
+          password: password2,
+        }
+        request("/recover/reset", "post", data, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.true
+          expect(res).to.not.have.property("error")
+          done.apply(null, arguments);
+
+        }, { status: 200, token: apiToken2 });
+      });
+    });
+    // user 1: result login
+    logout()
+
+    describe("password login for user 2 (temp user)", function () {
+      it(`should return result false with error: ${errors.incorrectPassword}`, function (done) {
+        request("/login", "post", emailRegCreds, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false
+          expect(res).to.have.property("error")
+          expect(res.error).to.have.property("code").that.equals(errors.incorrectPassword);
+          done.apply(null, arguments);
+
+        }, { status: 403 });
+      });
+    });
+
     // remove all
     remove()
   });
