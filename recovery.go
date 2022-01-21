@@ -38,6 +38,11 @@ func (r *Rauther) requestRecoveryHandler(c *gin.Context) {
 		return
 	}
 
+	if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+		return
+	}
+
 	code := r.generateCode(at)
 
 	// check resend timeout
@@ -96,6 +101,11 @@ func (r *Rauther) validateRecoveryCodeHandler(c *gin.Context) {
 		return
 	}
 
+	if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+		return
+	}
+
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 		codeSent := u.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 
@@ -139,6 +149,11 @@ func (r *Rauther) recoveryHandler(c *gin.Context) {
 
 	u, err := r.LoadByUID(at.Key, request.UID)
 	if err != nil {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
+		return
+	}
+
+	if tempUser, ok := u.(user.TempUser); ok && tempUser.IsTemp() {
 		errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 		return
 	}
