@@ -71,27 +71,29 @@ describe("check basic merge flow:", function () {
         });
     });
 
-    // create social user
-    describe("social login", function () {
-        it("should return result true", function (done) {
-            hippie(spec)
-                .header("Authorization", "Bearer " + apiToken)
-                .base(baseUrl)
-                .post("/social/login")
-                .json()
-                .send({
-                    type: "google",
-                    token: googleToken
-                })
-                .expectStatus(200)
-                .end(function (err, raw, res) {
-                    expect(res).to.have.property("result").that.is.true;
-                    expect(res).to.not.have.property("error");
-                    done.apply(null, arguments);
-                });
-        });
-    });
 
+    if (googleToken != "") {
+        // create social user
+        describe("social login", function () {
+            it("should return result true", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/social/login")
+                    .json()
+                    .send({
+                        type: "google",
+                        token: googleToken
+                    })
+                    .expectStatus(200)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.true;
+                        expect(res).to.not.have.property("error");
+                        done.apply(null, arguments);
+                    });
+            });
+        });
+    }
     // logout
     describe("logout", function () {
         it("should return true", function (done) {
@@ -245,49 +247,50 @@ describe("check basic merge flow:", function () {
         });
     });
 
-    // link social (expect merge warning)
-    describe("social login", function () {
-        it("should return result false", function (done) {
-            hippie(spec)
-                .header("Authorization", "Bearer " + apiToken)
-                .base(baseUrl)
-                .post("/social/login")
-                .json()
-                .send({
-                    type: "google",
-                    token: googleToken
-                })
-                .expectStatus(409)
-                .end(function (err, raw, res) {
-                    expect(res).to.have.property("result").that.is.false;
-                    expect(res).to.have.property("error");
-                    done.apply(null, arguments);
-                });
+    if (googleToken != "") {
+        // link social (expect merge warning)
+        describe("social login", function () {
+            it("should return result false", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/social/login")
+                    .json()
+                    .send({
+                        type: "google",
+                        token: googleToken
+                    })
+                    .expectStatus(409)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.false;
+                        expect(res).to.have.property("error");
+                        done.apply(null, arguments);
+                    });
+            });
         });
-    });
 
-    // link soical with confirm (expect ok)
-    describe("social login", function () {
-        it("should return result true", function (done) {
-            hippie(spec)
-                .header("Authorization", "Bearer " + apiToken)
-                .base(baseUrl)
-                .post("/social/login")
-                .json()
-                .send({
-                    type: "google",
-                    token: googleToken,
-                    merge: true,
-                })
-                .expectStatus(200)
-                .end(function (err, raw, res) {
-                    expect(res).to.have.property("result").that.is.true;
-                    expect(res).to.not.have.property("error");
-                    done.apply(null, arguments);
-                });
+        // link soical with confirm (expect ok)
+        describe("social login", function () {
+            it("should return result true", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/social/login")
+                    .json()
+                    .send({
+                        type: "google",
+                        token: googleToken,
+                        merge: true,
+                    })
+                    .expectStatus(200)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.true;
+                        expect(res).to.not.have.property("error");
+                        done.apply(null, arguments);
+                    });
+            });
         });
-    });
-
+    }
     // init link otp user (expect ok)
     describe("get otp code", function () {
         it("should return result true", function (done) {

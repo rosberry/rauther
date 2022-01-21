@@ -88,6 +88,10 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		isNew = true
 		u = r.deps.UserStorer.Create()
 
+		if linkAccount {
+			u.(user.TempUser).SetTemp(true)
+		}
+
 		u.(user.AuthableUser).SetUID(at.Key, userInfo.ID)
 
 		if r.Modules.ConfirmableUser && r.checker.Confirmable {
@@ -116,8 +120,17 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 		err := r.linkAccount(sessionInfo, u, at, mergeConfirm)
 		if err != nil {
 			var mergeErr MergeError
+			var customErr CustomError
 
 			switch {
+			case errors.Is(err, errAuthIdentityExists):
+				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+			case errors.Is(err, errCurrentUserNotConfirmed):
+				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+			case errors.Is(err, errUserAlreadyRegistered):
+				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			case errors.As(err, &customErr):
+				customErrorResponse(c, customErr)
 			case errors.As(err, &mergeErr):
 				mergeErrorResponse(c, mergeErr)
 			default:

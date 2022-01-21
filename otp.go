@@ -271,8 +271,17 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		err := r.linkAccount(sessionInfo, u, at, mergeConfirm)
 		if err != nil {
 			var mergeErr MergeError
+			var customErr CustomError
 
 			switch {
+			case errors.Is(err, errAuthIdentityExists):
+				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
+			case errors.Is(err, errCurrentUserNotConfirmed):
+				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+			case errors.Is(err, errUserAlreadyRegistered):
+				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			case errors.As(err, &customErr):
+				customErrorResponse(c, customErr)
 			case errors.As(err, &mergeErr):
 				mergeErrorResponse(c, mergeErr)
 			default:
