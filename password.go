@@ -14,6 +14,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	linkAction  = "link"
+	mergeAction = "merge"
+)
+
 func (r *Rauther) signUpHandler(c *gin.Context) {
 	at, ok := r.findAuthMethod(c, authtype.Password)
 	if !ok {
@@ -331,15 +336,21 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 	}
 
 	// confirmation
-	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-		curTime := time.Now()
-		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
-			errorCodeTimeoutResponse(c, *resendTime, curTime)
-			return
-		}
-	}
+	var confirmCodeRequired bool
 
-	r.setAndSendConfirmCode(at, u, uid)
+	if !u.(user.ConfirmableUser).GetConfirmed(at.Key) {
+		confirmCodeRequired = true
+
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			curTime := time.Now()
+			if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
+				errorCodeTimeoutResponse(c, *resendTime, curTime)
+				return
+			}
+		}
+
+		r.setAndSendConfirmCode(at, u, uid)
+	}
 
 	if err = r.deps.UserStorer.Save(u); err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
@@ -353,7 +364,13 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 	}
 
 	respMap := gin.H{
-		"result": true,
+		"result":              true,
+		"action":              linkAction,
+		"confirmCodeRequired": confirmCodeRequired,
+	}
+
+	if !u.(user.TempUser).IsTemp() {
+		respMap["action"] = mergeAction
 	}
 
 	c.JSON(http.StatusOK, respMap)
@@ -369,9 +386,11 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 	}
 
 	type linkAccountRequest struct {
-		UID      string `json:"uid" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Code     string `json:"code" binding:"required"`
+		UID          string `json:"uid" binding:"required"`
+		Password     string `json:"password" binding:"required"`
+		Code         string `json:"code"`
+		Merge        bool   `json:"merge"`
+		ConfirmMerge bool   `json:"confirmMerge"`
 	}
 
 	var request linkAccountRequest
@@ -395,31 +414,35 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 	laUser := u.(user.TempUser)
 
 	if !laUser.IsTemp() {
-		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
-		return
+		if !r.Modules.MergeAccount || !request.Merge {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			return
+		}
 	}
 
 	// check code
-	code := laUser.(user.ConfirmableUser).GetConfirmCode(at.Key)
-	if request.Code != code || code == "" {
-		errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
-		return
-	}
-
-	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
-		codeSent := laUser.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
-
-		expiredAt := calcExpiredAt(codeSent, r.Config.Password.CodeLifeTime)
-
-		if expiredAt.Before(time.Now()) {
-			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+	if !laUser.(user.ConfirmableUser).GetConfirmed(at.Key) {
+		code := laUser.(user.ConfirmableUser).GetConfirmCode(at.Key)
+		if request.Code != code || code == "" {
+			errorResponse(c, http.StatusBadRequest, common.ErrInvalidConfirmCode)
 			return
 		}
 
-		laUser.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
-	}
+		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
+			codeSent := laUser.(user.CodeSentTimeUser).GetCodeSentTime(at.Key)
 
-	laUser.SetConfirmed(at.Key, true)
+			expiredAt := calcExpiredAt(codeSent, r.Config.Password.CodeLifeTime)
+
+			if expiredAt.Before(time.Now()) {
+				errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
+				return
+			}
+
+			laUser.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
+		}
+
+		laUser.SetConfirmed(at.Key, true)
+	}
 
 	// set password
 	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
@@ -438,9 +461,16 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		return
 	}
 
-	err = r.linkAccount(sessionInfo, laUser, at, false)
+	var confirmMerge bool
+
+	if r.Modules.MergeAccount {
+		confirmMerge = request.Merge && request.ConfirmMerge
+	}
+
+	err = r.linkAccount(sessionInfo, laUser, at, confirmMerge)
 	if err != nil {
 		var customErr CustomError
+		var mergeErr MergeError
 
 		switch {
 		case errors.Is(err, errAuthIdentityExists):
@@ -451,6 +481,8 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 		case errors.As(err, &customErr):
 			customErrorResponse(c, customErr)
+		case errors.As(err, &mergeErr):
+			mergeErrorResponse(c, mergeErr)
 		default:
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 		}

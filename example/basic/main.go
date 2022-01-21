@@ -175,7 +175,7 @@ type phoneSignUp struct {
 	Phone    string `json:"phone" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Name     string `json:"name" binding:"required"`
-	Merge    bool   `json:"merge"`
+	Merge    bool   `json:"confirmMerge"`
 }
 
 func (r *phoneSignUp) GetUID() (uid string)           { return r.Phone }
@@ -205,7 +205,7 @@ type otpRequest struct {
 	Phone string  `json:"phone" binding:"required"`
 	Code  string  `json:"code"`
 	Name  *string `json:"name"`
-	Merge bool    `json:"merge"`
+	Merge bool    `json:"confirmMerge"`
 }
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
@@ -227,7 +227,7 @@ func (r *otpRequest) Fields() map[string]interface{} {
 type CustomSocialSignInRequest struct {
 	Name  string `json:"name"`
 	Token string `json:"token" binding:"required"`
-	Merge bool   `json:"merge"`
+	Merge bool   `json:"confirmMerge"`
 }
 
 func (r *CustomSocialSignInRequest) Fields() map[string]interface{} {
