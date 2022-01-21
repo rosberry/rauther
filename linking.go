@@ -131,6 +131,11 @@ func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool) error {
 		return fmt.Errorf("failed to run merge function: %w", err)
 	}
 
+	err = r.deps.UserRemover.RemoveByID(link.GetID())
+	if err != nil {
+		return fmt.Errorf("failed to remove user: %w", err)
+	}
+
 	return nil
 }
 
