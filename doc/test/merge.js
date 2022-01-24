@@ -75,8 +75,8 @@ describe("check basic merge flow:", function () {
 
     if (googleToken != "") {
         // create social user
-        describe("social login", function () {
-            it("should return result true", function (done) {
+        describe("init social user", function () {
+            it("login with google token", function (done) {
                 hippie(spec)
                     .header("Authorization", "Bearer " + apiToken)
                     .base(baseUrl)
@@ -93,31 +93,28 @@ describe("check basic merge flow:", function () {
                         done.apply(null, arguments);
                     });
             });
+
+            it("logout", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/logout")
+                    .json()
+                    .expectStatus(200)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.true;
+                        expect(res).to.not.have.property("error");
+                        expect(res).to.have.property("token");
+                        apiToken = res.token;
+                        done.apply(null, arguments);
+                    });
+            });
         });
     }
 
-    // logout
-    describe("logout", function () {
-        it("should return true", function (done) {
-            hippie(spec)
-                .header("Authorization", "Bearer " + apiToken)
-                .base(baseUrl)
-                .post("/logout")
-                .json()
-                .expectStatus(200)
-                .end(function (err, raw, res) {
-                    expect(res).to.have.property("result").that.is.true;
-                    expect(res).to.not.have.property("error");
-                    expect(res).to.have.property("token");
-                    apiToken = res.token;
-                    done.apply(null, arguments);
-                });
-        });
-    });
-
     // init otp user
-    describe("get otp code", function () {
-        it("should return result true", function (done) {
+    describe("init OTP user", function () {
+        it("get code", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -136,10 +133,8 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    describe("otp login", function () {
-        it("should return result true", function (done) {
+        it("otp auth", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -160,11 +155,8 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    // logout
-    describe("logout", function () {
-        it("should return true", function (done) {
+        it("logout", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -182,8 +174,8 @@ describe("check basic merge flow:", function () {
     });
 
     // create email user
-    describe("register", function () {
-        it("should return uid", function (done) {
+    describe("register email user", function () {
+        it("register", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -203,11 +195,8 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    // confirm email
-    describe("profile", function () {
-        it("should return result true", function (done) {
+        it("get profile", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -226,10 +215,8 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    describe("confirm", function () {
-        it("should return result true", function (done) {
+        it("confirm", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -252,52 +239,54 @@ describe("check basic merge flow:", function () {
     // link (merge) accounts 
     if (googleToken != "") {
         // link social (expect merge warning)
-        describe("social login", function () {
-            it("should return result false", function (done) {
-                hippie(spec)
-                    .header("Authorization", "Bearer " + apiToken)
-                    .base(baseUrl)
-                    .post("/social/login")
-                    .json()
-                    .send({
-                        type: "google",
-                        token: googleToken
-                    })
-                    .expectStatus(409)
-                    .end(function (err, raw, res) {
-                        expect(res).to.have.property("result").that.is.false;
-                        expect(res).to.have.property("error");
-                        done.apply(null, arguments);
-                    });
+        describe("merge user with social account", function () {
+            context("when merge confirm not set", function () {
+                it("should return result false with merge_warning", function (done) {
+                    hippie(spec)
+                        .header("Authorization", "Bearer " + apiToken)
+                        .base(baseUrl)
+                        .post("/social/login")
+                        .json()
+                        .send({
+                            type: "google",
+                            token: googleToken
+                        })
+                        .expectStatus(409)
+                        .end(function (err, raw, res) {
+                            expect(res).to.have.property("result").that.is.false;
+                            expect(res).to.have.property("error");
+                            expect(res.error).to.have.property("code").that.equals("merge_warning");
+                            done.apply(null, arguments);
+                        });
+                });
             });
-        });
 
-        // link soical with confirm (expect ok)
-        describe("social login", function () {
-            it("should return result true", function (done) {
-                hippie(spec)
-                    .header("Authorization", "Bearer " + apiToken)
-                    .base(baseUrl)
-                    .post("/social/login")
-                    .json()
-                    .send({
-                        type: "google",
-                        token: googleToken,
-                        merge: true,
-                    })
-                    .expectStatus(200)
-                    .end(function (err, raw, res) {
-                        expect(res).to.have.property("result").that.is.true;
-                        expect(res).to.not.have.property("error");
-                        done.apply(null, arguments);
-                    });
+            context("when merge confirm is true", function () {
+                it("should return result true", function (done) {
+                    hippie(spec)
+                        .header("Authorization", "Bearer " + apiToken)
+                        .base(baseUrl)
+                        .post("/social/login")
+                        .json()
+                        .send({
+                            type: "google",
+                            token: googleToken,
+                            merge: true,
+                        })
+                        .expectStatus(200)
+                        .end(function (err, raw, res) {
+                            expect(res).to.have.property("result").that.is.true;
+                            expect(res).to.not.have.property("error");
+                            done.apply(null, arguments);
+                        });
+                });
             });
         });
     }
 
     // init link otp user (expect ok)
-    describe("get otp code", function () {
-        it("should return result true", function (done) {
+    describe("merge otp user", function () {
+        it("get otp code", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -316,11 +305,9 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    describe("otp login", function () {
-        context("when not confirm merge", function () {
-            it("should return result false", function (done) {
+        context("when merge confirm not set", function () {
+            it("should return result false with merge_warning", function (done) {
                 hippie(spec)
                     .header("Authorization", "Bearer " + apiToken)
                     .base(baseUrl)
@@ -338,41 +325,41 @@ describe("check basic merge flow:", function () {
                     .end(function (err, raw, res) {
                         expect(res).to.have.property("result").that.is.false;
                         expect(res).to.have.property("error");
+                        expect(res.error).to.have.property("code").that.equals("merge_warning");
+                        done.apply(null, arguments);
+                    });
+            });
+        });
+
+        context("wnen merge confirm is true", function () {
+            it("should return result true", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/otp/{key}/auth")
+                    .pathParams({
+                        key: "telegram"
+                    })
+                    .json()
+                    .send({
+                        name: userName,
+                        phone: phone,
+                        code: otpCode,
+                        merge: true
+                    })
+                    .expectStatus(200)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.true;
+                        expect(res).to.not.have.property("error");
                         done.apply(null, arguments);
                     });
             });
         });
     });
 
-    // link otp user with confirm (expect ok)
-    describe("otp login", function () {
-        it("should return result true", function (done) {
-            hippie(spec)
-                .header("Authorization", "Bearer " + apiToken)
-                .base(baseUrl)
-                .post("/otp/{key}/auth")
-                .pathParams({
-                    key: "telegram"
-                })
-                .json()
-                .send({
-                    name: userName,
-                    phone: phone,
-                    code: otpCode,
-                    merge: true
-                })
-                .expectStatus(200)
-                .end(function (err, raw, res) {
-                    expect(res).to.have.property("result").that.is.true;
-                    expect(res).to.not.have.property("error");
-                    done.apply(null, arguments);
-                });
-        });
-    });
-
     // check auth identities
-    describe("profile", function () {
-        it("should have all auth identities", function (done) {
+    describe("check auth identities", function () {
+        it("profile should have all auth identities", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -423,7 +410,7 @@ describe("check basic merge flow:", function () {
 
     // create second user
     describe("register", function () {
-        it("should return uid", function (done) {
+        it("register should return uid", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -443,11 +430,8 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    // confirm email
-    describe("profile", function () {
-        it("should return result true", function (done) {
+        it("profile should have code", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -466,10 +450,8 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    describe("confirm", function () {
-        it("should return result true", function (done) {
+        it("confirm", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -490,8 +472,8 @@ describe("check basic merge flow:", function () {
     });
 
     // merge first user with OTP
-    describe("get otp code", function () {
-        it("should return result true", function (done) {
+    describe("merge user with email account by OTP", function () {
+        it("get code", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
@@ -510,11 +492,9 @@ describe("check basic merge flow:", function () {
                     done.apply(null, arguments);
                 });
         });
-    });
 
-    describe("otp login", function () {
-        context("when not confirm merge", function () {
-            it("should return result false", function (done) {
+        context("when merge confirm not set", function () {
+            it("should return result false with merge_warning", function (done) {
                 hippie(spec)
                     .header("Authorization", "Bearer " + apiToken)
                     .base(baseUrl)
@@ -552,37 +532,36 @@ describe("check basic merge flow:", function () {
                     });
             });
         });
-    });
 
-    // link otp user with confirm (expect ok)
-    describe("otp login", function () {
-        it("should return result true", function (done) {
-            hippie(spec)
-                .header("Authorization", "Bearer " + apiToken)
-                .base(baseUrl)
-                .post("/otp/{key}/auth")
-                .pathParams({
-                    key: "telegram"
-                })
-                .json()
-                .send({
-                    name: userName,
-                    phone: phone,
-                    code: otpCode,
-                    merge: true
-                })
-                .expectStatus(200)
-                .end(function (err, raw, res) {
-                    expect(res).to.have.property("result").that.is.true;
-                    expect(res).to.not.have.property("error");
-                    done.apply(null, arguments);
-                });
+        context("when merge confirm is true", function () {
+            it("should return result true", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/otp/{key}/auth")
+                    .pathParams({
+                        key: "telegram"
+                    })
+                    .json()
+                    .send({
+                        name: userName,
+                        phone: phone,
+                        code: otpCode,
+                        merge: true
+                    })
+                    .expectStatus(200)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.true;
+                        expect(res).to.not.have.property("error");
+                        done.apply(null, arguments);
+                    });
+            });
         });
     });
 
     // check auth identities
-    describe("profile", function () {
-        it("should have all auth identities", function (done) {
+    describe("check auth identities", function () {
+        it("profile should have all auth identities", function (done) {
             hippie(spec)
                 .header("Authorization", "Bearer " + apiToken)
                 .base(baseUrl)
