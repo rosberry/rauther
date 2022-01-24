@@ -25,7 +25,7 @@ if (googleToken2 == "") {
   console.log('ATTENTION! No GOOGLE_TOKEN2 provided, so some google tests are skipped.')
 }
 if (appleToken == "") {
-  console.log('ATTENTION! No GOOGLE_TOKEN2 provided, so some apple tests are skipped.')
+  console.log('ATTENTION! No APPLE_TOKEN provided, so some apple tests are skipped.')
 }
 
 const email = "test" + (Math.floor(Math.random() * 99999)) + "@rosberry.com"
@@ -59,6 +59,7 @@ const authTypes = {
   otp: "telegram",
 
   password2: "email2",
+  social2: "apple",
   otp2: "telegram2",
 }
 
@@ -352,7 +353,7 @@ describe("link account:", function () {
       auth()
       socialLogin()
       // adding auth identities
-      socialLink({ authType: authTypes.otp2 })
+      socialLink({ authType: authTypes.social2 })
       remove()
     });
   }
