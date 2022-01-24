@@ -604,6 +604,44 @@ describe("check merge flow:", function () {
                     });
             });
         });
+
+        describe("check remove user with warning auth identity", function () {
+            it("logout", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/logout")
+                    .json()
+                    .expectStatus(200)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.true;
+                        expect(res).to.not.have.property("error");
+                        expect(res).to.have.property("token");
+                        apiToken = res.token;
+                        done.apply(null, arguments);
+                    });
+            });
+
+            it("login should return false", function (done) {
+                hippie(spec)
+                    .header("Authorization", "Bearer " + apiToken)
+                    .base(baseUrl)
+                    .post("/login")
+                    .json()
+                    .send({
+                        type: "email",
+                        email: email,
+                        password: userPassword,
+                    })
+                    .expectStatus(400)
+                    .end(function (err, raw, res) {
+                        expect(res).to.have.property("result").that.is.false;
+                        expect(res).to.have.property("error");
+                        expect(res.error).to.have.property("code").that.equals("user_not_found");
+                        done.apply(null, arguments);
+                    });
+            });
+        })
     });
 
     // #3 Basic merge email account
