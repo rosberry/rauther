@@ -283,7 +283,7 @@ describe("check merge flow:", function () {
                             .send({
                                 type: "google",
                                 token: googleToken,
-                                confirmMerge: true,
+                                confirmMerge: true
                             })
                             .expectStatus(200)
                             .end(function (err, raw, res) {
@@ -631,7 +631,7 @@ describe("check merge flow:", function () {
                     .send({
                         type: "email",
                         email: email,
-                        password: userPassword,
+                        password: userPassword
                     })
                     .expectStatus(400)
                     .end(function (err, raw, res) {
@@ -823,7 +823,7 @@ describe("check merge flow:", function () {
                             .send({
                                 type: "email",
                                 uid: email,
-                                password: userPassword,
+                                password: userPassword
                             })
                             .expectStatus(400)
                             .end(function (err, raw, res) {
@@ -870,7 +870,7 @@ describe("check merge flow:", function () {
                                 uid: email,
                                 password: userPassword,
                                 merge: true,
-                                confirmMerge: true,
+                                confirmMerge: true
                             })
                             .expectStatus(200)
                             .end(function (err, raw, res) {
@@ -1091,7 +1091,7 @@ describe("check merge flow:", function () {
                                 type: "phone",
                                 uid: phoneForPasswordMethod2,
                                 code: linkConfirmCode,
-                                password: userPassword,
+                                password: userPassword
                             })
                             .expectStatus(400)
                             .end(function (err, raw, res) {
