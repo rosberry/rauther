@@ -1071,6 +1071,8 @@ describe("check merge flow:", function () {
                         .end(function (err, raw, res) {
                             expect(res).to.have.property("result").that.is.false;
                             expect(res).to.have.property("error");
+                            expect(res).to.have.property("action").that.is.equal("merge");
+                            expect(res).to.have.property("confirmCodeRequired").that.is.true;
 
                             done.apply(null, arguments);
                         });

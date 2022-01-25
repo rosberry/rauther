@@ -534,6 +534,17 @@ definitions:
           nextRequestTime:
             type: string
             example: "2021-12-09T16:36:13+06:00"
+      action:
+        type: string
+        example: link
+        description: only for initLink request
+        enum:
+          - link
+          - merge
+      confirmCodeRequired:
+        type: boolean
+        example: true
+        description: only for initLink request
   AuthRequest:
     properties:
       device_id:

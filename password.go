@@ -277,6 +277,11 @@ func (r *Rauther) validateLoginField(c *gin.Context) {
 	})
 }
 
+const (
+	actionKey              = "action"
+	confirmCodeRequiredKey = "confirmCodeRequired"
+)
+
 func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 	at, ok := r.findAuthMethod(c, authtype.Password)
 	if !ok {
@@ -335,6 +340,11 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 		return
 	}
 
+	action := linkAction
+	if !u.(user.TempUser).IsTemp() {
+		action = mergeAction
+	}
+
 	// confirmation
 	var confirmCodeRequired bool
 
@@ -344,7 +354,13 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 		if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 			curTime := time.Now()
 			if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
-				errorCodeTimeoutResponse(c, *resendTime, curTime)
+				resp, code := getCodeTimeoutResponse(*resendTime, curTime)
+
+				resp[actionKey] = action
+				resp[confirmCodeRequiredKey] = confirmCodeRequired
+
+				c.JSON(code, resp)
+
 				return
 			}
 		}
@@ -364,13 +380,9 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 	}
 
 	respMap := gin.H{
-		"result":              true,
-		"action":              linkAction,
-		"confirmCodeRequired": confirmCodeRequired,
-	}
-
-	if !u.(user.TempUser).IsTemp() {
-		respMap["action"] = mergeAction
+		"result":               true,
+		actionKey:              action,
+		confirmCodeRequiredKey: confirmCodeRequired,
 	}
 
 	c.JSON(http.StatusOK, respMap)
