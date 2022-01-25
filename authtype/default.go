@@ -8,14 +8,14 @@ import (
 )
 
 type SignUpRequestByEmail struct {
-	Email    string `json:"email" form:"email" binding:"required"`
-	Password string `json:"password" form:"password" binding:"required"`
-	Merge    bool   `json:"merge" form:"merge"`
+	Email        string `json:"email" form:"email" binding:"required"`
+	Password     string `json:"password" form:"password" binding:"required"`
+	ConfirmMerge bool   `json:"confirmMerge" form:"confirmMerge"`
 }
 
 func (r SignUpRequestByEmail) GetUID() (uid string)           { return r.Email } // trim spaces, toLower
 func (r SignUpRequestByEmail) GetPassword() (password string) { return r.Password }
-func (r SignUpRequestByEmail) MergeConfirm() bool             { return r.Merge }
+func (r SignUpRequestByEmail) GetConfirmMerge() bool          { return r.ConfirmMerge }
 
 type CheckLoginFieldRequestByEmail struct {
 	Email string `json:"email" form:"email" binding:"required"`
@@ -44,14 +44,14 @@ func DefaultSelector(c *gin.Context, t Type) string {
 }
 
 type SocialSignInRequest struct {
-	Token string `json:"token" binding:"required"`
-	Merge bool   `json:"merge"`
+	Token        string `json:"token" binding:"required"`
+	ConfirmMerge bool   `json:"confirmMerge"`
 }
 
 func (r *SocialSignInRequest) GetToken() string {
 	return r.Token
 }
 
-func (r *SocialSignInRequest) MergeConfirm() bool {
-	return r.Merge
+func (r *SocialSignInRequest) GetConfirmMerge() bool {
+	return r.ConfirmMerge
 }

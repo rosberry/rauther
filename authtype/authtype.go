@@ -69,7 +69,7 @@ type (
 	}
 
 	MergeConfirmRequest interface {
-		MergeConfirm() bool
+		GetConfirmMerge() bool
 	}
 )
 

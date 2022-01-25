@@ -49,7 +49,9 @@ func (r *Rauther) requestRecoveryHandler(c *gin.Context) {
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 		curTime := time.Now()
 		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
-			errorCodeTimeoutResponse(c, *resendTime, curTime)
+			resp, code := getCodeTimeoutResponse(*resendTime, curTime)
+			c.JSON(code, resp)
+
 			return
 		}
 

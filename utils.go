@@ -53,18 +53,18 @@ func customErrorResponse(c *gin.Context, cErr CustomError) {
 	})
 }
 
-func errorCodeTimeoutResponse(c *gin.Context, resendTime, curTime time.Time) {
+func getCodeTimeoutResponse(resendTime, curTime time.Time) (response map[string]interface{}, statusCode int) {
 	interval := resendTime.Sub(curTime) / time.Second
 	nextRequestTime := resendTime.Format(time.RFC3339)
 
-	c.JSON(http.StatusTooManyRequests, gin.H{
+	return gin.H{
 		"result": false,
 		"error":  common.Errors[common.ErrRequestCodeTimeout],
 		"info": common.ResendCodeErrInfo{
 			TimeoutSec:      interval,
 			NextRequestTime: nextRequestTime,
 		},
-	})
+	}, http.StatusTooManyRequests
 }
 
 func mergeErrorResponse(c *gin.Context, err error) {
@@ -101,6 +101,7 @@ func passwordCompare(requestPassword, hashedPassword string) (ok bool) {
 
 func parseAuthToken(c *gin.Context) (token string) {
 	if authHeader := c.Request.Header.Get("Authorization"); authHeader != "" {
+		log.Printf("auth header: %s", authHeader)
 		if strings.HasPrefix(authHeader, "Bearer ") {
 			if token = authHeader[7:]; len(token) > 0 {
 				return token

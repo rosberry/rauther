@@ -111,7 +111,9 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 	if r.checker.CodeSentTime && r.Modules.CodeSentTimeUser {
 		curTime := time.Now()
 		if resendTime, ok := r.checkResendTime(u, curTime, at); !ok {
-			errorCodeTimeoutResponse(c, *resendTime, curTime)
+			resp, code := getCodeTimeoutResponse(*resendTime, curTime)
+			c.JSON(code, resp)
+
 			return
 		}
 
@@ -265,7 +267,7 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 		var mergeConfirm bool
 
 		if requestWithMergeConfirm, ok := request.(authtype.MergeConfirmRequest); ok {
-			mergeConfirm = requestWithMergeConfirm.MergeConfirm()
+			mergeConfirm = requestWithMergeConfirm.GetConfirmMerge()
 		}
 
 		err := r.linkAccount(sessionInfo, u, at, mergeConfirm)

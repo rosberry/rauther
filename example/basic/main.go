@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rosberry/ginlog"
 	"github.com/rosberry/rauther"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/code"
@@ -25,6 +26,8 @@ func main() { // nolint
 			"message": "pong",
 		})
 	})
+
+	r.Use(ginlog.Logger(true))
 
 	ss := &models.Sessioner{
 		Sessions: make(map[string]*models.Session),
@@ -172,10 +175,10 @@ func (s *fakeTelegramSender) Send(event sender.Event, recipient string, message 
 }
 
 type phoneSignUp struct {
-	Phone    string `json:"phone" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Name     string `json:"name" binding:"required"`
-	Merge    bool   `json:"merge"`
+	Phone        string `json:"phone" binding:"required"`
+	Password     string `json:"password" binding:"required"`
+	Name         string `json:"name" binding:"required"`
+	ConfirmMerge bool   `json:"confirmMerge"`
 }
 
 func (r *phoneSignUp) GetUID() (uid string)           { return r.Phone }
@@ -185,7 +188,7 @@ func (r *phoneSignUp) Fields() map[string]string {
 		"username": r.Name,
 	}
 }
-func (r *phoneSignUp) MergeConfirm() bool { return r.Merge }
+func (r *phoneSignUp) GetConfirmMerge() bool { return r.ConfirmMerge }
 
 type phoneSignIn struct {
 	Phone    string `json:"phone" binding:"required"`
@@ -202,15 +205,15 @@ type CheckPhoneRequest struct {
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
 
 type otpRequest struct {
-	Phone string  `json:"phone" binding:"required"`
-	Code  string  `json:"code"`
-	Name  *string `json:"name"`
-	Merge bool    `json:"merge"`
+	Phone        string  `json:"phone" binding:"required"`
+	Code         string  `json:"code"`
+	Name         *string `json:"name"`
+	ConfirmMerge bool    `json:"confirmMerge"`
 }
 
 func (r *otpRequest) GetUID() (uid string)           { return r.Phone }
 func (r *otpRequest) GetPassword() (password string) { return r.Code }
-func (r *otpRequest) MergeConfirm() bool             { return r.Merge }
+func (r *otpRequest) GetConfirmMerge() bool          { return r.ConfirmMerge }
 
 func (r *otpRequest) Fields() map[string]interface{} {
 	return map[string]interface{}{
@@ -225,9 +228,9 @@ func (r *otpRequest) Fields() map[string]interface{} {
 }
 
 type CustomSocialSignInRequest struct {
-	Name  string `json:"name"`
-	Token string `json:"token" binding:"required"`
-	Merge bool   `json:"merge"`
+	Name         string `json:"name"`
+	Token        string `json:"token" binding:"required"`
+	ConfirmMerge bool   `json:"confirmMerge"`
 }
 
 func (r *CustomSocialSignInRequest) Fields() map[string]interface{} {
@@ -240,4 +243,4 @@ func (r *CustomSocialSignInRequest) GetToken() string {
 	return r.Token
 }
 
-func (r *CustomSocialSignInRequest) MergeConfirm() bool { return r.Merge }
+func (r *CustomSocialSignInRequest) GetConfirmMerge() bool { return r.ConfirmMerge }

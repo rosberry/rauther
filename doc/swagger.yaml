@@ -108,7 +108,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/EmptyResponse"
+            $ref: "#/definitions/PasswordInitLinkResponse"
         "400":
           description: Bad Request
           schema:
@@ -117,6 +117,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "429":
+          description: Too many code requests
+          schema:
+            $ref: "#/definitions/TooManyErrorResponse"
       tags:
         - auth
       security:
@@ -143,6 +147,10 @@ paths:
             $ref: "#/definitions/ErrorResponse"
         "401":
           description: Not auth. Auth token required
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "409":
+          description: Conflict. Merge account
           schema:
             $ref: "#/definitions/ErrorResponse"
       tags:
@@ -526,6 +534,17 @@ definitions:
           nextRequestTime:
             type: string
             example: "2021-12-09T16:36:13+06:00"
+      action:
+        type: string
+        example: link
+        description: only for initLink request
+        enum:
+          - link
+          - merge
+      confirmCodeRequired:
+        type: boolean
+        example: true
+        description: only for initLink request
   AuthRequest:
     properties:
       device_id:
@@ -603,7 +622,6 @@ definitions:
       - type
       - uid
       - password
-      - code
 
   SignInRequest:
     properties:
@@ -697,6 +715,21 @@ definitions:
         type: string
     required:
       - type
+
+  PasswordInitLinkResponse:
+    type: object
+    properties:
+      result:
+        type: boolean
+        example: true
+      action:
+        type: string
+        example: link
+        enum:
+          - link
+          - merge
+      confirmCodeRequired:
+        type: boolean
 
   CheckLoginFieldResponse:
     properties:
