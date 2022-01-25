@@ -489,7 +489,19 @@ describe("link account:", function () {
     // user 2: password register
     auth({ session: 2 })
     passwordRegister({ session: 2 })
+    passwordConfirm({ session: 2 })
     // user 2: start otp link
+    describe("otp init for user 2", function () {
+      it(`should return result false and error: ${errors.userExist}`, function (done) {
+        request("/otp/{key}/code", "post", otpLoginCreds, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false
+          expect(res).to.have.property("error")
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
+          done.apply(null, arguments)
+
+        }, { status: 400, token: apiToken2, pathParams: { key: authTypes.otp } })
+      })
+    })
     describe("otp login for user 2", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/otp/{key}/auth", "post", otpLoginCreds, function (err, raw, res) {
@@ -513,6 +525,7 @@ describe("link account:", function () {
       // user 2: password register
       auth({ session: 2 })
       passwordRegister({ session: 2 })
+      passwordConfirm({ session: 2 })
       // user 2: start social link
       describe("duplicate social register", function () {
         it(`should return result false and error: ${errors.userExist}`, function (done) {
