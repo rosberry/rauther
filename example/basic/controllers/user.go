@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther/example/basic/models"
+	"github.com/rs/zerolog/log"
 )
 
 func Profile(c *gin.Context) {
@@ -52,6 +52,8 @@ func UpdateProfile(c *gin.Context) {
 			"result":  false,
 			"message": "failed type assertion",
 		})
+
+		return
 	}
 
 	type updateRequest struct {
@@ -79,5 +81,25 @@ func UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"result": true,
 		"user":   user,
+	})
+}
+
+func RemoveAll(c *gin.Context, ss *models.Sessioner, us *models.UserStorer) {
+	for _, ses := range ss.Sessions {
+		err := ss.RemoveByID(ses.GetID())
+		if err != nil {
+			log.Print(err)
+		}
+	}
+
+	for _, user := range us.Users {
+		err := us.RemoveByID(user.ID)
+		if err != nil {
+			log.Print(err)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"result": true,
 	})
 }

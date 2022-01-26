@@ -24,6 +24,16 @@ func (s *Sessioner) LoadByID(id string) session.Session {
 	return s.Sessions[id]
 }
 
+func (s *Sessioner) RemoveByID(id string) error {
+	if _, ok := s.Sessions[id]; !ok {
+		return fmt.Errorf("session not found") // nolint:goerr113
+	}
+
+	delete(s.Sessions, id)
+
+	return nil
+}
+
 func (s *Sessioner) FindByToken(token string) session.Session {
 	for _, sess := range s.Sessions {
 		if sess.Token == token {
