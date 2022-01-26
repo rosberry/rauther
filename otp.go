@@ -215,6 +215,11 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
+
+		if !r.Modules.MergeAccount && !isTempUser && linkAccount {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			return
+		}
 	}
 
 	// Check user code (password)
