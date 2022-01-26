@@ -6,11 +6,9 @@ var hippie = require("hippie-swagger");
 var expect = require("chai").expect;
 var chai = require("chai");
 var chaihttp = require("chai-http")
-let should = chai.should();
 var spec;
 
 var config = require("./config.js");
-
 chai.use(chaihttp);
 
 var baseUrl = config.baseUrl;
@@ -198,10 +196,28 @@ describe("apple auth:", function () {
             .end(function (err, raw, res) {
               expect(res).to.have.property("result").that.is.true;
               expect(res).to.not.have.property("error");
+              expect(res).to.have.property("token");
               done.apply(null, arguments);
             });
         });
       });
+
+      describe("remove all users and sessions", function () {
+        it("should return result true", function (done) {
+          hippie(spec)
+            .header("Authorization", "Bearer " + apiToken)
+            .base(baseUrl)
+            .url("/clearAll")
+            .method("DELETE")
+            .json()
+            .expectStatus(200)
+            .end(function (err, raw, res) {
+              expect(res).to.have.property("result").that.is.true
+              expect(res).to.not.have.property("error")
+              done.apply(null, arguments)
+            })
+        })
+      })
     }); // apple login
   } // if appleToken
 }); // testing

@@ -3,11 +3,11 @@ package models
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 
 	"github.com/rosberry/rauther/user"
+	"github.com/rs/zerolog/log"
 )
 
 // User model
@@ -25,17 +25,17 @@ type (
 		FirstName string `auth:"fname" json:"firstName"`
 		LastName  string `auth:"lname" json:"lastName"`
 
-		RecoveryCode string `json:"recoveryCode"`
-		Temp         bool   `json:"-"`
+		Temp bool `json:"-"`
 	}
 
 	AuthIdentities struct {
-		Type        string     `json:"type"`
-		UID         string     `json:"uid"`
-		Password    string     `json:"password"`
-		ConfirmCode string     `json:"confirmCode"`
-		Confirmed   bool       `json:"confirmed"`
-		SentAt      *time.Time `json:"sentAt"`
+		Type         string     `json:"type"`
+		UID          string     `json:"uid"`
+		Password     string     `json:"password"`
+		ConfirmCode  string     `json:"confirmCode"`
+		RecoveryCode string     `json:"recoveryCode"`
+		Confirmed    bool       `json:"confirmed"`
+		SentAt       *time.Time `json:"sentAt"`
 	}
 )
 
@@ -114,11 +114,13 @@ func (u *User) GetCodeSentTime(authType string) *time.Time {
 }
 
 func (u *User) SetRecoveryCode(authType, code string) {
-	u.RecoveryCode = code
+	at := u.Auths[authType]
+	at.RecoveryCode = code
+	u.Auths[authType] = at
 }
 
 func (u *User) GetRecoveryCode(authType string) (code string) {
-	return u.RecoveryCode
+	return u.Auths[authType].RecoveryCode
 }
 
 func (u *User) GetField(key string) (field interface{}, err error) {
@@ -180,10 +182,6 @@ func (s *UserStorer) LoadByID(id interface{}) (user user.User, err error) {
 	}
 
 	if user, ok := s.Users[userID]; ok {
-		for k, v := range s.Users {
-			log.Printf("%v: %+v", k, v)
-		}
-
 		return user, nil
 	}
 
@@ -229,10 +227,11 @@ func (s *UserStorer) RemoveByUID(authType, uid string) error {
 }
 
 func (s *UserStorer) RemoveByID(id interface{}) error {
-	log.Printf("RemoveByID: %v", id)
 	delete(s.Users, id.(uint))
 
-	log.Printf("\n\n-----\nAfter delete: %v\n\n-----\n", s.Users)
+	for k, u := range s.Users {
+		log.Info().Interface(fmt.Sprintf("%v", k), u).Msg("")
+	}
 
 	return nil
 }

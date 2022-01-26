@@ -1,4 +1,6 @@
 var env = process.env.ENV || "";
+var testEnv = process.env.TEST_ENV ? process.env.TEST_ENV === 'true' : false;
+var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT ? Number(process.env.SENT_CODE_TIMEOUT) : 20000;
 
 var baseUrl;
 var specFile;
@@ -7,7 +9,7 @@ switch (env) {
   case "local":
     // local
     baseUrl = "http://localhost:8080";
-    specFile = process.env.GOPATH + "/src/github.com/rosberry/rauther/doc/swagger.yaml";
+    specFile = "../swagger.yaml";
     break;
   default:
     // custom
@@ -21,11 +23,20 @@ switch (env) {
     }
 }
 
+if (!testEnv) {
+  console.error('Please set TEST_ENV to true for start testing');
+  process.exit();
+  return;
+}
+
 var config = {
-    baseUrl: baseUrl,
-    specFile: specFile
+  env: env,
+  testEnv: testEnv,
+  baseUrl: baseUrl,
+  specFile: specFile,
+  sentCodeTimeout: sentCodeTimeout,
 };
 
-console.log("Selected environment: " + env);
+console.log("Settings: ", config);
 
 module.exports = config

@@ -221,7 +221,7 @@ paths:
           name: key
           type: string
           required: true
-          description: Method for send code (sms or telegram)
+          description: Method for send code (sms or telegram or telegram2)
         - description: Request body
           in: body
           name: body
@@ -259,7 +259,7 @@ paths:
           name: key
           type: string
           required: true
-          description: Method for send code (sms or telegram)
+          description: Method for send code (sms or telegram or telegram2)
         - description: Request body
           in: body
           name: body
@@ -486,6 +486,23 @@ paths:
       tags:
         - profile
 
+  /clearAll:
+    delete:
+      consumes:
+        - application/json
+      description: Delete all users and sessions
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+            properties:
+              result:
+                example: true
+                type: boolean
+      tags:
+        - profile
+
 definitions:
   Error:
     properties:
@@ -542,11 +559,12 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       email:
         example: example@mailer.com
         type: string
-        description: required for type `email`
+        description: required for type `email` or `email2`
       phone:
         example: 79876543210
         type: string
@@ -581,6 +599,7 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       uid:
         example: example@mailer.com
@@ -604,11 +623,12 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       email:
         example: example@mailer.com
         type: string
-        description: required for type `email`
+        description: required for type `email` or `email2`
       phone:
         example: 79876543210
         type: string
@@ -662,11 +682,12 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       email:
         example: example@mailer.com
         type: string
-        description: required for type `email`
+        description: required for type `email` or `email2`
       phone:
         example: 79876543210
         type: string
@@ -683,6 +704,7 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       uid:
         example: example@mailer.com
@@ -714,6 +736,7 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       code:
         example: 14d4f2e9-563d-4d57-9d1a-982a85f12fd8
@@ -741,6 +764,7 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
     type: object
     required:
@@ -760,6 +784,7 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       uid:
         example: example@mailer.com
@@ -783,6 +808,7 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       uid:
         example: example@mailer.com
@@ -803,6 +829,7 @@ definitions:
         example: email
         enum:
           - email
+          - email2
           - phone
       uid:
         example: example@mailer.com
@@ -861,6 +888,18 @@ definitions:
                   confirmed:
                     type: boolean
                     example: false
+              email2:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: email2
+                  uid:
+                    type: string
+                    example: example2@mailer.com
+                  confirmed:
+                    type: boolean
+                    example: false
               phone:
                 type: object
                 properties:
@@ -873,3 +912,64 @@ definitions:
                   confirmed:
                     type: boolean
                     example: false
+              telegram:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: telegram
+                  uid:
+                    type: string
+                    example: 79876543210
+                  confirmed:
+                    type: boolean
+                    example: false
+              telegram2:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: telegram2
+                  uid:
+                    type: string
+                    example: 79876543210
+                  confirmed:
+                    type: boolean
+                    example: false
+              sms:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: sms
+                  uid:
+                    type: string
+                    example: 79876543210
+                  confirmed:
+                    type: boolean
+                    example: false
+              google:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: google
+                  uid:
+                    type: string
+                    example: 8262326810234485412
+                  confirmed:
+                    type: boolean
+                    example: false
+              apple:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: google
+                  uid:
+                    type: string
+                    example: 8262326810234485412
+                  confirmed:
+                    type: boolean
+                    example: false
+              
