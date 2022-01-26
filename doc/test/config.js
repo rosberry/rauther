@@ -1,6 +1,7 @@
 var env = process.env.ENV || "";
 var testEnv = process.env.TEST_ENV ? process.env.TEST_ENV === 'true' : false;
 var sentCodeTimeout = process.env.SENT_CODE_TIMEOUT ? Number(process.env.SENT_CODE_TIMEOUT) : 20000;
+var merge = process.env.MERGE ? process.env.MERGE === 'true' : true;
 
 var baseUrl;
 var specFile;
@@ -35,6 +36,7 @@ var config = {
   baseUrl: baseUrl,
   specFile: specFile,
   sentCodeTimeout: sentCodeTimeout,
+  merge: merge,
 };
 
 console.log("Settings: ", config);
