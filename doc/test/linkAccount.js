@@ -466,9 +466,20 @@ describe("link account:", function () {
     otpGetCode({ session: 2 })
     otpLogin({ session: 2 })
     // user 2: start password link
-    describe("link already register password account", function () {
+    describe("init linking already register password account", function () {
       it(`should return result false and error: ${errors.userExist}`, function (done) {
         request("/initLink", "post", passwordInitLinkingCreds, function (err, raw, res) {
+          expect(res).to.have.property("result").that.is.false
+          expect(res).to.have.property("error")
+          expect(res.error).to.have.property("code").that.equals(errors.userExist);
+          done.apply(null, arguments);
+
+        }, { token: apiToken2, status: 400 });
+      });
+    });
+    describe("link already register password account", function () {
+      it(`should return result false and error: ${errors.userExist}`, function (done) {
+        request("/link", "post", passwordLinkCreds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.false
           expect(res).to.have.property("error")
           expect(res.error).to.have.property("code").that.equals(errors.userExist);
