@@ -1,8 +1,10 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,10 +17,16 @@ import (
 	"github.com/rosberry/rauther/example/basic/models"
 	"github.com/rosberry/rauther/sender"
 	"github.com/rosberry/rauther/session"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() { // nolint
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Print("It's basic example for rauther lib")
+
+	testEnv := os.Getenv("TEST_ENV")
+	testMod, _ := strconv.ParseBool(testEnv)
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -37,23 +45,22 @@ func main() { // nolint
 	}
 
 	debugLog := func(c *gin.Context) {
-		log.Printf("\n\n--------\nSessions:")
-
-		for k, v := range ss.Sessions {
-			log.Printf("%v: %+v", k, v)
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+		cc := c.Copy()
+		req := *cc.Request.Clone(cc)
+		log.Info().Interface("Request headers", req.Header).Msg("")
+		log.Info().Int("sessions count", len(ss.Sessions)).Msg("")
+		for _, ses := range ss.Sessions {
+			log.Info().Interface(ses.GetID(), ses).Msg("")
 		}
-
-		log.Printf("\n\n--------\nUsers:")
-
-		for k, v := range us.Users {
-			log.Printf("%v: %+v", k, v)
+		log.Info().Int("users count", len(us.Users)).Msg("")
+		for k, u := range us.Users {
+			log.Info().Interface(fmt.Sprintf("%v", k), u).Msg("")
 		}
-
-		log.Printf("\n\n--------\n")
 		c.Next()
 	}
 
-	group := r.Group("", debugLog)
+	group := r.Group("", ginlog.Logger(true), debugLog)
 
 	rauth := rauther.New(deps.New(
 		group,
@@ -65,10 +72,25 @@ func main() { // nolint
 
 	rauth.DefaultSender(&fakeEmailSender{})
 
+	confirmPasswordCode := "456123"
+	confirmPasswordCode2 := "098765"
+	confirmOTPCode := "123321"
+	confirmOTPCode2 := "565656"
+
 	rauth.AddAuthMethods([]authtype.AuthMethod{
 		{
 			Key:    "email",
 			Sender: &fakeEmailSender{},
+			CodeGenerator: func(l int) string {
+				return confirmPasswordCode
+			},
+		},
+		{
+			Key:    "email2",
+			Sender: &fakeEmailSender{},
+			CodeGenerator: func(l int) string {
+				return confirmPasswordCode2
+			},
 		},
 		{
 			Key:                    "phone",
@@ -93,7 +115,17 @@ func main() { // nolint
 			SignUpRequest: &otpRequest{},
 			SignInRequest: &otpRequest{},
 			CodeGenerator: func(l int) string {
-				return "123321"
+				return confirmOTPCode
+			},
+		},
+		{
+			Key:           "telegram2",
+			Type:          authtype.OTP,
+			Sender:        &fakeTelegramSender{},
+			SignUpRequest: &otpRequest{},
+			SignInRequest: &otpRequest{},
+			CodeGenerator: func(l int) string {
+				return confirmOTPCode2
 			},
 		},
 		{
@@ -141,6 +173,12 @@ func main() { // nolint
 
 	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
 	r.POST("/profile", rauth.AuthMiddleware(), controllers.UpdateProfile)
+	// test route for truncate accounts
+	if testMod {
+		r.DELETE("/clearAll", func(c *gin.Context) {
+			controllers.RemoveAll(c, ss, us)
+		})
+	}
 
 	err := rauth.InitHandlers()
 	if err != nil {
@@ -149,7 +187,7 @@ func main() { // nolint
 
 	err = r.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Gin start error")
 	}
 }
 

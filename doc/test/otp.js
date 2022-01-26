@@ -6,15 +6,14 @@ var hippie = require("hippie-swagger");
 var expect = require("chai").expect;
 var chai = require("chai");
 var chaihttp = require("chai-http")
-let should = chai.should();
 var spec;
 
 var config = require("./config.js");
-
 chai.use(chaihttp);
 
 var baseUrl = config.baseUrl;
 var specFile = config.specFile;
+var sentCodeTimeout = config.sentCodeTimeout;
 
 var phone = "+7" + (Math.floor(Math.random() * 999999999));
 var phone2 = "+7" + (Math.floor(Math.random() * 999999999));
@@ -441,7 +440,7 @@ describe("otp auth:", function () {
       });
 
       it("should return result true", function (done) {
-        this.timeout(20000);
+        this.timeout(sentCodeTimeout + 1000);
         setTimeout(function () {
           hippie(spec)
             .header("Authorization", "Bearer " + apiToken)
@@ -460,7 +459,7 @@ describe("otp auth:", function () {
               expect(res).to.not.have.property("error");
               done.apply(null, arguments);
             });
-        }, 16000);
+        }, sentCodeTimeout);
       });
     });
 
