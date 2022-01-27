@@ -86,6 +86,8 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
 			case errors.Is(err, errCurrentUserNotConfirmed):
 				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+			default:
+				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			}
 			return
 		}
