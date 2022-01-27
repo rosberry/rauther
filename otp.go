@@ -297,6 +297,11 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 
 			return
 		}
+
+		if err = r.deps.UserStorer.Save(sessionInfo.User); err != nil {
+			errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
+			return
+		}
 	} else {
 		sessionInfo.Session.BindUser(u)
 		err = r.deps.SessionStorer.Save(sessionInfo.Session)
