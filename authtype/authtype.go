@@ -257,13 +257,9 @@ func (a *AuthMethods) CheckMergeModuleSupport() (ok bool, badAuthMethods map[str
 
 	for _, at := range a.List {
 		switch at.Type {
-		case Password:
-			if _, ok := at.SignUpRequest.(MergeConfirmRequest); !ok {
-				badAuthMethods[at.Key] = reflect.TypeOf(at.SignUpRequest).String()
-			}
 		case OTP:
-			if _, ok := at.SignUpRequest.(MergeConfirmRequest); !ok {
-				badAuthMethods[at.Key] = reflect.TypeOf(at.SignUpRequest).String()
+			if _, ok := at.SignInRequest.(MergeConfirmRequest); !ok {
+				badAuthMethods[at.Key] = reflect.TypeOf(at.SignInRequest).String()
 			}
 		case Social:
 			if _, ok := at.SocialSignInRequest.(MergeConfirmRequest); !ok {

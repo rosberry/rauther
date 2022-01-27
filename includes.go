@@ -111,6 +111,10 @@ func (r *Rauther) checkLink() {
 		if !r.checker.LinkAccount {
 			log.Fatal("Please, implement TempUser interface for use linking")
 		}
+
+		if r.Modules.MergeAccount && !r.checker.MergeAccount {
+			log.Fatal("Please, implement MergeUser interface for use merging")
+		}
 	}
 }
 

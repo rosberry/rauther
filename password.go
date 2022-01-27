@@ -424,9 +424,12 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 	}
 
 	laUser := u.(user.TempUser)
+	var mergeAccount bool
 
 	if !laUser.IsTemp() {
-		if !r.Modules.MergeAccount || !request.Merge {
+		if r.Modules.MergeAccount && request.Merge {
+			mergeAccount = true
+		} else {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
 			return
 		}
@@ -456,19 +459,28 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		laUser.SetConfirmed(at.Key, true)
 	}
 
-	// set password
-	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Print("encrypt password error:", err)
-		errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+	// check or create password
+	if mergeAccount {
+		userPassword := laUser.(user.PasswordAuthableUser).GetPassword(at.Key)
 
-		return
+		if !passwordCompare(request.Password, userPassword) {
+			errorResponse(c, http.StatusForbidden, common.ErrIncorrectPassword)
+			return
+		}
+	} else {
+		encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Print("encrypt password error:", err)
+			errorResponse(c, http.StatusInternalServerError, common.ErrUnknownError)
+
+			return
+		}
+
+		laUser.(user.PasswordAuthableUser).SetPassword(at.Key, string(encryptedPassword))
 	}
 
-	laUser.(user.PasswordAuthableUser).SetPassword(at.Key, string(encryptedPassword))
-
 	// TODO: Unnecessary saving? Remove?
-	err = r.deps.UserStorer.Save(u)
+	err = r.deps.UserStorer.Save(laUser)
 	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 		return
