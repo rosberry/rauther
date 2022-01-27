@@ -1,161 +1,149 @@
-"use strict"
+'use strict'
 
-var SwaggerParser = require("swagger-parser");
-var parser = new SwaggerParser();
-var api = require("hippie");
-var expect = require("chai").expect;
-var chai = require("chai");
-var chaihttp = require("chai-http")
-let should = chai.should();
-var spec;
+const api = require('hippie')
+const chai = require('chai')
+const chaihttp = require('chai-http')
 
-var config = require("./config.js");
+const config = require('./config.js')
 
-chai.use(chaihttp);
-
-var baseUrl = config.baseUrl;
-var specFile = config.specFile;
-var apiToken = "";
-
-async function auth(device_id) {
-    console.log("AUTH!", device_id);
-
-    return api()
-        .base(baseUrl)
-        .post("/auth")
-        .json()
-        .send({
-            device_id: device_id
-        })
-        .expectStatus(200)
-        .end(function (err, raw, res) {
-            apiToken = res.token;
-        });
-}
+chai.use(chaihttp)
 
 class APIClient {
-    baseUrl = "";
-    apiToken = "";
-    confirmCode = "";
+  constructor (baseUrl) {
+    this.baseUrl = baseUrl
+    this.apiToken = ''
+    this.confirmCode = ''
+  }
 
-    constructor(baseUrl) {
-        this.baseUrl = baseUrl;
-        this.apiToken = "";
-    }
+  async auth (deviceID) {
+    const client = this
+    // console.log("AUTH!", deviceID);
 
-    async auth(device_id) {
-        var client = this;
-        console.log("AUTH!", device_id);
+    return api()
+      .base(client.baseUrl)
+      .post('/auth')
+      .json()
+      .send({
+        device_id: deviceID
+      })
+      .expectStatus(200)
+      .end()
+      .then(function (res) {
+        client.apiToken = JSON.parse(res.body).token
+      })
+  }
 
-        return api()
-            .base(this.baseUrl)
-            .post("/auth")
-            .json()
-            .send({
-                device_id: device_id
-            })
-            .expectStatus(200)
-            .end()
-            .then(function (res) {
-                client.apiToken = JSON.parse(res.body).token;
-            });
-    }
+  async getOTPCode (uid) {
+    const client = this
+    // console.log("GET OTP CODE!", uid);
+    // console.log("[get otp code] this:", this)
 
-    async getOTPCode(uid) {
-        var client = this;
-        console.log("GET OTP CODE!", uid);
-        console.log("[get otp code] this:", this)
+    return api()
+      .header('Authorization', 'Bearer ' + client.apiToken)
+      .base(client.baseUrl)
+      .post('/otp/telegram/code')
+      .json()
+      .send({
+        phone: uid
+      })
+      .expectStatus(200)
+      .end()
+  }
 
-        return api()
-            .header("Authorization", "Bearer " + client.apiToken)
-            .base(client.baseUrl)
-            .post("/otp/telegram/code")
-            .json()
-            .send({
-                phone: uid
-            })
-            .expectStatus(200)
-            .end();
-    }
+  async otpAuth (uid, code) {
+    const client = this
+    // console.log("OTP AUTH!", uid, code);
 
-    async otpAuth(uid, code) {
-        var client = this;
-        console.log("OTP AUTH!", uid, code);
+    return api()
+      .header('Authorization', 'Bearer ' + client.apiToken)
+      .base(client.baseUrl)
+      .post('/otp/telegram/auth')
+      .json()
+      .send({
+        phone: uid,
+        code: code
+      })
+      .expectStatus(200)
+      .end()
+  }
 
-        return api()
-            .header("Authorization", "Bearer " + client.apiToken)
-            .base(baseUrl)
-            .post("/otp/telegram/auth")
-            .json()
-            .send({
-                phone: uid,
-                code: code
-            })
-            .expectStatus(200)
-            .end();
-    }
+  async register (uid, password) {
+    const client = this
+    // console.log("REGISTER!", uid, password)
 
-    async register(uid, password) {
-        var client = this;
-        console.log("REGISTER!", uid, password)
+    return api()
+      .header('Authorization', 'Bearer ' + client.apiToken)
+      .base(client.baseUrl)
+      .post('/register')
+      .json()
+      .send({
+        type: 'email',
+        email: uid,
+        password: password,
+        name: 'Test1'
+      })
+      .expectStatus(200)
+      .end()
+  }
 
-        return api()
-            .header("Authorization", "Bearer " + client.apiToken)
-            .base(baseUrl)
-            .post("/register")
-            .json()
-            .send({
-                type: "email",
-                email: uid,
-                password: password,
-                name: "Test1"
-            })
-            .expectStatus(200)
-            .end();
-    }
+  async getProfile () {
+    const client = this
+    // console.log("PROFILE!")
 
-    async getProfile() {
-        var client = this;
-        console.log("PROFILE!")
+    let code = ''
 
-        var code = "";
+    return api()
+      .header('Authorization', 'Bearer ' + client.apiToken)
+      .base(client.baseUrl)
+      .get('/profile')
+      .json()
+      .expectStatus(200)
+      .end()
+      .then(function (res) {
+        // console.log("res.body", res.body)
+        code = JSON.parse(res.body).user.auths.email.confirmCode
+        // console.log("res.user.auths.email.confirmCode:", code)
+        client.confirmCode = code
+      })
+  }
 
-        return api()
-            .header("Authorization", "Bearer " + client.apiToken)
-            .base(baseUrl)
-            .get("/profile")
-            .json()
-            .expectStatus(200)
-            .end()
-            .then(function (res) {
-                console.log("res.body", res.body)
-                code = JSON.parse(res.body).user.auths.email.confirmCode;
-                console.log("res.user.auths.email.confirmCode:", code)
-                client.confirmCode = code;
-            });
+  async confirm (uid) {
+    const client = this
+    // console.log("CONFIRM!", uid, client.confirmCode)
 
-        return code
-    }
+    return api()
+      .header('Authorization', 'Bearer ' + client.apiToken)
+      .base(client.baseUrl)
+      .post('/confirm')
+      .json()
+      .send({
+        type: 'email',
+        uid: uid,
+        code: client.confirmCode
+      })
+      .expectStatus(200)
+      .end()
+  }
 
-    async confirm(uid) {
-        var client = this;
-        console.log("CONFIRM!", uid, client.confirmCode)
+  async clearAll (uid) {
+    const client = this
+    // console.log("CLEAR!")
 
-        return api()
-            .header("Authorization", "Bearer " + client.apiToken)
-            .base(baseUrl)
-            .post("/confirm")
-            .json()
-            .send({
-                type: "email",
-                uid: uid,
-                code: client.confirmCode
-            })
-            .expectStatus(200)
-            .end();
-    }
+    return api()
+    // .header("Authorization", "Bearer " + client.apiToken)
+      .base(client.baseUrl)
+      .del('/clearAll')
+      .expectStatus(200)
+      .end()
+  }
 }
 
-var client = new APIClient(baseUrl);
+const client = new APIClient(config.baseUrl)
 
-module.exports = client
+function newClient () {
+  const client = new APIClient(config.baseUrl)
+  return client
+}
+
+module.exports.client = client
+module.exports.newClient = newClient
