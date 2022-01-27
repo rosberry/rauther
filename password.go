@@ -432,6 +432,7 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 
 	laUser.(user.PasswordAuthableUser).SetPassword(at.Key, string(encryptedPassword))
 
+	// TODO: Unnecessary saving? Remove?
 	err = r.deps.UserStorer.Save(u)
 	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
@@ -455,6 +456,12 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 		}
 
+		return
+	}
+
+	err = r.deps.UserStorer.Save(sessionInfo.User)
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, common.ErrUserSave)
 		return
 	}
 
