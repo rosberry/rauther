@@ -8,8 +8,8 @@ const chai = require('chai')
 const chaihttp = require('chai-http')
 let spec
 
-const config = require('./config.js')
-const helper = require('./helper.js')
+const config = require('../config.js')
+const helper = require('../helper.js')
 
 chai.use(chaihttp)
 

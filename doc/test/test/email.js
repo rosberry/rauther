@@ -9,7 +9,7 @@ chai.use(require('chai-datetime'));
 var chaihttp = require("chai-http")
 var spec;
 
-var config = require("./config.js");
+var config = require("../config.js");
 chai.use(chaihttp);
 
 var baseUrl = config.baseUrl;
