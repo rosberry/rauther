@@ -55,20 +55,18 @@ describe('Check merge flow:', function () {
 
       before(async function () {
         // main client
-        const passwordClient = await new helper.ClientBuilder()
-          .addAuth(deviceID)
-          .addPasswordRegister(email, password)
-          .addGetProfile()
-          .addPasswordConfirm(email)
-          .build()
+        const passwordClient = await new helper.newClient(deviceID)
+          .passwordRegister(email, password)
+          .getProfile()
+          .passwordConfirm(email)
+          .end()
 
         apiToken = passwordClient.apiToken
 
-        const otpClient = await new helper.ClientBuilder()
-          .addAuth(deviceID2)
-          .addGetOTPCode(phone)
-          .addOTPAuth(phone, code)
-          .build()
+        const otpClient = await new helper.newClient(deviceID2)
+          .getOTPCode(phone)
+          .otpAuth(phone, code)
+          .end()
       })
 
       after(async function () {
@@ -190,19 +188,17 @@ describe('Check merge flow:', function () {
 
         before(async function () {
           // main client
-          const passwordClient = await new helper.ClientBuilder()
-            .addAuth(deviceID)
-            .addPasswordRegister(email, password)
-            .addGetProfile()
-            .addPasswordConfirm(email)
-            .build()
+          const passwordClient = await new helper.newClient(deviceID)
+            .passwordRegister(email, password)
+            .getProfile()
+            .passwordConfirm(email)
+            .end()
 
           apiToken = passwordClient.apiToken
 
-          const socialClient = await new helper.ClientBuilder()
-            .addAuth(deviceID2)
-            .addSocialLogin(googleToken)
-            .build()
+          const socialClient = await new helper.newClient(deviceID2)
+            .socialLogin(googleToken)
+            .end()
         })
 
         after(async function () {

@@ -42,74 +42,17 @@ const errors = {
 }
 
 class APIClient {
+  baseUrl = null
+  promise = null
   apiToken = ''
   state = null
 
-  constructor(baseUrl) {
+  constructor(deviceID = null, baseUrl) {
     this.baseUrl = baseUrl
-  }
-
-  async auth(deviceID) {
-    const body = {
-      device_id: deviceID
+    this.promise = Promise.resolve()
+    if (deviceID !== null) {
+      this.auth(deviceID)
     }
-    return this.request(endpoints.auth, 'post', body, { hasToken: false })
-      .then((res) => {
-        this.apiToken = JSON.parse(res.body).token
-      })
-  }
-
-  async getOTPCode(uid) {
-    const body = {
-      phone: uid
-    }
-    return this.request(endpoints.otpGetCode, 'post', body)
-  }
-
-  async otpAuth(uid, code) {
-    const body = {
-      phone: uid,
-      code: code
-    }
-    return this.request(endpoints.otpAuth, 'post', body)
-  }
-
-  async register(uid, password, type = authTypes.password, name = 'Test1') {
-    const body = {
-      type: type,
-      email: uid,
-      password: password,
-      name: name
-    }
-    return this.request(endpoints.passwordReg, 'post', body)
-  }
-
-  async getProfile() {
-    return this.request(endpoints.profile, 'get', null)
-      .then((res) => {
-        this.state = JSON.parse(res.body).user
-      })
-  }
-
-  async confirm(uid, type = authTypes.password) {
-    let code = ''
-    if (this.state !== null && typeof this.state.auths[type] !== 'undefined') {
-      code = this.state.auths[type].confirmCode
-    }
-    const body = {
-      type: type,
-      uid: uid,
-      code: code,
-    }
-    return this.request(endpoints.passwordCondirm, 'post', body)
-  }
-
-  async socialLogin(token, type = authTypes.social) {
-    const body = {
-      type: authTypes.social,
-      token: token
-    }
-    return this.request(endpoints.socialLogin, 'post', body)
   }
 
   async request(url, type, data, paramsCfg) {
@@ -150,81 +93,102 @@ class APIClient {
           reject(err)
         })
     })
-
-
-  }
-}
-
-function newClient() {
-  const client = new APIClient(config.baseUrl)
-  return client
-}
-
-class ClientBuilder {
-  client = null
-  promise = null
-  constructor(deviceID = null, client = null) {
-    this.client = client !== null ? client : newClient()
-    this.promise = Promise.resolve()
-    if (deviceID !== null) {
-      this.addAuth(deviceID)
-    }
   }
 
-  addAuth(deviceID) {
+  auth(deviceID) {
     this.promise = this.promise.then(() => {
-      return this.client.auth(deviceID)
+      const body = {
+        device_id: deviceID
+      }
+      return this.request(endpoints.auth, 'post', body, { hasToken: false })
+        .then((res) => {
+          this.apiToken = JSON.parse(res.body).token
+        })
     })
     return this
   }
 
-  addGetOTPCode(uid) {
+  getOTPCode(uid) {
     this.promise = this.promise.then(() => {
-      return this.client.getOTPCode(uid)
+      const body = {
+        phone: uid
+      }
+      return this.request(endpoints.otpGetCode, 'post', body)
     })
     return this
   }
 
-  addOTPAuth(uid, code) {
+  otpAuth(uid, code) {
     this.promise = this.promise.then(() => {
-      return this.client.otpAuth(uid, code)
+      const body = {
+        phone: uid,
+        code: code
+      }
+      return this.request(endpoints.otpAuth, 'post', body)
     })
     return this
   }
 
-  addPasswordRegister(uid, password, type = 'email', name = 'Test1') {
+  passwordRegister(uid, password, type = authTypes.password, name = 'Test1') {
     this.promise = this.promise.then(() => {
-      return this.client.register(uid, password, type, name)
+      const body = {
+        type: type,
+        email: uid,
+        password: password,
+        name: name
+      }
+      return this.request(endpoints.passwordReg, 'post', body)
     })
     return this
   }
 
-  addPasswordConfirm(uid, type = authTypes.password) {
+  passwordConfirm(uid, type = authTypes.password) {
     this.promise = this.promise.then(() => {
-      return this.client.confirm(uid, type)
+      let code = ''
+      if (this.state !== null && typeof this.state.auths[type] !== 'undefined') {
+        code = this.state.auths[type].confirmCode
+      }
+      const body = {
+        type: type,
+        uid: uid,
+        code: code,
+      }
+      return this.request(endpoints.passwordCondirm, 'post', body)
     })
     return this
   }
 
-  addSocialLogin(token) {
+  socialLogin(token, type = authTypes.social) {
     this.promise = this.promise.then(() => {
-      return this.client.socialLogin(token)
+      const body = {
+        type: type,
+        token: token
+      }
+      return this.request(endpoints.socialLogin, 'post', body)
     })
     return this
   }
 
-  addGetProfile() {
+  getProfile() {
     this.promise = this.promise.then(() => {
-      return this.client.getProfile()
+      return this.request(endpoints.profile, 'get', null)
+        .then((res) => {
+          this.state = JSON.parse(res.body).user
+        })
     })
     return this
   }
 
-  async build() {
+  async end() {
     return this.promise.then(() => {
-      return this.client
+      return this
     })
   }
+}
+
+function newClient(deviceID = null) {
+  let client = new APIClient(deviceID, config.baseUrl)
+  return client
 }
 
 function clearAll() {
@@ -240,5 +204,4 @@ module.exports.authTypes = authTypes
 module.exports.errors = errors
 
 module.exports.newClient = newClient
-module.exports.ClientBuilder = ClientBuilder
 module.exports.clearAll = clearAll
