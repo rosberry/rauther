@@ -9,7 +9,7 @@ var chaihttp = require("chai-http")
 let should = chai.should();
 var spec;
 
-var config = require("./config.js");
+var config = require("../config.js");
 
 chai.use(chaihttp);
 
