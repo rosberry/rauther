@@ -169,7 +169,9 @@ func main() { // nolint
 	})
 
 	group.GET("/profile", rauth.AuthMiddleware(), controllers.Profile)
-	r.POST("/profile", rauth.AuthMiddleware(), controllers.UpdateProfile)
+	r.POST("/profile", rauth.AuthMiddleware(), func(c *gin.Context) {
+		controllers.UpdateProfile(c, us)
+	})
 	// test route for truncate accounts
 	if testMod {
 		r.DELETE("/clearAll", func(c *gin.Context) {
