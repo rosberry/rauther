@@ -170,10 +170,18 @@ type UserStorer struct {
 }
 
 func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error) {
-	for _, u := range s.Users {
-		if at, ok := u.Auths[authType]; ok {
-			if at.UID == uid {
-				return u, nil
+	for key, u := range s.Users {
+		if ai, ok := u.Auths[authType]; ok {
+			if ai.UID == uid {
+				user := *s.Users[key]
+				auths := make(map[string]AuthIdentities)
+
+				for sKey, baseAI := range user.Auths {
+					auths[sKey] = baseAI
+				}
+				user.Auths = auths
+
+				return &user, nil
 			}
 		}
 	}
@@ -187,8 +195,16 @@ func (s *UserStorer) LoadByID(id interface{}) (user user.User, err error) {
 		return nil, errors.New("id must be uint") //nolint
 	}
 
-	if user, ok := s.Users[userID]; ok {
-		return user, nil
+	if u, ok := s.Users[userID]; ok {
+		user := *u
+		auths := make(map[string]AuthIdentities)
+
+		for sKey, baseAI := range user.Auths {
+			auths[sKey] = baseAI
+		}
+		user.Auths = auths
+
+		return &user, nil
 	}
 
 	return nil, fmt.Errorf("User not found by id: %v", id) // nolint:goerr113

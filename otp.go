@@ -234,6 +234,8 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrCodeExpired)
 			return
 		}
+
+		u.(user.CodeSentTimeUser).SetCodeSentTime(at.Key, nil)
 	}
 
 	if code != userCode {
