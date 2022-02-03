@@ -34,7 +34,7 @@ func Profile(c *gin.Context) {
 	})
 }
 
-func UpdateProfile(c *gin.Context) {
+func UpdateProfile(c *gin.Context, us *models.UserStorer) {
 	u, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusForbidden, gin.H{
@@ -77,6 +77,8 @@ func UpdateProfile(c *gin.Context) {
 	user.Username = request.Username
 	user.FirstName = request.FirstName
 	user.LastName = request.LastName
+
+	us.Save(user)
 
 	c.JSON(http.StatusOK, gin.H{
 		"result": true,
