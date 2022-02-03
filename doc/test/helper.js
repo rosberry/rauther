@@ -12,8 +12,10 @@ const endpoints = {
   auth: '/auth',
   passwordReg: '/register',
   passwordCondirm: '/confirm',
-  otpGetCode: '/otp/telegram/code',
-  otpAuth: '/otp/telegram/auth',
+  passwordInitLink: '/initLink',
+  passwordLink: '/link',
+  otpGetCode: '/otp/{key}/code',
+  otpAuth: '/otp/{key}/auth',
   socialLogin: '/social/login',
   profile: '/profile',
 }
@@ -39,6 +41,13 @@ const errors = {
   codeExpired: 'code_expired',
   incorrectPassword: 'incorrect_password',
   mergeWarning: 'merge_warning',
+}
+
+const staticCodes = {
+  password: '456123',
+  password2: '098765',
+  otp: '123321',
+  otp2: '565656',
 }
 
 class APIClient {
@@ -89,7 +98,7 @@ class APIClient {
           resolve(res)
         })
         .catch((err) => {
-          console.log(err)
+          console.log(err.message)
           reject(err)
         })
     })
@@ -113,7 +122,7 @@ class APIClient {
       const body = {
         phone: uid
       }
-      return this.request(endpoints.otpGetCode, 'post', body)
+      return this.request('/otp/telegram/code', 'post', body)
     })
     return this
   }
@@ -124,7 +133,7 @@ class APIClient {
         phone: uid,
         code: code
       }
-      return this.request(endpoints.otpAuth, 'post', body)
+      return this.request('/otp/telegram/auth', 'post', body)
     })
     return this
   }
@@ -202,6 +211,7 @@ function clearAll() {
 module.exports.endpoints = endpoints
 module.exports.authTypes = authTypes
 module.exports.errors = errors
+module.exports.staticCodes = staticCodes
 
 module.exports.newClient = newClient
 module.exports.clearAll = clearAll
