@@ -15,9 +15,12 @@ const endpoints = {
   passwordInitLink: '/initLink',
   passwordLink: '/link',
   otpGetCode: '/otp/{key}/code',
+  otpTelegramGetCode: '/otp/telegram/code',
   otpAuth: '/otp/{key}/auth',
+  otpTelegramAuth: '/otp/telegram/auth',
   socialLogin: '/social/login',
   profile: '/profile',
+  clearAll: '/clearAll'
 }
 
 const authTypes = {
@@ -27,7 +30,7 @@ const authTypes = {
 
   password2: 'email2',
   social2: 'apple',
-  otp2: 'telegram2',
+  otp2: 'telegram2'
 }
 
 const errors = {
@@ -41,34 +44,32 @@ const errors = {
   codeExpired: 'code_expired',
   incorrectPassword: 'incorrect_password',
   mergeWarning: 'merge_warning',
+  codeTimeout: 'code_timeout'
 }
 
 const staticCodes = {
   password: '456123',
   password2: '098765',
   otp: '123321',
-  otp2: '565656',
+  otp2: '565656'
 }
 
 class APIClient {
-  baseUrl = null
-  promise = null
-  apiToken = ''
-  state = null
-
-  constructor(deviceID = null, baseUrl) {
+  constructor (deviceID = null, baseUrl) {
     this.baseUrl = baseUrl
+    this.apiToken = ''
+    this.state = null
     this.promise = Promise.resolve()
     if (deviceID !== null) {
       this.auth(deviceID)
     }
   }
 
-  async request(url, type, data, paramsCfg) {
+  async request (url, type, data, paramsCfg) {
     const params = {
       hasToken: true,
       status: 200,
-      pathParams: {},
+      pathParams: {}
     }
 
     if (typeof paramsCfg !== 'undefined') {
@@ -104,30 +105,28 @@ class APIClient {
     })
   }
 
-  auth(deviceID) {
-    this.promise = this.promise.then(() => {
+  auth (deviceID) {
+    this.promise = this.promise.then(async () => {
       const body = {
         device_id: deviceID
       }
-      return this.request(endpoints.auth, 'post', body, { hasToken: false })
-        .then((res) => {
-          this.apiToken = JSON.parse(res.body).token
-        })
+      const res = await this.request(endpoints.auth, 'post', body, { hasToken: false })
+      this.apiToken = JSON.parse(res.body).token
     })
     return this
   }
 
-  getOTPCode(uid) {
+  getOTPCode (uid) {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid
       }
-      return this.request('/otp/telegram/code', 'post', body)
+      return this.request(endpoints.otpTelegramGetCode, 'post', body)
     })
     return this
   }
 
-  otpAuth(uid, code) {
+  otpAuth (uid, code) {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid,
@@ -138,7 +137,7 @@ class APIClient {
     return this
   }
 
-  passwordRegister(uid, password, type = authTypes.password, name = 'Test1') {
+  passwordRegister (uid, password, type = authTypes.password, name = 'Test1') {
     this.promise = this.promise.then(() => {
       const body = {
         type: type,
@@ -151,7 +150,7 @@ class APIClient {
     return this
   }
 
-  passwordConfirm(uid, type = authTypes.password) {
+  passwordConfirm (uid, type = authTypes.password) {
     this.promise = this.promise.then(() => {
       let code = ''
       if (this.state !== null && typeof this.state.auths[type] !== 'undefined') {
@@ -160,14 +159,14 @@ class APIClient {
       const body = {
         type: type,
         uid: uid,
-        code: code,
+        code: code
       }
       return this.request(endpoints.passwordCondirm, 'post', body)
     })
     return this
   }
 
-  socialLogin(token, type = authTypes.social) {
+  socialLogin (token, type = authTypes.social) {
     this.promise = this.promise.then(() => {
       const body = {
         type: type,
@@ -178,7 +177,7 @@ class APIClient {
     return this
   }
 
-  getProfile() {
+  getProfile () {
     this.promise = this.promise.then(() => {
       return this.request(endpoints.profile, 'get', null)
         .then((res) => {
@@ -188,24 +187,28 @@ class APIClient {
     return this
   }
 
-  async end() {
+  async end () {
     return this.promise.then(() => {
       return this
     })
   }
 }
 
-function newClient(deviceID = null) {
-  let client = new APIClient(deviceID, config.baseUrl)
+function newClient (deviceID = null) {
+  const client = new APIClient(deviceID, config.baseUrl)
   return client
 }
 
-function clearAll() {
+function clearAll () {
   return api()
     .base(config.baseUrl)
-    .del('/clearAll')
+    .del(endpoints.clearAll)
     .expectStatus(200)
     .end()
+}
+
+async function sleep (timeout) {
+  return new Promise(resolve => setTimeout(resolve, timeout))
 }
 
 module.exports.endpoints = endpoints
@@ -213,5 +216,6 @@ module.exports.authTypes = authTypes
 module.exports.errors = errors
 module.exports.staticCodes = staticCodes
 
-module.exports.newClient = newClient
+module.exports.NewClient = newClient
 module.exports.clearAll = clearAll
+module.exports.sleep = sleep

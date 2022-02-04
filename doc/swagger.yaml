@@ -149,6 +149,10 @@ paths:
           description: Not auth. Auth token required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "403":
+          description: Incorrect password
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         "409":
           description: Conflict. Merge account
           schema:
