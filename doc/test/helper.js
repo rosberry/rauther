@@ -16,8 +16,10 @@ const endpoints = {
   passwordLink: '/link',
   otpGetCode: '/otp/{key}/code',
   otpTelegramGetCode: '/otp/telegram/code',
+  otpTelegram2GetCode: '/otp/telegram2/code',
   otpAuth: '/otp/{key}/auth',
   otpTelegramAuth: '/otp/telegram/auth',
+  otpTelegram2Auth: '/otp/telegram2/auth',
   socialLogin: '/social/login',
   profile: '/profile',
   clearAll: '/clearAll'
@@ -44,7 +46,8 @@ const errors = {
   codeExpired: 'code_expired',
   incorrectPassword: 'incorrect_password',
   mergeWarning: 'merge_warning',
-  codeTimeout: 'code_timeout'
+  codeTimeout: 'code_timeout',
+  authLost: 'auth method already exists'
 }
 
 const staticCodes = {
@@ -116,25 +119,55 @@ class APIClient {
     return this
   }
 
-  getOTPCode (uid) {
+  getOTPCode (uid, type = authTypes.otp) {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid
       }
-      return this.request(endpoints.otpTelegramGetCode, 'post', body)
+
+      let endpoint = null
+      switch (type) {
+        case authTypes.otp:
+          endpoint = endpoints.otpTelegramGetCode
+          break
+        case authTypes.otp2:
+          endpoint = endpoints.otpTelegram2GetCode
+          break
+      }
+
+      return this.request(endpoint, 'post', body)
     })
     return this
   }
 
-  otpAuth (uid, code) {
+  otpAuth (uid, code, type = authTypes.otp) {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid,
         code: code
       }
-      return this.request('/otp/telegram/auth', 'post', body)
+
+      let endpoint = null
+      switch (type) {
+        case authTypes.otp:
+          endpoint = endpoints.otpTelegramAuth
+          break
+        case authTypes.otp2:
+          endpoint = endpoints.otpTelegram2Auth
+          break
+      }
+
+      return this.request(endpoint, 'post', body)
     })
     return this
+  }
+
+  otpInitLink (uid) {
+    return this.getOTPCode(uid)
+  }
+
+  otpLink (uid, code) {
+    return this.otpAuth(uid, code)
   }
 
   passwordRegister (uid, password, type = authTypes.password, name = 'Test1') {
@@ -162,6 +195,38 @@ class APIClient {
         code: code
       }
       return this.request(endpoints.passwordCondirm, 'post', body)
+    })
+    return this
+  }
+
+  passwordInitLink (uid, type = authTypes.password) {
+    this.promise = this.promise.then(() => {
+      const body = {
+        type: type,
+        uid: uid
+      }
+      return this.request(endpoints.passwordInitLink, 'post', body)
+    })
+    return this
+  }
+
+  passwordLink (uid, password, action, type = authTypes.password, code = staticCodes.password) {
+    this.promise = this.promise.then(() => {
+      const body = {
+        type: type,
+        uid: uid,
+        password: password,
+        code: code
+      }
+
+      if (action === 'merge') {
+        body.merge = true
+        body.confirmMerge = true
+      } else {
+        body.merge = false
+      }
+
+      return this.request(endpoints.passwordLink, 'post', body)
     })
     return this
   }
