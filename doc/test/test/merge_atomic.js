@@ -3331,7 +3331,7 @@ describe('Check merge flow:', function () {
             .json()
             .send({
               type: authTypes.password,
-              uid: email
+              uid: email2
             })
             .expectStatus(400)
             .end(function (_, raw, res) {
@@ -3364,8 +3364,8 @@ describe('Check merge flow:', function () {
             .send({
               type: authTypes.password,
               merge: true,
-              uid: email,
-              password: password
+              uid: email2,
+              password: password2
             })
             .expectStatus(400)
             .end(function (_, raw, res) {
@@ -3403,8 +3403,8 @@ describe('Check merge flow:', function () {
             .send({
               type: authTypes.password,
               merge: true,
-              uid: email,
-              password: password,
+              uid: email2,
+              password: password2,
               confirmMerge: true
             })
             .expectStatus(400)
