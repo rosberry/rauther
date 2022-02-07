@@ -47,6 +47,7 @@ const errors = {
   incorrectPassword: 'incorrect_password',
   mergeWarning: 'merge_warning',
   codeTimeout: 'code_timeout',
+  invalidAuthToken: 'invalid_auth_token',
   authLost: 'auth method already exists'
 }
 
