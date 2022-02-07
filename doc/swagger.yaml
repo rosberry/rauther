@@ -156,7 +156,7 @@ paths:
         "409":
           description: Conflict. Merge account
           schema:
-            $ref: "#/definitions/ErrorResponse"
+            $ref: "#/definitions/MergeWarningResponse"
       tags:
         - auth
       security:
@@ -221,7 +221,7 @@ paths:
         "409":
           description: Conflict. Merge account
           schema:
-            $ref: "#/definitions/ErrorResponse"
+            $ref: "#/definitions/MergeWarningResponse"
       tags:
         - auth
       security:
@@ -297,7 +297,7 @@ paths:
         "409":
           description: Conflict. Merge account
           schema:
-            $ref: "#/definitions/ErrorResponse"
+            $ref: "#/definitions/MergeWarningResponse"
       tags:
         - auth
       security:
@@ -566,6 +566,42 @@ definitions:
         type: boolean
         example: true
         description: only for initLink request
+  MergeWarningResponse:
+    type: object
+    properties:
+      error:
+        $ref: "#/definitions/Error"
+      result:
+        example: false
+        type: boolean
+      info:
+        type: object
+        properties:
+          lost:
+            type: array
+            items:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: email
+                  enum:
+                  - email
+                  - email2
+                  - phone
+                  - telegram
+                  - telegram2
+                  - google
+                  - apple
+                uid:
+                  type: string
+                  example: test9017@example.com
+                error:
+                  type: string
+                  example: auth method already exists
+
+
+      
   AuthRequest:
     properties:
       device_id:
