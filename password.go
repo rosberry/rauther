@@ -424,15 +424,20 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 	}
 
 	laUser := u.(user.TempUser)
+	isTempUser := laUser.IsTemp()
 	var mergeAccount bool
 
-	if !laUser.IsTemp() {
-		if r.Modules.MergeAccount && request.Merge {
-			mergeAccount = true
-		} else {
-			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+	if r.Modules.MergeAccount && request.Merge {
+		if isTempUser {
+			errorResponse(c, http.StatusBadRequest, common.ErrUserNotFound)
 			return
 		}
+
+		mergeAccount = true
+
+	} else if !isTempUser {
+		errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		return
 	}
 
 	// check code
