@@ -47,6 +47,11 @@ func (r *Rauther) signUpHandler(c *gin.Context) {
 		return
 	}
 
+	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
+		errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+		return
+	}
+
 	// Find user by UID
 	u, err := r.deps.UserStorer.LoadByUID(at.Key, uid)
 	if err != nil {
