@@ -7,11 +7,14 @@ const hippie = require('hippie-swagger')
 const expect = require('chai').expect
 const chai = require('chai')
 const chaihttp = require('chai-http')
-let spec
-
 const config = require('../config.js')
 const helper = require('../helper.js')
+
+let spec
 const googleToken = process.env.GOOGLE_TOKEN || ''
+const googleToken2 = process.env.GOOGLE_TOKEN2 || ''
+const appleToken = process.env.APPLE_TOKEN || ''
+
 const authTypes = helper.authTypes
 const endpoints = helper.endpoints
 const errors = helper.errors
@@ -45,7 +48,7 @@ describe('Check merge flow:', function () {
   // #1 Merge OTP
   // OTP: Expected group
   describe('I want to test merging with confirmed existing OTP account', function () {
-    context('Given user 1 with email account and user 2 with OTP account', function () {
+    context('Given user 1 with confirmed password account and user 2 with OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -214,9 +217,370 @@ describe('Check merge flow:', function () {
     })
   })
 
+  // OTP: same OTP type and differrent auth keys
+  describe('I want to test merging with same OTP type and different auth keys in confirmed existing OTP accounts', function () {
+    context('Given user 1 and user 2 with OTP confirmed accounts with different auth key', function () {
+      const deviceID = 'test' + (Math.floor(Math.random() * 99999))
+      const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
+      let apiToken = ''
+
+      const phone = '+7' + (Math.floor(Math.random() * 999999999))
+      const phone2 = '+7' + (Math.floor(Math.random() * 999999999))
+      const code = staticCodes.otp
+      const code2 = staticCodes.otp2
+
+      before(async function () {
+        // main client
+        const otpClient1 = await new helper.NewClient(deviceID)
+          .getOTPCode(phone, authTypes.otp)
+          .otpAuth(phone, code, authTypes.otp)
+          .end()
+
+        apiToken = otpClient1.apiToken
+
+        await new helper.NewClient(deviceID2)
+          .getOTPCode(phone2, authTypes.otp2)
+          .otpAuth(phone2, code2, authTypes.otp2)
+          .end()
+      })
+
+      after(async function () {
+        await helper.clearAll()
+      })
+
+      describe('When user 1 requests code for OTP account', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.otpGetCode)
+            .pathParams({
+              key: authTypes.otp2
+            })
+            .json()
+            .send({
+              phone: phone2
+            })
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          done()
+        })
+      })
+
+      describe('When user 1 requests OTP auth with no merge confirm parameter', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.otpAuth)
+            .pathParams({
+              key: authTypes.otp2
+            })
+            .json()
+            .send({
+              name: userName,
+              phone: phone2,
+              code: code2
+            })
+            .expectStatus(mergeConflictStatus)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.mergeWarning}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.mergeWarning)
+          done()
+        })
+      })
+
+      describe('When user 1 requests OTP auth with merge confirm parameter set to true', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.otpAuth)
+            .pathParams({
+              key: authTypes.otp2
+            })
+            .json()
+            .send({
+              name: userName,
+              phone: phone2,
+              code: code2,
+              confirmMerge: true
+            })
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          done()
+        })
+      })
+
+      describe('When user 1 requests profile', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .get(endpoints.profile)
+            .json()
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          expect(resData).to.have.property('user').that.is.an('object')
+          expect(resData.user).to.have.property('guest').that.is.false
+          done()
+        })
+
+        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+          const auths = resData.user.auths
+          expect(auths).to.have.property(authTypes.otp).that.is.an('object')
+          expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
+          done()
+        })
+
+        it(`Then uid property of auths.${authTypes.otp} should equal uid of user 1 and not equals of user 2`, function (done) {
+          const uid = resData.user.auths[authTypes.otp].uid
+          expect(uid).equals(phone)
+          expect(uid).not.equals(phone2)
+          done()
+        })
+
+        it(`Then property auths should exists ${authTypes.otp2} type that is confirmed`, function (done) {
+          const auths = resData.user.auths
+          expect(auths).to.have.property(authTypes.otp2).that.is.an('object')
+          expect(auths[authTypes.otp2]).to.have.property('confirmed').that.is.true
+          done()
+        })
+
+        it(`Then uid property of auths.${authTypes.otp2} should equal uid of user 2 and not equals of user 1`, function (done) {
+          const uid = resData.user.auths[authTypes.otp2].uid
+          expect(uid).not.equals(phone)
+          expect(uid).equals(phone2)
+          done()
+        })
+      })
+    })
+  })
+
+  // OTP: same OTP type and auth key
+  describe('I want to test merging OTP account with same auth key and auth type', function () {
+    context('Given user 1 and user 2 with OTP accounts and same auth keys and auth types', function () {
+      const deviceID = 'test' + (Math.floor(Math.random() * 99999))
+      const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
+      let apiToken = ''
+
+      const phone = '+7' + (Math.floor(Math.random() * 999999999))
+      const phone2 = '+7' + (Math.floor(Math.random() * 999999999))
+      const code = staticCodes.otp
+
+      before(async function () {
+        // main client
+        const otpClient = await new helper.NewClient(deviceID)
+          .getOTPCode(phone)
+          .otpAuth(phone, code)
+          .end()
+
+        apiToken = otpClient.apiToken
+
+        await new helper.NewClient(deviceID2)
+          .getOTPCode(phone2)
+          .otpAuth(phone2, code)
+          .end()
+      })
+
+      after(async function () {
+        await helper.clearAll()
+      })
+
+      describe('When user 1 requests code for OTP account', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.otpGetCode)
+            .pathParams({
+              key: authTypes.otp
+            })
+            .json()
+            .send({
+              phone: phone2
+            })
+            .expectStatus(400)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+          done()
+        })
+      })
+
+      describe('When user 1 requests OTP auth with no merge confirm parameter', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.otpAuth)
+            .pathParams({
+              key: authTypes.otp
+            })
+            .json()
+            .send({
+              name: userName,
+              phone: phone2,
+              code: code
+            })
+            .expectStatus(400)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.codeExpired}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.codeExpired)
+          done()
+        })
+      })
+
+      describe('When user 1 requests OTP auth with merge confirm parameter set to true', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.otpAuth)
+            .pathParams({
+              key: authTypes.otp
+            })
+            .json()
+            .send({
+              name: userName,
+              phone: phone2,
+              code: code,
+              confirmMerge: true
+            })
+            .expectStatus(400)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.codeExpired}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.codeExpired)
+          done()
+        })
+      })
+
+      describe('When user 1 requests profile', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .get(endpoints.profile)
+            .json()
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          expect(resData).to.have.property('user').that.is.an('object')
+          expect(resData.user).to.have.property('guest').that.is.false
+          done()
+        })
+
+        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+          const auths = resData.user.auths
+          expect(auths).to.have.property(authTypes.otp).that.is.an('object')
+          expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
+          done()
+        })
+
+        it(`Then uid property of auths.${authTypes.otp} should equal uid of user 1 and not equals of user 2`, function (done) {
+          const uid = resData.user.auths[authTypes.otp].uid
+          expect(uid).equals(phone)
+          expect(uid).not.equals(phone2)
+          done()
+        })
+      })
+    })
+  })
+
   // OTP: not confirmed base account (password)
   // TODO: codeExpired with not success request to get code?
-  describe('I want to test merging with confirmed existing OTP account by not confirmed password account', function () {
+  describe('I want to test merging not confirmed password account with confirmed existing OTP account', function () {
     context('Given user 1 with not confirmed password account and user 2 with OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -310,6 +674,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
+        // TODO: codeExpired with not success request to get code?
         it(`Then property code of error should equal ${errors.codeExpired}`, function (done) {
           expect(resData.error).to.have.property('code').that.equals(errors.codeExpired)
           done()
@@ -347,6 +712,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
+        // TODO: codeExpired with not success request to get code?
         it(`Then property code of error should equal ${errors.codeExpired}`, function (done) {
           expect(resData.error).to.have.property('code').that.equals(errors.codeExpired)
           done()
@@ -929,7 +1295,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then uid property of auths.${authTypes.password} should equal UID of user 1 and not equals of user 2`, function (done) {
+        it(`Then uid property of auths.${authTypes.password} should equal uid of user 1 and not equals of user 2`, function (done) {
           const uid = resData.user.auths[authTypes.password].uid
           expect(uid).equals(email)
           expect(uid).not.equals(email2)
@@ -940,7 +1306,7 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: Experimental group
-  // OTP: user not found (switch to link account flow)
+  // OTP: user does not exist (switch to link account flow)
   // TODO: code_expired? May be already_auth?
   describe('I want to test merging with not existing OTP account', function () {
     context('Given user 1 with email account', function () {
@@ -1316,7 +1682,7 @@ describe('Check merge flow:', function () {
 
   // OTP: self merge
   // TODO: code_expired on auth request?
-  describe('I want to test merging with confirmed self OTP account', function () {
+  describe('I want to test self merging with confirmed OTP account', function () {
     context('Given user 1 with otp account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -1483,7 +1849,7 @@ describe('Check merge flow:', function () {
   if (googleToken !== '') {
     // Social: Expected group
     describe('I want to test merging with existing social account', function () {
-      context('Given user 1 with email account and user 2 with social account', function () {
+      context('Given user 1 with password account and user 2 with social account', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
         const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
         let apiToken = ''
@@ -1611,8 +1977,265 @@ describe('Check merge flow:', function () {
       })
     })
 
+    // Social: same social type and differrent auth keys
+    if (appleToken !== '') {
+      describe('I want to test merging with same social type and different auth keys in existing social accounts', function () {
+        context('Given user 1 and user 2 with social accounts with different auth key', function () {
+          const deviceID = 'test' + (Math.floor(Math.random() * 99999))
+          const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
+          let apiToken = ''
+
+          before(async function () {
+            // main client
+            const socialClient = await new helper.NewClient(deviceID)
+              .socialLogin(googleToken)
+              .end()
+
+            apiToken = socialClient.apiToken
+
+            await new helper.NewClient(deviceID2)
+              .socialLogin(appleToken)
+              .end()
+          })
+
+          after(async function () {
+            await helper.clearAll()
+          })
+
+          describe('When user 1 requests social login for social account without merge confirm parameter', function () {
+            let resData = null
+
+            before(function (done) {
+              hippie(spec)
+                .header('Authorization', 'Bearer ' + apiToken)
+                .base(baseUrl)
+                .post(endpoints.socialLogin)
+                .json()
+                .send({
+                  type: authTypes.social2,
+                  token: appleToken
+                })
+                .expectStatus(mergeConflictStatus)
+                .end(function (_, raw, res) {
+                  resData = res
+                  done.apply(null, arguments)
+                })
+            })
+
+            it('Then request should return result false', function (done) {
+              expect(resData).to.have.property('result').that.is.false
+              expect(resData).to.have.property('error')
+              done()
+            })
+
+            it(`Then property code of error should equal ${errors.mergeWarning}`, function (done) {
+              expect(resData.error).to.have.property('code').that.equals(errors.mergeWarning)
+              done()
+            })
+          })
+
+          describe('When user 1 requests social login with merge confirm parameter set to true', function () {
+            let resData = null
+
+            before(function (done) {
+              hippie(spec)
+                .header('Authorization', 'Bearer ' + apiToken)
+                .base(baseUrl)
+                .post(endpoints.socialLogin)
+                .json()
+                .send({
+                  type: authTypes.social2,
+                  token: appleToken,
+                  confirmMerge: true
+                })
+                .expectStatus(200)
+                .end(function (_, raw, res) {
+                  resData = res
+                  done.apply(null, arguments)
+                })
+            })
+
+            it('Then request should return result true', function (done) {
+              expect(resData).to.have.property('result').that.is.true
+              expect(resData).to.not.have.property('error')
+              done()
+            })
+          })
+
+          describe('When user 1 requests profile', function () {
+            let resData = null
+
+            before(function (done) {
+              hippie(spec)
+                .header('Authorization', 'Bearer ' + apiToken)
+                .base(baseUrl)
+                .get(endpoints.profile)
+                .json()
+                .expectStatus(200)
+                .end(function (_, raw, res) {
+                  resData = res
+                  done.apply(null, arguments)
+                })
+            })
+
+            it('Then request should return true', function (done) {
+              expect(resData).to.have.property('result').that.is.true
+              expect(resData).to.not.have.property('error')
+              expect(resData).to.have.property('user').that.is.an('object')
+              expect(resData.user).to.have.property('guest').that.is.false
+              done()
+            })
+
+            it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+              const auths = resData.user.auths
+              expect(auths).to.have.property(authTypes.social).that.is.an('object')
+              expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
+              done()
+            })
+
+            it(`Then property auths should exists ${authTypes.social2} type that is confirmed`, function (done) {
+              const auths = resData.user.auths
+              expect(auths).to.have.property(authTypes.social2).that.is.an('object')
+              expect(auths[authTypes.social2]).to.have.property('confirmed').that.is.true
+              done()
+            })
+          })
+        })
+      })
+    }
+
+    // Social: same social type and auth key
+    if (googleToken2 !== '') {
+      describe('I want to test merging social account with same auth key and auth type', function () {
+        context('Given user 1 and user 2 with social accounts and same auth keys and auth types', function () {
+          const deviceID = 'test' + (Math.floor(Math.random() * 99999))
+          const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
+          let apiToken = ''
+
+          before(async function () {
+            // main client
+            const socialClient = await new helper.NewClient(deviceID)
+              .socialLogin(googleToken)
+              .end()
+
+            apiToken = socialClient.apiToken
+
+            await new helper.NewClient(deviceID2)
+              .socialLogin(googleToken2)
+              .end()
+          })
+
+          after(async function () {
+            await helper.clearAll()
+          })
+
+          describe('When user 1 requests social login for social account without merge confirm parameter', function () {
+            let resData = null
+
+            before(function (done) {
+              hippie(spec)
+                .header('Authorization', 'Bearer ' + apiToken)
+                .base(baseUrl)
+                .post(endpoints.socialLogin)
+                .json()
+                .send({
+                  type: authTypes.social,
+                  token: googleToken2
+                })
+                .expectStatus(400)
+                .end(function (_, raw, res) {
+                  resData = res
+                  done.apply(null, arguments)
+                })
+            })
+
+            it('Then request should return result false', function (done) {
+              expect(resData).to.have.property('result').that.is.false
+              expect(resData).to.have.property('error')
+              done()
+            })
+
+            it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
+              expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+              done()
+            })
+
+            it('Then property info should not exists', function (done) {
+              expect(resData).to.not.have.property('info')
+              done()
+            })
+          })
+
+          describe('When user 1 requests social login with merge confirm parameter set to true', function () {
+            let resData = null
+
+            before(function (done) {
+              hippie(spec)
+                .header('Authorization', 'Bearer ' + apiToken)
+                .base(baseUrl)
+                .post(endpoints.socialLogin)
+                .json()
+                .send({
+                  type: authTypes.social,
+                  token: googleToken2,
+                  confirmMerge: true
+                })
+                .expectStatus(400)
+                .end(function (_, raw, res) {
+                  resData = res
+                  done.apply(null, arguments)
+                })
+            })
+
+            it('Then request should return result false', function (done) {
+              expect(resData).to.have.property('result').that.is.false
+              expect(resData).to.have.property('error')
+              done()
+            })
+
+            it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
+              expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+              done()
+            })
+          })
+
+          describe('When user 1 requests profile', function () {
+            let resData = null
+
+            before(function (done) {
+              hippie(spec)
+                .header('Authorization', 'Bearer ' + apiToken)
+                .base(baseUrl)
+                .get(endpoints.profile)
+                .json()
+                .expectStatus(200)
+                .end(function (_, raw, res) {
+                  resData = res
+                  done.apply(null, arguments)
+                })
+            })
+
+            it('Then request should return true', function (done) {
+              expect(resData).to.have.property('result').that.is.true
+              expect(resData).to.not.have.property('error')
+              expect(resData).to.have.property('user').that.is.an('object')
+              expect(resData.user).to.have.property('guest').that.is.false
+              done()
+            })
+
+            it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+              const auths = resData.user.auths
+              expect(auths).to.have.property(authTypes.social).that.is.an('object')
+              expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
+              done()
+            })
+          })
+        })
+      })
+    }
+
     // Social: not confirmed base account (password)
-    describe('I want to test merging with existing social account by not confirmed password account', function () {
+    describe('I want to test merging not confirmed password account with existing social account', function () {
       context('Given user 1 with not confirmed email account and user 2 with social account', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
         const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -1891,7 +2514,7 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then uid property of auths.${authTypes.password} should equal UID of user 1 and not equals of user 2`, function (done) {
+          it(`Then uid property of auths.${authTypes.password} should equal uid of user 1 and not equals of user 2`, function (done) {
             const uid = resData.user.auths[authTypes.password].uid
             expect(uid).equals(email)
             expect(uid).not.equals(email2)
@@ -1902,7 +2525,7 @@ describe('Check merge flow:', function () {
     })
 
     // Social: Experimental group
-    // Social: user not found (switch to link account flow)
+    // Social: user does not exist (switch to link account flow)
     describe('I want to test merging with not existing social account', function () {
       context('Given user 1 with email account', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -2161,7 +2784,7 @@ describe('Check merge flow:', function () {
     })
 
     // Social: self merge
-    describe('I want to test merging with self social account', function () {
+    describe('I want to test self merging with social account', function () {
       context('Given user 1 with social account', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
         let apiToken = ''
@@ -2459,6 +3082,385 @@ describe('Check merge flow:', function () {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
+          done()
+        })
+      })
+    })
+  })
+
+  // Password: same password type and differrent auth keys
+  describe('I want to test merging with same password type and different auth keys in confirmed existing password accounts', function () {
+    context('Given user 1 and user 2 with password confirmed accounts with different auth key', function () {
+      const deviceID = 'test' + (Math.floor(Math.random() * 99999))
+      const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
+      let apiToken = ''
+
+      const email = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
+      const email2 = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
+      const password = 'password1'
+      const password2 = 'password2'
+
+      before(async function () {
+        // main client
+        const passwordClient = await new helper.NewClient(deviceID)
+          .passwordRegister(email, password, authTypes.password)
+          .getProfile()
+          .passwordConfirm(email, authTypes.password)
+          .end()
+
+        apiToken = passwordClient.apiToken
+
+        await new helper.NewClient(deviceID2)
+          .passwordRegister(email2, password2, authTypes.password2)
+          .getProfile()
+          .passwordConfirm(email2, authTypes.password2)
+          .end()
+      })
+
+      after(async function () {
+        await helper.clearAll()
+      })
+
+      describe('When user 1 requests for init merge password account', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.passwordInitLink)
+            .json()
+            .send({
+              type: authTypes.password2,
+              uid: email2
+            })
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          done()
+        })
+
+        it('Then property action should equal "merge"', function (done) {
+          expect(resData).to.have.property('action').that.equals('merge')
+          done()
+        })
+
+        it('Then property confirmCodeRequired should equal false', function (done) {
+          expect(resData).to.have.property('confirmCodeRequired').is.false
+          done()
+        })
+      })
+
+      describe('When user 1 requests for merge password account with no merge confirm parameter', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.passwordLink)
+            .json()
+            .send({
+              type: authTypes.password2,
+              merge: true,
+              uid: email2,
+              password: password2
+            })
+            .expectStatus(mergeConflictStatus)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.mergeWarning}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.mergeWarning)
+          done()
+        })
+
+        it('Then property info should exists', function (done) {
+          expect(resData).to.have.property('info')
+          done()
+        })
+
+        it('Then property lost of info should exists and should be zero length', function (done) {
+          expect(resData.info).to.have.property('lost').that.have.length(0)
+          done()
+        })
+      })
+
+      describe('When user 1 requests for merge password account with merge confirm parameter set to true', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.passwordLink)
+            .json()
+            .send({
+              type: authTypes.password2,
+              merge: true,
+              uid: email2,
+              password: password2,
+              confirmMerge: true
+            })
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          done()
+        })
+      })
+
+      describe('When user 1 requests profile', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .get(endpoints.profile)
+            .json()
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          expect(resData).to.have.property('user').that.is.an('object')
+          expect(resData.user).to.have.property('guest').that.is.false
+          done()
+        })
+
+        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+          const auths = resData.user.auths
+          expect(auths).to.have.property(authTypes.password).that.is.an('object')
+          expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
+          done()
+        })
+
+        it(`Then uid property of auths.${authTypes.password} should equal uid of user 1 and not equals of user 2`, function (done) {
+          const uid = resData.user.auths[authTypes.password].uid
+          expect(uid).equals(email)
+          expect(uid).not.equals(email2)
+          done()
+        })
+
+        it(`Then property auths should exists ${authTypes.password2} type that is confirmed`, function (done) {
+          const auths = resData.user.auths
+          expect(auths).to.have.property(authTypes.password2).that.is.an('object')
+          expect(auths[authTypes.password2]).to.have.property('confirmed').that.is.true
+          done()
+        })
+
+        it(`Then uid property of auths.${authTypes.password2} should equal uid of user 2 and not equals of user 1`, function (done) {
+          const uid = resData.user.auths[authTypes.password2].uid
+          expect(uid).not.equals(email)
+          expect(uid).equals(email2)
+          done()
+        })
+      })
+    })
+  })
+
+  // Password: same password type and auth key
+  describe('I want to test merging password account with same auth key and auth type', function () {
+    context('Given user 1 and user 2 with password accounts and same auth keys and auth types', function () {
+      const deviceID = 'test' + (Math.floor(Math.random() * 99999))
+      const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
+      let apiToken = ''
+
+      const email = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
+      const email2 = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
+      const password = 'password1'
+      const password2 = 'password1'
+
+      before(async function () {
+        // main client
+        const passwordClient = await new helper.NewClient(deviceID)
+          .passwordRegister(email, password)
+          .getProfile()
+          .passwordConfirm(email)
+          .end()
+
+        apiToken = passwordClient.apiToken
+
+        await new helper.NewClient(deviceID2)
+          .passwordRegister(email2, password2)
+          .getProfile()
+          .passwordConfirm(email2)
+          .end()
+      })
+
+      after(async function () {
+        await helper.clearAll()
+      })
+
+      describe('When user 1 requests for init merge password account', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.passwordInitLink)
+            .json()
+            .send({
+              type: authTypes.password,
+              uid: email
+            })
+            .expectStatus(400)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+          done()
+        })
+      })
+
+      describe('When user 1 requests for merge password account with no merge confirm parameter', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.passwordLink)
+            .json()
+            .send({
+              type: authTypes.password,
+              merge: true,
+              uid: email,
+              password: password
+            })
+            .expectStatus(400)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+          done()
+        })
+
+        it('Then property info should not exists', function (done) {
+          expect(resData).to.not.have.property('info')
+          done()
+        })
+      })
+
+      describe('When user 1 requests for merge password account with merge confirm parameter set to true', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .post(endpoints.passwordLink)
+            .json()
+            .send({
+              type: authTypes.password,
+              merge: true,
+              uid: email,
+              password: password,
+              confirmMerge: true
+            })
+            .expectStatus(400)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+          done()
+        })
+      })
+
+      describe('When user 1 requests profile', function () {
+        let resData = null
+
+        before(function (done) {
+          hippie(spec)
+            .header('Authorization', 'Bearer ' + apiToken)
+            .base(baseUrl)
+            .get(endpoints.profile)
+            .json()
+            .expectStatus(200)
+            .end(function (_, raw, res) {
+              resData = res
+              done.apply(null, arguments)
+            })
+        })
+
+        it('Then request should return true', function (done) {
+          expect(resData).to.have.property('result').that.is.true
+          expect(resData).to.not.have.property('error')
+          expect(resData).to.have.property('user').that.is.an('object')
+          expect(resData.user).to.have.property('guest').that.is.false
+          done()
+        })
+
+        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+          const auths = resData.user.auths
+          expect(auths).to.have.property(authTypes.password).that.is.an('object')
+          expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
+          done()
+        })
+
+        it(`Then uid property of auths.${authTypes.password} should equal uid of user 1 and not equals of user 2`, function (done) {
+          const uid = resData.user.auths[authTypes.password].uid
+          expect(uid).equals(email)
+          expect(uid).not.equals(email2)
           done()
         })
       })
@@ -3035,7 +4037,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then uid property of auths.${authTypes.otp} should equal UID of user 1 and not equals of user 2`, function (done) {
+        it(`Then uid property of auths.${authTypes.otp} should equal uid of user 1 and not equals of user 2`, function (done) {
           const uid = resData.user.auths[authTypes.otp].uid
           expect(uid).equals(phone)
           expect(uid).not.equals(phone2)
@@ -3046,7 +4048,7 @@ describe('Check merge flow:', function () {
   })
 
   // Password: Experimental group
-  // Password: user not found
+  // Password: user does not exist
   describe('I want to test merging with not existing password account', function () {
     context('Given user 1 with OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -3399,7 +4401,7 @@ describe('Check merge flow:', function () {
   })
 
   // Password: self merge
-  describe('I want to test merging with confirmed existing password account', function () {
+  describe('I want to test self merging with confirmed existing password account', function () {
     context('Given user 1 with OTP account and user 2 with confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
