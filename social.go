@@ -80,12 +80,14 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 	}
 
 	if linkAccount {
-		if err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key); err != nil {
+		if err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key, userInfo.ID); err != nil {
 			switch {
 			case errors.Is(err, errAuthIdentityExists):
 				errorResponse(c, http.StatusBadRequest, common.ErrAuthIdentityExists)
 			case errors.Is(err, errCurrentUserNotConfirmed):
 				errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
+			case errors.Is(err, errCannotMergeSelf):
+				errorResponse(c, http.StatusBadRequest, common.ErrCannotMergeSelf)
 			default:
 				errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 			}
@@ -139,6 +141,8 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 			switch {
 			case errors.Is(err, errUserAlreadyRegistered):
 				errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+			case errors.Is(err, errCannotMergeSelf):
+				errorResponse(c, http.StatusBadRequest, common.ErrCannotMergeSelf)
 			case errors.As(err, &customErr):
 				customErrorResponse(c, customErr)
 			case errors.As(err, &mergeErr):

@@ -41,6 +41,7 @@ const errors = {
   userExist: 'user_exist',
   alreadyAuth: 'already_auth',
   authIdentityAlreadyExists: 'auth_identity_already_exists',
+  cannotMergeSelf: 'cannot_merge_self',
   invalidRequest: 'req_invalid',
   invalidCode: 'invalid_code',
   codeExpired: 'code_expired',
