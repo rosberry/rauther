@@ -1994,7 +1994,7 @@ describe('Check merge flow:', function () {
             apiToken = socialClient.apiToken
 
             await new helper.NewClient(deviceID2)
-              .socialLogin(appleToken)
+              .socialLogin(appleToken, authTypes.social2)
               .end()
           })
 
@@ -2107,7 +2107,7 @@ describe('Check merge flow:', function () {
     // Social: same social type and auth key
     if (googleToken2 !== '') {
       describe('I want to test merging social account with existing social account with same auth key', function () {
-        context('Given user 1 and user 2 with social accounts with different auth keys', function () {
+        context('Given user 1 and user 2 with social accounts with same auth keys', function () {
           const deviceID = 'test' + (Math.floor(Math.random() * 99999))
           const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
           let apiToken = ''
@@ -2603,8 +2603,8 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
-            expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+          it(`Then property code of error should equal ${errors.cannotMergeSelf}`, function (done) {
+            expect(resData.error).to.have.property('code').that.equals(errors.cannotMergeSelf)
             done()
           })
         })
@@ -2828,8 +2828,8 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
-            expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+          it(`Then property code of error should equal ${errors.cannotMergeSelf}`, function (done) {
+            expect(resData.error).to.have.property('code').that.equals(errors.cannotMergeSelf)
             done()
           })
         })
@@ -2861,8 +2861,8 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
-            expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+          it(`Then property code of error should equal ${errors.cannotMergeSelf}`, function (done) {
+            expect(resData.error).to.have.property('code').that.equals(errors.cannotMergeSelf)
             done()
           })
         })
