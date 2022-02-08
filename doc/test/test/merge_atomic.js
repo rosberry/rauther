@@ -200,14 +200,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
@@ -218,8 +218,8 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: same OTP type and differrent auth keys
-  describe('I want to test merging with same OTP type and different auth keys in confirmed existing OTP accounts', function () {
-    context('Given user 1 and user 2 with OTP confirmed accounts with different auth key', function () {
+  describe('I want to test merging OTP account with existing OTP account with different auth key', function () {
+    context('Given user 1 and user 2 with OTP confirmed accounts with different auth keys', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -369,7 +369,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
@@ -383,7 +383,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp2} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp2} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp2).that.is.an('object')
           expect(auths[authTypes.otp2]).to.have.property('confirmed').that.is.true
@@ -401,8 +401,8 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: same OTP type and auth key
-  describe('I want to test merging OTP account with same auth key and auth type', function () {
-    context('Given user 1 and user 2 with OTP accounts and same auth keys and auth types', function () {
+  describe('I want to test merging OTP account with existing OTP account with same auth key', function () {
+    context('Given user 1 and user 2 with OTP accounts with same auth keys', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -561,7 +561,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
@@ -743,14 +743,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is not confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is not confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.false
           done()
         })
 
-        it(`Then property auths should not exists ${authTypes.otp}`, function (done) {
+        it(`Then property auths should not contain ${authTypes.otp}`, function (done) {
           expect(resData.user.auths).to.not.have.property(authTypes.otp)
           done()
         })
@@ -759,8 +759,8 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: not confirmed
-  describe('I want to test merging with not confirmed existing OTP account', function () {
-    context('Given user 1 with email account and user 2 with not confirmed OTP account', function () {
+  describe('I want to test merging with not confirmed existing OTP account right after OTP confirmation code has been sent', function () {
+    context('Given user 1 with password account and user 2 with not confirmed OTP account and OTP confirmation code has been sent', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -916,14 +916,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
@@ -934,8 +934,8 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: not confirmed + timeout
-  describe('I want to test merging with not confirmed existing OTP account and base timeout', function () {
-    context('Given user 1 with email account and user 2 with not confirmed OTP account', function () {
+  describe('I want to test merging with not confirmed existing OTP account with timeout after OTP confirmation code has been sent', function () {
+    context('Given user 1 with password account and user 2 with not confirmed OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -1088,14 +1088,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
@@ -1107,7 +1107,7 @@ describe('Check merge flow:', function () {
 
   // OTP: lost ai after merge
   describe('I want to test that after merging OTP account, similar auth identities will be lost', function () {
-    context('Given user 1 with password account and user 2 with confirmed confirmed auth identities of password and OTP', function () {
+    context('Given user 1 with password account and user 2 with confirmed password and OTP auth identities', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -1206,17 +1206,17 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should exists', function (done) {
+        it('Then property info should exist', function (done) {
           expect(resData).to.have.property('info')
           done()
         })
 
-        it('Then property lost of info should exists that length must be one', function (done) {
+        it('Then property lost of info should exist that length must be one', function (done) {
           expect(resData.info).to.have.property('lost').that.have.length(1)
           done()
         })
 
-        it(`Then property lost of info should exists ${authTypes.password} type, expected uid and error '${errors.authLost}'`, function (done) {
+        it(`Then property lost of info should contain ${authTypes.password} type, expected uid and error '${errors.authLost}'`, function (done) {
           const row = resData.info.lost[0]
           expect(row.type).equals(authTypes.password)
           expect(row.uid).equals(email2)
@@ -1281,14 +1281,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
@@ -1309,7 +1309,7 @@ describe('Check merge flow:', function () {
   // OTP: user does not exist (switch to link account flow)
   // TODO: code_expired? May be already_auth?
   describe('I want to test merging with not existing OTP account', function () {
-    context('Given user 1 with email account', function () {
+    context('Given user 1 with password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
 
@@ -1455,14 +1455,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type`, function (done) {
           expect(resData.user.auths).to.have.property(authTypes.otp).that.is.an('object')
           done()
         })
@@ -1472,7 +1472,7 @@ describe('Check merge flow:', function () {
 
   // OTP: invalid code
   describe('I want to test merging with not confirmed existing OTP account and with invalid code', function () {
-    context('Given user 1 with email account and user 2 with not confirmed OTP account', function () {
+    context('Given user 1 with password account and user 2 with not confirmed OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -1665,14 +1665,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should not exists ${authTypes.otp} type`, function (done) {
+        it(`Then property auths should not contain ${authTypes.otp} type`, function (done) {
           expect(resData.user.auths).to.not.have.property(authTypes.otp)
           done()
         })
@@ -1683,7 +1683,7 @@ describe('Check merge flow:', function () {
   // OTP: self merge
   // TODO: code_expired on auth request?
   describe('I want to test self merging with confirmed OTP account', function () {
-    context('Given user 1 with otp account', function () {
+    context('Given user 1 with OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
 
@@ -1835,7 +1835,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
@@ -1960,14 +1960,14 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.password).that.is.an('object')
             expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.social} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.social).that.is.an('object')
             expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
@@ -1979,8 +1979,8 @@ describe('Check merge flow:', function () {
 
     // Social: same social type and differrent auth keys
     if (appleToken !== '') {
-      describe('I want to test merging with same social type and different auth keys in existing social accounts', function () {
-        context('Given user 1 and user 2 with social accounts with different auth key', function () {
+      describe('I want to test merging social account with existing social account with different auth key', function () {
+        context('Given user 1 and user 2 with social accounts with different auth keys', function () {
           const deviceID = 'test' + (Math.floor(Math.random() * 99999))
           const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
           let apiToken = ''
@@ -2086,14 +2086,14 @@ describe('Check merge flow:', function () {
               done()
             })
 
-            it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+            it(`Then property auths should contain ${authTypes.social} type that is confirmed`, function (done) {
               const auths = resData.user.auths
               expect(auths).to.have.property(authTypes.social).that.is.an('object')
               expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
               done()
             })
 
-            it(`Then property auths should exists ${authTypes.social2} type that is confirmed`, function (done) {
+            it(`Then property auths should contain ${authTypes.social2} type that is confirmed`, function (done) {
               const auths = resData.user.auths
               expect(auths).to.have.property(authTypes.social2).that.is.an('object')
               expect(auths[authTypes.social2]).to.have.property('confirmed').that.is.true
@@ -2106,8 +2106,8 @@ describe('Check merge flow:', function () {
 
     // Social: same social type and auth key
     if (googleToken2 !== '') {
-      describe('I want to test merging social account with same auth key and auth type', function () {
-        context('Given user 1 and user 2 with social accounts and same auth keys and auth types', function () {
+      describe('I want to test merging social account with existing social account with same auth key', function () {
+        context('Given user 1 and user 2 with social accounts with different auth keys', function () {
           const deviceID = 'test' + (Math.floor(Math.random() * 99999))
           const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
           let apiToken = ''
@@ -2160,7 +2160,7 @@ describe('Check merge flow:', function () {
               done()
             })
 
-            it('Then property info should not exists', function (done) {
+            it('Then property info should not exist', function (done) {
               expect(resData).to.not.have.property('info')
               done()
             })
@@ -2223,7 +2223,7 @@ describe('Check merge flow:', function () {
               done()
             })
 
-            it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+            it(`Then property auths should contain ${authTypes.social} type that is confirmed`, function (done) {
               const auths = resData.user.auths
               expect(auths).to.have.property(authTypes.social).that.is.an('object')
               expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
@@ -2236,7 +2236,7 @@ describe('Check merge flow:', function () {
 
     // Social: not confirmed base account (password)
     describe('I want to test merging not confirmed password account with existing social account', function () {
-      context('Given user 1 with not confirmed email account and user 2 with social account', function () {
+      context('Given user 1 with not confirmed password account and user 2 with social account', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
         const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
         let apiToken = ''
@@ -2350,14 +2350,14 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.password} type that is not confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.password} type that is not confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.password).that.is.an('object')
             expect(auths[authTypes.password]).to.have.property('confirmed').that.is.false
             done()
           })
 
-          it(`Then property auths should not exists ${authTypes.social}`, function (done) {
+          it(`Then property auths should not contain ${authTypes.social}`, function (done) {
             expect(resData.user.auths).to.not.have.property(authTypes.social)
             done()
           })
@@ -2367,7 +2367,7 @@ describe('Check merge flow:', function () {
 
     // Social: lost ai after merge
     describe('I want to test that after merging social account, similar auth identities will be lost', function () {
-      context('Given user 1 with password account and user 2 with confirmed auth identities of social and OTP', function () {
+      context('Given user 1 with password account and user 2 with confirmed auth identities of social and password', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
         const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
         let apiToken = ''
@@ -2429,17 +2429,17 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it('Then property info should exists', function (done) {
+          it('Then property info should exist', function (done) {
             expect(resData).to.have.property('info')
             done()
           })
 
-          it('Then property lost of info should exists that length must be one', function (done) {
+          it('Then property lost of info should exist that length must be one', function (done) {
             expect(resData.info).to.have.property('lost').that.have.length(1)
             done()
           })
 
-          it(`Then property lost of info should exists ${authTypes.password} type, expected uid and error '${errors.authLost}'`, function (done) {
+          it(`Then property lost of info should contain ${authTypes.password} type, expected uid and error '${errors.authLost}'`, function (done) {
             const row = resData.info.lost[0]
             expect(row.type).equals(authTypes.password)
             expect(row.uid).equals(email2)
@@ -2500,14 +2500,14 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.social} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.social).that.is.an('object')
             expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.password).that.is.an('object')
             expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
@@ -2527,7 +2527,7 @@ describe('Check merge flow:', function () {
     // Social: Experimental group
     // Social: user does not exist (switch to link account flow)
     describe('I want to test merging with not existing social account', function () {
-      context('Given user 1 with email account', function () {
+      context('Given user 1 with password account', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
         let apiToken = ''
 
@@ -2633,14 +2633,14 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.password).that.is.an('object')
             expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.social} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.social).that.is.an('object')
             expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
@@ -2652,7 +2652,7 @@ describe('Check merge flow:', function () {
 
     // Social: invalid token
     describe('I want to test merging with existing social account and with invalid token', function () {
-      context('Given user 1 with email account and user 2 with social account', function () {
+      context('Given user 1 with password account and user 2 with social account', function () {
         const deviceID = 'test' + (Math.floor(Math.random() * 99999))
         const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
         let apiToken = ''
@@ -2768,14 +2768,14 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.password).that.is.an('object')
             expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
             done()
           })
 
-          it(`Then property auths should not exists ${authTypes.social} type`, function (done) {
+          it(`Then property auths should not contain ${authTypes.social} type`, function (done) {
             expect(resData.user.auths).to.not.have.property(authTypes.social)
             done()
           })
@@ -2891,7 +2891,7 @@ describe('Check merge flow:', function () {
             done()
           })
 
-          it(`Then property auths should exists ${authTypes.social} type that is confirmed`, function (done) {
+          it(`Then property auths should contain ${authTypes.social} type that is confirmed`, function (done) {
             const auths = resData.user.auths
             expect(auths).to.have.property(authTypes.social).that.is.an('object')
             expect(auths[authTypes.social]).to.have.property('confirmed').that.is.true
@@ -3006,12 +3006,12 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should exists', function (done) {
+        it('Then property info should exist', function (done) {
           expect(resData).to.have.property('info')
           done()
         })
 
-        it('Then property lost of info should exists and should be zero length', function (done) {
+        it('Then property lost of info should exist and should be zero length', function (done) {
           expect(resData.info).to.have.property('lost').that.have.length(0)
           done()
         })
@@ -3071,14 +3071,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
@@ -3089,8 +3089,8 @@ describe('Check merge flow:', function () {
   })
 
   // Password: same password type and differrent auth keys
-  describe('I want to test merging with same password type and different auth keys in confirmed existing password accounts', function () {
-    context('Given user 1 and user 2 with password confirmed accounts with different auth key', function () {
+  describe('I want to test merging password account with another confirmed password account with different auth key', function () {
+    context('Given user 1 and user 2 with password confirmed accounts with different auth keys', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -3191,12 +3191,12 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should exists', function (done) {
+        it('Then property info should exist', function (done) {
           expect(resData).to.have.property('info')
           done()
         })
 
-        it('Then property lost of info should exists and should be zero length', function (done) {
+        it('Then property lost of info should exist and should be zero length', function (done) {
           expect(resData.info).to.have.property('lost').that.have.length(0)
           done()
         })
@@ -3256,7 +3256,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
@@ -3270,7 +3270,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password2} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password2} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password2).that.is.an('object')
           expect(auths[authTypes.password2]).to.have.property('confirmed').that.is.true
@@ -3288,8 +3288,8 @@ describe('Check merge flow:', function () {
   })
 
   // Password: same password type and auth key
-  describe('I want to test merging password account with same auth key and auth type', function () {
-    context('Given user 1 and user 2 with password accounts and same auth keys and auth types', function () {
+  describe('I want to test merging password account with another confirmed password account with same auth key', function () {
+    context('Given user 1 and user 2 with password accounts with same auth keys', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -3385,7 +3385,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should not exists', function (done) {
+        it('Then property info should not exist', function (done) {
           expect(resData).to.not.have.property('info')
           done()
         })
@@ -3450,7 +3450,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
@@ -3468,8 +3468,8 @@ describe('Check merge flow:', function () {
   })
 
   // Password: not confirmed
-  describe('I want to test merging with not confirmed existing password account', function () {
-    context('Given user 1 with OTP account and user 2 with not confirmed password account', function () {
+  describe('I want to test merging with not confirmed existing password account right after registration confirmation code has been sent', function () {
+    context('Given user 1 with OTP account and user 2 with not confirmed password account and registration confirmation code has been sent', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -3575,12 +3575,12 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should exists', function (done) {
+        it('Then property info should exist', function (done) {
           expect(resData).to.have.property('info')
           done()
         })
 
-        it('Then property lost of info should exists and should be zero length', function (done) {
+        it('Then property lost of info should exist and should be zero length', function (done) {
           expect(resData.info).to.have.property('lost').that.have.length(0)
           done()
         })
@@ -3640,14 +3640,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
@@ -3658,7 +3658,7 @@ describe('Check merge flow:', function () {
   })
 
   // Password: not confirmed + timeout
-  describe('I want to test merging with not confirmed existing password account and base timeout', function () {
+  describe('I want to test merging with not confirmed existing password account with timeout after registration confirmation code has been sent', function () {
     context('Given user 1 with OTP account and user 2 with not confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -3762,12 +3762,12 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should exists', function (done) {
+        it('Then property info should exist', function (done) {
           expect(resData).to.have.property('info')
           done()
         })
 
-        it('Then property lost of info should exists and should be zero length', function (done) {
+        it('Then property lost of info should exist and should be zero length', function (done) {
           expect(resData.info).to.have.property('lost').that.have.length(0)
           done()
         })
@@ -3827,14 +3827,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
@@ -3846,7 +3846,7 @@ describe('Check merge flow:', function () {
 
   // Password: lost ai after merge
   describe('I want to test that after merging password account, similar auth identities will be lost', function () {
-    context('Given user 1 with OTP account and user 2 with confirmed auth identities of password and OTP', function () {
+    context('Given user 1 with OTP account and user 2 with confirmed password and OTP auth identities', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -3950,17 +3950,17 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should exists', function (done) {
+        it('Then property info should exist', function (done) {
           expect(resData).to.have.property('info')
           done()
         })
 
-        it('Then property lost of info should exists that length must be one', function (done) {
+        it('Then property lost of info should exist that length must be one', function (done) {
           expect(resData.info).to.have.property('lost').that.have.length(1)
           done()
         })
 
-        it(`Then property lost of info should exists ${authTypes.otp} type, expected uid and error '${errors.authLost}'`, function (done) {
+        it(`Then property lost of info should contain ${authTypes.otp} type, expected uid and error '${errors.authLost}'`, function (done) {
           const row = resData.info.lost[0]
           expect(row.type).equals(authTypes.otp)
           expect(row.uid).equals(phone2)
@@ -4023,14 +4023,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
@@ -4206,14 +4206,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should not exists ${authTypes.password} type`, function (done) {
+        it(`Then property auths should not contain ${authTypes.password} type`, function (done) {
           expect(resData.user.auths).to.not.have.property(authTypes.password)
           done()
         })
@@ -4384,14 +4384,14 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.otp} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.otp).that.is.an('object')
           expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
           done()
         })
 
-        it(`Then property auths should not exists ${authTypes.password} type`, function (done) {
+        it(`Then property auths should not contain ${authTypes.password} type`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.not.have.property(authTypes.password).that.is.an('object')
           done()
@@ -4402,7 +4402,7 @@ describe('Check merge flow:', function () {
 
   // Password: self merge
   describe('I want to test self merging with confirmed existing password account', function () {
-    context('Given user 1 with OTP account and user 2 with confirmed password account', function () {
+    context('Given user 1 with confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
 
@@ -4455,12 +4455,12 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property action should not exists', function (done) {
+        it('Then property action should not exist', function (done) {
           expect(resData).to.not.have.property('action')
           done()
         })
 
-        it('Then property confirmCodeRequired should not exists', function (done) {
+        it('Then property confirmCodeRequired should not exist', function (done) {
           expect(resData).to.not.have.property('confirmCodeRequired')
           done()
         })
@@ -4499,7 +4499,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it('Then property info should not exists', function (done) {
+        it('Then property info should not exist', function (done) {
           expect(resData).to.not.have.property('info')
           done()
         })
@@ -4564,7 +4564,7 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property auths should exists ${authTypes.password} type that is confirmed`, function (done) {
+        it(`Then property auths should contain ${authTypes.password} type that is confirmed`, function (done) {
           const auths = resData.user.auths
           expect(auths).to.have.property(authTypes.password).that.is.an('object')
           expect(auths[authTypes.password]).to.have.property('confirmed').that.is.true
