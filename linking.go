@@ -48,11 +48,6 @@ func (r *Rauther) initLinkAccount(sessionInfo sessionInfo, authKey string, uid s
 		if !r.Modules.MergeAccount {
 			return nil, errUserAlreadyRegistered
 		}
-
-		fmt.Printf("Current session user id: %d, user id to merge: %d\n")
-		if u.GetID() == sessionInfo.User.GetID() {
-			return nil, errCannotMergeSelf
-		}
 	}
 
 	return u, nil
