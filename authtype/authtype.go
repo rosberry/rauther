@@ -32,6 +32,8 @@ type (
 
 		CodeGenerator code.Generator
 		CodeLength    int
+
+		DisableLink bool
 	}
 
 	// list of AuthType by key

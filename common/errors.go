@@ -54,6 +54,7 @@ const (
 	ErrInvalidCode
 	ErrUserNotConfirmed
 	ErrMergeWarning
+	ErrLinkingNotAllowed
 )
 
 var Errors = map[ErrTypes]Err{
@@ -89,4 +90,5 @@ var Errors = map[ErrTypes]Err{
 	ErrInvalidCode:                      {"invalid_code", "Invalid code"},
 	ErrUserNotConfirmed:                 {"user_not_confirmed", "User not confirmed"},
 	ErrMergeWarning:                     {"merge_warning", "Users will be merged"},
+	ErrLinkingNotAllowed:                {"linking_not_allowed", "Linking not allowed for this auth method"},
 }
