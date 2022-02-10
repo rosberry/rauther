@@ -244,7 +244,6 @@ func (s *UserStorer) Save(u user.User) error {
 	defer s.mu.Unlock()
 
 	for sKey, baseAI := range user.Auths {
-		log.Debug().Uint("ID", user.ID).Str("auth type", sKey).Interface("auth", baseAI).Msg("[dbg]")
 		userID, err := s.GetUserIDByUID(sKey, baseAI.UID)
 
 		if err == nil && userID != user.ID {
