@@ -54,6 +54,11 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			return
 		}
 
+		if at.DisableLink {
+			errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
+			return
+		}
+
 		u, err = r.initLinkAccount(sessionInfo, at.Key, uid)
 		if err != nil {
 			log.Print(err)
@@ -188,6 +193,11 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 	if sessionInfo.User != nil && !sessionInfo.UserIsGuest {
 		if !r.Modules.LinkAccount {
 			errorResponse(c, http.StatusBadRequest, common.ErrAlreadyAuth)
+			return
+		}
+
+		if at.DisableLink {
+			errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
 			return
 		}
 

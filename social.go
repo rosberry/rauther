@@ -46,6 +46,11 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 			return
 		}
 
+		if at.DisableLink {
+			errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
+			return
+		}
+
 		linkAccount = true
 	}
 

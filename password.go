@@ -291,6 +291,11 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 		return
 	}
 
+	if at.DisableLink {
+		errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
+		return
+	}
+
 	type linkAccountRequest struct {
 		UID string `json:"uid" binding:"required"`
 	}
@@ -396,6 +401,11 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		log.Print("not found expected auth method")
 		errorResponse(c, http.StatusBadRequest, common.ErrInvalidRequest)
 
+		return
+	}
+
+	if at.DisableLink {
+		errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
 		return
 	}
 
