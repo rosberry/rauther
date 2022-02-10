@@ -127,6 +127,11 @@ const googleRegCreds2 = {
   token: googleToken2
 }
 
+const appleRegCreds = {
+  type: authTypes.social2,
+  token: appleToken
+}
+
 const otpRegCreds = {
   phone: otpPhone
 }
@@ -1754,13 +1759,29 @@ function logout(params) {
 function socialLogin(params) {
   if (googleToken !== "") {
     let title = "social login"
-    if (typeof params !== "undefined" && typeof params.title !== "undefined") {
-      title = params.title
+    let authType = authTypes.social
+    let creds
+    if (typeof params !== "undefined") {
+      if (typeof params.title !== "undefined") {
+        title = params.title
+      }
+      if (typeof params.authType !== "undefined") {
+        authType = params.authType
+      }
+    }
+
+    switch (authType) {
+      case authTypes.social:
+        creds = googleRegCreds
+        break
+      case authTypes.social2:
+        creds = appleRegCreds
+        break
     }
 
     describe(`${title} for user ${getSession(params)[1]}`, function () {
       it("should return result true", function (done) {
-        request("/social/login", "post", googleRegCreds, function (err, raw, res) {
+        request("/social/login", "post", creds, function (err, raw, res) {
           expect(res).to.have.property("result").that.is.true
           expect(res).to.not.have.property("error")
           done.apply(null, arguments);
