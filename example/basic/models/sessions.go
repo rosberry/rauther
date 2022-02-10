@@ -3,16 +3,21 @@ package models
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/rosberry/rauther/session"
 	"github.com/rosberry/rauther/user"
 )
 
 type Sessioner struct {
+	mu       sync.RWMutex
 	Sessions map[string]*Session
 }
 
 func (s *Sessioner) LoadByID(id string) session.Session {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if sess, ok := s.Sessions[id]; ok {
 		return sess
 	}
@@ -25,6 +30,9 @@ func (s *Sessioner) LoadByID(id string) session.Session {
 }
 
 func (s *Sessioner) RemoveByID(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if _, ok := s.Sessions[id]; !ok {
 		return fmt.Errorf("session not found") // nolint:goerr113
 	}
@@ -35,6 +43,9 @@ func (s *Sessioner) RemoveByID(id string) error {
 }
 
 func (s *Sessioner) FindByToken(token string) session.Session {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	for _, sess := range s.Sessions {
 		if sess.Token == token {
 			return sess
@@ -49,6 +60,9 @@ func (s *Sessioner) Save(sess session.Session) error {
 	if !ok {
 		return fmt.Errorf("failed session type assertion") // nolint:goerr113
 	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	s.Sessions[session.GetID()] = session
 
