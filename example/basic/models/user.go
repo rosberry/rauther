@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/rosberry/rauther/user"
@@ -160,10 +161,14 @@ func (u *User) SetTemp(temp bool) {
 }
 
 type UserStorer struct {
+	mu    sync.RWMutex
 	Users map[uint]*User
 }
 
 func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	for key, u := range s.Users {
 		if ai, ok := u.Auths[authType]; ok {
 			if ai.UID == uid {
@@ -184,6 +189,9 @@ func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error)
 }
 
 func (s *UserStorer) LoadByID(id interface{}) (user user.User, err error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	userID, ok := id.(uint)
 	if !ok {
 		return nil, errors.New("id must be uint") //nolint
@@ -219,6 +227,9 @@ func (s *UserStorer) Save(u user.User) error {
 		return errors.New("failed user interface assertion to user model") //nolint
 	}
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.Users[user.ID] = user
 
 	return nil
@@ -227,6 +238,9 @@ func (s *UserStorer) Save(u user.User) error {
 // Removable
 
 func (s *UserStorer) RemoveByUID(authType, uid string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	u, err := s.LoadByUID(authType, uid)
 	if err != nil {
 		return err
@@ -243,6 +257,9 @@ func (s *UserStorer) RemoveByUID(authType, uid string) error {
 }
 
 func (s *UserStorer) RemoveByID(id interface{}) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	delete(s.Users, id.(uint))
 
 	for k, u := range s.Users {
