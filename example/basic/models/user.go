@@ -188,6 +188,19 @@ func (s *UserStorer) LoadByUID(authType, uid string) (user user.User, err error)
 	return nil, fmt.Errorf("User not found by type and uid: %v %v", authType, uid) // nolint:goerr113
 }
 
+// GetUserIDByUID returns user id by uid without mutex lock
+func (s *UserStorer) GetUserIDByUID(authType, uid string) (userID uint, err error) {
+	for _, u := range s.Users {
+		if ai, ok := u.Auths[authType]; ok {
+			if ai.UID == uid {
+				return u.ID, nil
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("User not found by type and uid: %v %v", authType, uid) // nolint:goerr113
+}
+
 func (s *UserStorer) LoadByID(id interface{}) (user user.User, err error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -229,6 +242,15 @@ func (s *UserStorer) Save(u user.User) error {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	for sKey, baseAI := range user.Auths {
+		log.Debug().Uint("ID", user.ID).Str("auth type", sKey).Interface("auth", baseAI).Msg("[dbg]")
+		userID, err := s.GetUserIDByUID(sKey, baseAI.UID)
+
+		if err == nil && userID != user.ID {
+			return errors.New("duplicate auth identity") // nolint
+		}
+	}
 
 	s.Users[user.ID] = user
 
