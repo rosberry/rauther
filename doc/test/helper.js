@@ -11,6 +11,7 @@ chai.use(chaihttp)
 const endpoints = {
   auth: '/auth',
   passwordReg: '/register',
+  passwordLogin: '/login',
   passwordCondirm: '/confirm',
   passwordInitLink: '/initLink',
   passwordLink: '/link',
@@ -41,6 +42,7 @@ const errors = {
   userExist: 'user_exist',
   alreadyAuth: 'already_auth',
   authIdentityAlreadyExists: 'auth_identity_already_exists',
+  cannotMergeSelf: 'cannot_merge_self',
   invalidRequest: 'req_invalid',
   invalidCode: 'invalid_code',
   codeExpired: 'code_expired',
@@ -48,7 +50,8 @@ const errors = {
   mergeWarning: 'merge_warning',
   codeTimeout: 'code_timeout',
   invalidAuthToken: 'invalid_auth_token',
-  authLost: 'auth method already exists'
+  authLost: 'auth method already exists',
+  userNotFoundInProfile: 'not found user in context'
 }
 
 const staticCodes = {
@@ -141,11 +144,15 @@ class APIClient {
     return this
   }
 
-  otpAuth (uid, code, type = authTypes.otp) {
+  otpAuth (uid, code, type = authTypes.otp, action = 'auth') {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid,
         code: code
+      }
+
+      if (action === 'merge') {
+        body.confirmMerge = true
       }
 
       let endpoint = null
@@ -163,12 +170,12 @@ class APIClient {
     return this
   }
 
-  otpInitLink (uid) {
-    return this.getOTPCode(uid)
+  otpInitLink (uid, type = authTypes.otp) {
+    return this.getOTPCode(uid, type)
   }
 
-  otpLink (uid, code) {
-    return this.otpAuth(uid, code)
+  otpLink (uid, code, action = 'link', type = authTypes.otp) {
+    return this.otpAuth(uid, code, type, action)
   }
 
   passwordRegister (uid, password, type = authTypes.password, name = 'Test1') {
@@ -211,7 +218,7 @@ class APIClient {
     return this
   }
 
-  passwordLink (uid, password, action, type = authTypes.password, code = staticCodes.password) {
+  passwordLink (uid, password, action = 'link', type = authTypes.password, code = staticCodes.password) {
     this.promise = this.promise.then(() => {
       const body = {
         type: type,
@@ -232,15 +239,23 @@ class APIClient {
     return this
   }
 
-  socialLogin (token, type = authTypes.social) {
+  socialLogin (token, type = authTypes.social, action = 'auth') {
     this.promise = this.promise.then(() => {
       const body = {
         type: type,
         token: token
       }
+      if (action === 'merge') {
+        body.confirmMerge = true
+      }
+
       return this.request(endpoints.socialLogin, 'post', body)
     })
     return this
+  }
+
+  socialLink (token, action = 'link', type = authTypes.social) {
+    return this.socialLogin(token, type, action)
   }
 
   getProfile () {

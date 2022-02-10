@@ -336,6 +336,8 @@ func (r *Rauther) initLinkingPasswordAccount(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 		case errors.Is(err, errUserAlreadyRegistered):
 			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		case errors.Is(err, errCannotMergeSelf):
+			errorResponse(c, http.StatusBadRequest, common.ErrCannotMergeSelf)
 		case errors.As(err, &customErr):
 			customErrorResponse(c, customErr)
 		default:
@@ -519,6 +521,8 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 			errorResponse(c, http.StatusBadRequest, common.ErrUserNotConfirmed)
 		case errors.Is(err, errUserAlreadyRegistered):
 			errorResponse(c, http.StatusBadRequest, common.ErrUserExist)
+		case errors.Is(err, errCannotMergeSelf):
+			errorResponse(c, http.StatusBadRequest, common.ErrCannotMergeSelf)
 		case errors.As(err, &customErr):
 			customErrorResponse(c, customErr)
 		case errors.As(err, &mergeErr):
