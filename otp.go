@@ -54,6 +54,11 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 			return
 		}
 
+		if at.DisableLink {
+			errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
+			return
+		}
+
 		u, err = r.initLinkAccount(sessionInfo, at.Key, uid)
 		if err != nil {
 			log.Print(err)
@@ -77,11 +82,6 @@ func (r *Rauther) otpGetCodeHandler(c *gin.Context) {
 		}
 
 		linkAccount = true
-
-		if at.DisableLink {
-			errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
-			return
-		}
 	}
 
 	if !linkAccount {
@@ -194,12 +194,12 @@ func (r *Rauther) otpAuthHandler(c *gin.Context) {
 			return
 		}
 
-		linkAccount = true
-
 		if at.DisableLink {
 			errorResponse(c, http.StatusBadRequest, common.ErrLinkingNotAllowed)
 			return
 		}
+
+		linkAccount = true
 	}
 
 	// Find user by UID
