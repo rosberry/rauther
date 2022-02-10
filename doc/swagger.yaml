@@ -472,6 +472,10 @@ paths:
           description: Authorized user required
           schema:
             $ref: "#/definitions/ErrorResponse"
+        "403":
+          description: Not found user in context
+          schema:
+            $ref: "#/definitions/ErrorProfileResponse"
         "500":
           description: Internal error. User not found
           schema:
@@ -599,8 +603,15 @@ definitions:
                 error:
                   type: string
                   example: auth method already exists
-
-
+  ErrorProfileResponse:
+    type: object
+    properties:
+      result:
+        type: boolean
+        example: false
+      message:
+        type: string
+        example: not found user in context
       
   AuthRequest:
     properties:
