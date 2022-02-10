@@ -1732,8 +1732,8 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
-          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+        it(`Then property code of error should equal ${errors.cannotMergeSelf}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.cannotMergeSelf)
           done()
         })
       })
@@ -4450,8 +4450,8 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
-          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+        it(`Then property code of error should equal ${errors.cannotMergeSelf}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.cannotMergeSelf)
           done()
         })
 
@@ -4494,8 +4494,8 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
-          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+        it(`Then property code of error should equal ${errors.cannotMergeSelf}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.cannotMergeSelf)
           done()
         })
 
@@ -4534,8 +4534,8 @@ describe('Check merge flow:', function () {
           done()
         })
 
-        it(`Then property code of error should equal ${errors.authIdentityAlreadyExists}`, function (done) {
-          expect(resData.error).to.have.property('code').that.equals(errors.authIdentityAlreadyExists)
+        it(`Then property code of error should equal ${errors.cannotMergeSelf}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.cannotMergeSelf)
           done()
         })
       })

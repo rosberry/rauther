@@ -18,10 +18,11 @@ var (
 	errMergeWarning            = errors.New("merge warning")
 	errAuthMethodExist         = errors.New("auth method already exists")
 	errAuthMethodNotConfirmed  = errors.New("auth method not confirmed")
+	errCannotMergeSelf         = errors.New("cannot merge self")
 )
 
 func (r *Rauther) initLinkAccount(sessionInfo sessionInfo, authKey string, uid string) (u user.User, err error) {
-	err = r.checkUserCanLinkAccount(sessionInfo.User, authKey)
+	err = r.checkUserCanLinkAccount(sessionInfo.User, authKey, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -52,12 +53,15 @@ func (r *Rauther) initLinkAccount(sessionInfo sessionInfo, authKey string, uid s
 	return u, nil
 }
 
-func (r *Rauther) checkUserCanLinkAccount(currentUser user.User, authKey string) error {
+func (r *Rauther) checkUserCanLinkAccount(currentUser user.User, authKey, uid string) error {
 	if currentConfirmUser, ok := currentUser.(user.ConfirmableUser); ok && !currentConfirmUser.Confirmed() {
 		return errCurrentUserNotConfirmed
 	}
 
 	if foundUID := currentUser.(user.AuthableUser).GetUID(authKey); foundUID != "" {
+		if foundUID == uid {
+			return errCannotMergeSelf
+		}
 		return errAuthIdentityExists
 	}
 
@@ -65,7 +69,9 @@ func (r *Rauther) checkUserCanLinkAccount(currentUser user.User, authKey string)
 }
 
 func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *authtype.AuthMethod, mergeConfirm bool) error {
-	err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key)
+	uid := link.(user.AuthableUser).GetUID(at.Key)
+
+	err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key, uid)
 	if err != nil {
 		return err
 	}
@@ -77,7 +83,6 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *autht
 		return errFailedLinkUser
 	}
 
-	uid := link.(user.AuthableUser).GetUID(at.Key)
 	if uid == "" {
 		return errFailedLinkUser
 	}

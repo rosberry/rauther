@@ -54,6 +54,7 @@ const (
 	ErrInvalidCode
 	ErrUserNotConfirmed
 	ErrMergeWarning
+	ErrCannotMergeSelf
 )
 
 var Errors = map[ErrTypes]Err{
@@ -89,4 +90,5 @@ var Errors = map[ErrTypes]Err{
 	ErrInvalidCode:                      {"invalid_code", "Invalid code"},
 	ErrUserNotConfirmed:                 {"user_not_confirmed", "User not confirmed"},
 	ErrMergeWarning:                     {"merge_warning", "Users will be merged"},
+	ErrCannotMergeSelf:                  {"cannot_merge_self", "Cannot merge self"},
 }
