@@ -382,7 +382,7 @@ describe("link account:", function () {
     remove()
   });
 
-  if (googleToken2 !== "") {
+  if (googleToken !== "" && googleToken2 !== "") {
     describe("social negative scenario with linking account whose auth identity key is already exists", function () {
       auth()
       socialLogin()
@@ -1757,39 +1757,37 @@ function logout(params) {
 }
 
 function socialLogin(params) {
-  if (googleToken !== "") {
-    let title = "social login"
-    let authType = authTypes.social
-    let creds
-    if (typeof params !== "undefined") {
-      if (typeof params.title !== "undefined") {
-        title = params.title
-      }
-      if (typeof params.authType !== "undefined") {
-        authType = params.authType
-      }
+  let title = "social login"
+  let authType = authTypes.social
+  let creds
+  if (typeof params !== "undefined") {
+    if (typeof params.title !== "undefined") {
+      title = params.title
     }
-
-    switch (authType) {
-      case authTypes.social:
-        creds = googleRegCreds
-        break
-      case authTypes.social2:
-        creds = appleRegCreds
-        break
+    if (typeof params.authType !== "undefined") {
+      authType = params.authType
     }
-
-    describe(`${title} for user ${getSession(params)[1]}`, function () {
-      it("should return result true", function (done) {
-        request("/social/login", "post", creds, function (err, raw, res) {
-          expect(res).to.have.property("result").that.is.true
-          expect(res).to.not.have.property("error")
-          done.apply(null, arguments);
-
-        }, { token: getSession(params)[0] });
-      });
-    });
   }
+
+  switch (authType) {
+    case authTypes.social:
+      creds = googleRegCreds
+      break
+    case authTypes.social2:
+      creds = appleRegCreds
+      break
+  }
+
+  describe(`${title} for user ${getSession(params)[1]}`, function () {
+    it("should return result true", function (done) {
+      request("/social/login", "post", creds, function (err, raw, res) {
+        expect(res).to.have.property("result").that.is.true
+        expect(res).to.not.have.property("error")
+        done.apply(null, arguments);
+
+      }, { token: getSession(params)[0] });
+    });
+  });
 }
 
 function socialLink(params) {
