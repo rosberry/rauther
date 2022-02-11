@@ -70,7 +70,7 @@ describe('Check merge flow:', function () {
         apiToken = passwordClient.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, code)
           .end()
       })
@@ -232,14 +232,14 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient1 = await new helper.NewClient(deviceID)
-          .getOTPCode(phone, authTypes.otp)
+          .otpGetCode(phone, authTypes.otp)
           .otpAuth(phone, code, authTypes.otp)
           .end()
 
         apiToken = otpClient1.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone2, authTypes.otp2)
+          .otpGetCode(phone2, authTypes.otp2)
           .otpAuth(phone2, code2, authTypes.otp2)
           .end()
       })
@@ -414,14 +414,14 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, code)
           .end()
 
         apiToken = otpClient.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone2)
+          .otpGetCode(phone2)
           .otpAuth(phone2, code)
           .end()
       })
@@ -601,7 +601,7 @@ describe('Check merge flow:', function () {
         apiToken = passwordClient.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, code)
           .end()
       })
@@ -782,7 +782,7 @@ describe('Check merge flow:', function () {
         apiToken = passwordClient.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .end()
       })
 
@@ -957,7 +957,7 @@ describe('Check merge flow:', function () {
         apiToken = passwordClient.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .end()
 
         await helper.sleep(config.sentCodeTimeout)
@@ -1127,7 +1127,7 @@ describe('Check merge flow:', function () {
           .end()
 
         const user2 = await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -1297,7 +1297,7 @@ describe('Check merge flow:', function () {
         apiToken = passwordClient.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .passwordInitLink(email2)
           .passwordLink(email2, password2)
@@ -1496,7 +1496,7 @@ describe('Check merge flow:', function () {
           .end()
 
         const user2 = await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .passwordInitLink(lostedEmail, authTypes.password)
           .passwordLink(lostedEmail, lostedPassword, 'link', authTypes.password)
@@ -1766,7 +1766,7 @@ describe('Check merge flow:', function () {
         apiToken = passwordClient.apiToken
 
         await new helper.NewClient(deviceID2)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
       })
@@ -1929,7 +1929,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, code)
           .end()
 
@@ -3385,7 +3385,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -4121,7 +4121,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -4311,7 +4311,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -4498,7 +4498,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -4640,7 +4640,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const user1 = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -4776,7 +4776,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -5085,7 +5085,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 
@@ -5258,7 +5258,7 @@ describe('Check merge flow:', function () {
       before(async function () {
         // main client
         const otpClient = await new helper.NewClient(deviceID)
-          .getOTPCode(phone)
+          .otpGetCode(phone)
           .otpAuth(phone, otpCode)
           .end()
 

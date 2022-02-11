@@ -123,7 +123,7 @@ class APIClient {
     return this
   }
 
-  getOTPCode (uid, type = authTypes.otp) {
+  otpGetCode (uid, type = authTypes.otp) {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid
@@ -171,7 +171,7 @@ class APIClient {
   }
 
   otpInitLink (uid, type = authTypes.otp) {
-    return this.getOTPCode(uid, type)
+    return this.otpGetCode(uid, type)
   }
 
   otpLink (uid, code, action = 'link', type = authTypes.otp) {
