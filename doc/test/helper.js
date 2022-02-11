@@ -10,11 +10,14 @@ chai.use(chaihttp)
 
 const endpoints = {
   auth: '/auth',
-  passwordReg: '/register',
+  passwordRegister: '/register',
   passwordLogin: '/login',
   passwordCondirm: '/confirm',
   passwordInitLink: '/initLink',
   passwordLink: '/link',
+  passwordRecovery: '/recover',
+  passwordRecoveryValidate: '/recover/validate',
+  passwordRecoveryReset: '/recover/reset',
   otpGetCode: '/otp/{key}/code',
   otpTelegramGetCode: '/otp/telegram/code',
   otpTelegram2GetCode: '/otp/telegram2/code',
@@ -186,7 +189,7 @@ class APIClient {
         password: password,
         name: name
       }
-      return this.request(endpoints.passwordReg, 'post', body)
+      return this.request(endpoints.passwordRegister, 'post', body)
     })
     return this
   }
