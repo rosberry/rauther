@@ -657,7 +657,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // Password: link already registered confirmed account flow (user exists)
+  // Password: link already registered confirmed account flow (user exists) (requirements: no merge mode)
   describe('I want to test password linking with already registered confirmed account', function () {
     context('Given user 1 with OTP account and user 2 with confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -799,7 +799,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // Password: link already registered not confirmed account flow (user exists)
+  // Password: link already registered not confirmed account flow (user exists) (requirements: no merge mode)
   describe('I want to test password linking with already registered not confirmed account', function () {
     context('Given user 1 with OTP account and user 2 with not confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -814,6 +814,9 @@ describe('Check link account flow:', function () {
       const pswdCode = staticCodes.password
 
       before(async function () {
+        if (config.merge) {
+          this.skip()
+        }
         // main client
         const otpClient = await new helper.NewClient(deviceID)
           .otpGetCode(phone)
@@ -2501,7 +2504,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // OTP: link already registered confirmed account flow (user exists)
+  // OTP: link already registered confirmed account flow (user exists) (requirements: no merge mode)
   describe('I want to test OTP linking with already registered account', function () {
     context('Given user 1 with confirmed password account and user 2 with OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -2738,7 +2741,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // OTP: inject register after link init flow
+  // OTP: inject register after link init flow (requirements: no merge mode)
   describe('I want to test that if the user has not completed the linking of the OTP account to the end, then under these credentials you can register and the original user will not be able to complete the linking', function () {
     context('Given user 1 with password account and user 2 without account, user 1 initialized linking OTP account and base timeout', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -2753,6 +2756,9 @@ describe('Check link account flow:', function () {
       const password = 'password1'
 
       before(async function () {
+        if (config.merge) {
+          this.skip()
+        }
         // main client
         const user1 = await new helper.NewClient(deviceID)
           .passwordRegister(email, password)
@@ -2869,7 +2875,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // OTP: link account by 2 users
+  // OTP: link account by 2 users (requirements: no merge mode)
   describe('I want to test that we can initialize OTP linking from different accounts, but only one can complete it, for another user it will no longer be available', function () {
     context('Given user 1 with password account and user 2 with password account, user 1 initialized OTP linking with base timeount', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -2886,6 +2892,9 @@ describe('Check link account flow:', function () {
       const password2 = 'password2'
 
       before(async function () {
+        if (config.merge) {
+          this.skip()
+        }
         // main client
         const user1 = await new helper.NewClient(deviceID)
           .passwordRegister(email, password, authTypes.password)
@@ -3253,7 +3262,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // OTP: link account by 2 users without init by another user
+  // OTP: link account by 2 users without init by another user (requirements: no merge mode)
   describe('I want to test that one user can initialize OTP linking, but another user can complete linking and it will no longer be available even if this user initialized linking', function () {
     context('Given user 1 with password account and user 2 with password account, user 1 initialized OTP linking with base timeount', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -3270,6 +3279,9 @@ describe('Check link account flow:', function () {
       const password2 = 'password2'
 
       before(async function () {
+        if (config.merge) {
+          this.skip()
+        }
         // main client
         const user1 = await new helper.NewClient(deviceID)
           .passwordRegister(email, password, authTypes.password)
@@ -3439,7 +3451,7 @@ describe('Check link account flow:', function () {
   })
 
   // #3 Link social
-  // Social: base link
+  // Social: base link (requirements: googleToken)
   describe('I want to test social linking', function () {
     context('Given user 1 with confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -3534,7 +3546,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // Social: same social type and differrent auth keys
+  // Social: same social type and differrent auth keys (requirements: googleToken, appleToken)
   describe('I want to test linking with same social type and different auth key', function () {
     context('Given user 1 with social account and auth identity with the same auth type and different auth key', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -3624,7 +3636,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // Social: same otp type and auth key
+  // Social: same otp type and auth key (requirements: googleToken, googleToken2)
   describe('I want to test social linking with the same auth key and auth type', function () {
     context('Given user 1 with social account and auth identity with the same auth keys and auth types', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -3712,7 +3724,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // Social: not confirmed base account
+  // Social: not confirmed base account (requirements: googleToken)
   describe('I want to test social linking with not confirmed existing password account', function () {
     context('Given user 1 with password account and social auth identity', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -3808,7 +3820,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // Social: link already registered confirmed account flow (user exists)
+  // Social: link already registered confirmed account flow (user exists) (requirements: no merge mode, googleToken)
   describe('I want to test social linking with already registered account', function () {
     context('Given user 1 with confirmed password account and user 2 with social account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
@@ -3911,7 +3923,7 @@ describe('Check link account flow:', function () {
     })
   })
 
-  // Social: login to linked account by another user
+  // Social: login to linked account by another user (requirements: googleToken)
   describe('I want to test that after the social linking, the account does exist and it is possible to login from another session', function () {
     context('Given user 1 with confirmed password auth identity, linked social auth identity and user 2 without account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
