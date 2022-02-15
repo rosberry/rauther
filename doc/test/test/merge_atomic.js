@@ -1107,7 +1107,7 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: lost account session after merge
-  describe('I want to test that after merging OTP account, this account should be lost for her session but available for login', function () {
+  describe('I want to test that after merging with OTP account it\'s actually merged and the second session has no user', function () {
     context('Given user 1 with password account and user 2 with OTP account and user 1 merged user 2', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -1273,7 +1273,7 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: lost ai after merge
-  describe('I want to test that after merging OTP account, similar auth identities will be lost', function () {
+  describe('I want to test that after merging with OTP account similar auth identities will be lost', function () {
     context('Given user 1 with password account and user 2 with confirmed password and OTP auth identities', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -1473,8 +1473,8 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: not login in lost ai
-  describe('I want to test that after merging OTP account with lost auth identities, account that contain this auth identity should be really lost', function () {
-    context('Given user 1 with password account and user 2 with OTP and password auth identities which contains the same password auth identity key as user 1 and user 1 merged user 2', function () {
+  describe('I want to test that after merging with OTP account with similar auth identities lost identities are really lost and user is deleted', function () {
+    context('Given user 1 with password account and user 2 with OTP and similar password auth identities and user 1 merged user 2', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken2 = ''
@@ -1483,10 +1483,10 @@ describe('Check merge flow:', function () {
       const otpCode = staticCodes.otp
 
       const email = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
-      const lostedEmail = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
+      const lostEmail = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
 
       const password = 'password1'
-      const lostedPassword = 'password2'
+      const lostPassword = 'password2'
 
       before(async function () {
         // main client
@@ -1499,8 +1499,8 @@ describe('Check merge flow:', function () {
         const user2 = await new helper.NewClient(deviceID2)
           .otpGetCode(phone)
           .otpAuth(phone, otpCode)
-          .passwordInitLink(lostedEmail, authTypes.password)
-          .passwordLink(lostedEmail, lostedPassword, 'link', authTypes.password)
+          .passwordInitLink(lostEmail, authTypes.password)
+          .passwordLink(lostEmail, lostPassword, 'link', authTypes.password)
           .end()
 
         await user1
@@ -1554,8 +1554,8 @@ describe('Check merge flow:', function () {
             .json()
             .send({
               type: authTypes.password,
-              email: lostedEmail,
-              password: lostedPassword
+              email: lostEmail,
+              password: lostPassword
             })
             .expectStatus(400)
             .end(function (_, raw, res) {
@@ -1744,8 +1744,8 @@ describe('Check merge flow:', function () {
   })
 
   // OTP: invalid code
-  describe('I want to test merging with confirmed existing OTP account and with invalid code', function () {
-    context('Given user 1 with password account and user 2 with not confirmed OTP account', function () {
+  describe('I want to test merging with confirmed existing OTP account with invalid code', function () {
+    context('Given user 1 with password account and user 2 with OTP account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
@@ -2218,7 +2218,7 @@ describe('Check merge flow:', function () {
   })
 
   // Social: same social type and differrent auth keys (requirements: googleToken, appleToken)
-  describe('I want to test merging social account with existing social account with different auth key', function () {
+  describe.only('I want to test merging social account with existing social account with different auth key', function () {
     context('Given user 1 and user 2 with social accounts with different auth keys', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -2611,7 +2611,7 @@ describe('Check merge flow:', function () {
   })
 
   // Social: lost account session after merge (requirements: googleToken)
-  describe('I want to test that after merging social account, this account should be lost for her session but available for login', function () {
+  describe('I want to test that after merging with social account it\'s actually merged and the second session has no user', function () {
     context('Given user 1 with password confirmed account and user 2 with social account and user 1 merged user 2', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -2743,7 +2743,7 @@ describe('Check merge flow:', function () {
   })
 
   // Social: lost ai after merge (requirements: googleToken)
-  describe('I want to test that after merging social account, similar auth identities will be lost', function () {
+  describe('I want to test that after merging with social account similar auth identities will be lost', function () {
     context('Given user 1 with password account and user 2 with confirmed auth identities of social and password', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -2905,8 +2905,8 @@ describe('Check merge flow:', function () {
   })
 
   // Social: not login in lost ai (requirements: googleToken)
-  describe('I want to test that after merging social account with lost auth identities, account that contain this auth identity should be really lost', function () {
-    context('Given user 1 with password account and user 2 with social and password auth identities which contains the same password auth identity key as user 1 and user 1 merged user 2', function () {
+  describe('I want to test that after merging with social account with similar auth identities lost identities are really lost and user is deleted', function () {
+    context('Given user 1 with password account and user 2 with social and similar password auth identities and user 1 merged user 2', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken2 = ''
@@ -4662,7 +4662,7 @@ describe('Check merge flow:', function () {
   })
 
   // Password: lost account session after merge
-  describe('I want to test that after merging password account, this account should be lost for her session but available for login', function () {
+  describe('I want to test that after merging with password account it\'s actually merged and the second session has no user', function () {
     context('Given user 1 with OTP account and user 2 with confirmed password account and user 1 merged user 2', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -4797,7 +4797,7 @@ describe('Check merge flow:', function () {
   })
 
   // Password: lost ai after merge
-  describe('I want to test that after merging password account, similar auth identities will be lost', function () {
+  describe('I want to test that after merging with password account similar auth identities will be lost', function () {
     context('Given user 1 with OTP account and user 2 with confirmed password and OTP auth identities', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -5000,7 +5000,7 @@ describe('Check merge flow:', function () {
   })
 
   // Password: not login in lost ai
-  describe('I want to test that after merging password account with lost auth identities, account that contain this auth identity should be really lost', function () {
+  describe('I want to test that after merging with password account with similar auth identities lost identities are really lost and user is deleted', function () {
     context('Given user 1 with password account and user 2 with 2 password auth identities, one of which contains the same password auth identity as user 1 and user 1 merged user 2', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
@@ -5008,11 +5008,11 @@ describe('Check merge flow:', function () {
 
       const email = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
       const email2 = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
-      const lostedEmail = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
+      const lostEmail = 'test' + (Math.floor(Math.random() * 99999)) + '@example.com'
 
       const password = 'password1'
       const password2 = 'password2'
-      const lostedPassword = 'password3'
+      const lostPassword = 'password3'
 
       before(async function () {
         // main client
@@ -5026,8 +5026,8 @@ describe('Check merge flow:', function () {
           .passwordRegister(email2, password2, authTypes.password2)
           .getProfile()
           .passwordConfirm(email2, authTypes.password2)
-          .passwordInitLink(lostedEmail, authTypes.password)
-          .passwordLink(lostedEmail, lostedPassword, 'link', authTypes.password)
+          .passwordInitLink(lostEmail, authTypes.password)
+          .passwordLink(lostEmail, lostPassword, 'link', authTypes.password)
           .end()
 
         await user1
@@ -5081,8 +5081,8 @@ describe('Check merge flow:', function () {
             .json()
             .send({
               type: authTypes.password,
-              email: lostedEmail,
-              password: lostedPassword
+              email: lostEmail,
+              password: lostPassword
             })
             .expectStatus(400)
             .end(function (_, raw, res) {
