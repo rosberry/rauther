@@ -71,13 +71,16 @@ func mergeErrorResponse(c *gin.Context, err error) {
 	var mergeError MergeError
 	if errors.As(err, &mergeError) {
 		log.Printf("mergeError list: %v", mergeError.removeAuthMethods)
+
 		c.JSON(http.StatusConflict, gin.H{
 			"result": false,
 			"error":  common.Errors[common.ErrMergeWarning],
 			"info": struct {
 				Lost interface{} `json:"lost"`
+				Data interface{} `json:"data,omitempty"`
 			}{
 				Lost: mergeError,
+				Data: mergeError.info,
 			},
 		})
 

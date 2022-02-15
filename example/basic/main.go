@@ -79,15 +79,17 @@ func main() { // nolint
 
 	rauth.AddAuthMethods([]authtype.AuthMethod{
 		{
-			Key:    "email",
-			Sender: &fakeEmailSender{},
+			Key:           "email",
+			Sender:        &fakeEmailSender{},
+			SignUpRequest: &EmailSignUp{},
 			CodeGenerator: func(l int) string {
 				return confirmPasswordCode
 			},
 		},
 		{
-			Key:    "email2",
-			Sender: &fakeEmailSender{},
+			Key:           "email2",
+			Sender:        &fakeEmailSender{},
+			SignUpRequest: &EmailSignUp{},
 			CodeGenerator: func(l int) string {
 				return confirmPasswordCode2
 			},
@@ -157,6 +159,7 @@ func main() { // nolint
 
 	rauth.Modules.LinkAccount = true
 	// rauth.Modules.MergeAccount = false
+	// rauth.Modules.CustomizableMergeAccount = false
 	rauth.Modules.GuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
@@ -214,6 +217,31 @@ func (s *fakeTelegramSender) Send(event sender.Event, recipient string, message 
 	return nil
 }
 
+type EmailSignUp struct {
+	Email        string  `json:"email" form:"email" binding:"required"`
+	Name         *string `json:"name"`
+	Password     string  `json:"password" form:"password" binding:"required"`
+	ConfirmMerge bool    `json:"confirmMerge" form:"confirmMerge"`
+}
+
+func (r *EmailSignUp) Fields() map[string]interface{} {
+	log.Error().Interface("request", *r).Msg("")
+	return map[string]interface{}{
+		"email": r.Email,
+		"username": func() interface{} {
+			if r.Name == nil {
+				return nil
+			}
+
+			return *r.Name
+		}(),
+	}
+}
+
+func (r EmailSignUp) GetUID() (uid string)           { return r.Email } // trim spaces, toLower
+func (r EmailSignUp) GetPassword() (password string) { return r.Password }
+func (r EmailSignUp) GetConfirmMerge() bool          { return r.ConfirmMerge }
+
 type phoneSignUp struct {
 	Phone        string `json:"phone" binding:"required"`
 	Password     string `json:"password" binding:"required"`
@@ -226,6 +254,7 @@ func (r *phoneSignUp) GetPassword() (password string) { return r.Password }
 func (r *phoneSignUp) Fields() map[string]string {
 	return map[string]string{
 		"username": r.Name,
+		"phone":    r.Phone,
 	}
 }
 func (r *phoneSignUp) GetConfirmMerge() bool { return r.ConfirmMerge }
@@ -257,6 +286,7 @@ func (r *otpRequest) GetConfirmMerge() bool          { return r.ConfirmMerge }
 
 func (r *otpRequest) Fields() map[string]interface{} {
 	return map[string]interface{}{
+		"phone": r.Phone,
 		"username": func() interface{} {
 			if r.Name == nil {
 				return nil

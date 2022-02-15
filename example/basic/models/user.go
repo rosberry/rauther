@@ -21,7 +21,8 @@ type (
 		Username string `auth:"username" json:"username"`
 
 		Guest bool   `json:"guest"`
-		Email string `auth:"email"`
+		Email string `auth:"email" json:"email"`
+		Phone string `auth:"phone" json:"phone"`
 
 		FirstName string `auth:"fname" json:"firstName"`
 		LastName  string `auth:"lname" json:"lastName"`
@@ -164,6 +165,33 @@ func (u *User) Merge(additionalUser user.User) error {
 	log.Printf("Merge %+v", additionalUser)
 
 	return nil
+}
+
+func (u *User) GetMergeInfo(additionalUser user.User) interface{} {
+	type ResponseUser struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Phone    string `json:"phone"`
+	}
+	type Response struct {
+		MainUser       ResponseUser `json:"mainUser"`
+		AdditionalUser ResponseUser `json:"additionalUser"`
+	}
+
+	mergeUser := additionalUser.(*User)
+
+	return Response{
+		MainUser: ResponseUser{
+			Username: u.Username,
+			Email:    u.Email,
+			Phone:    u.Phone,
+		},
+		AdditionalUser: ResponseUser{
+			Username: mergeUser.Username,
+			Email:    mergeUser.Email,
+			Phone:    mergeUser.Phone,
+		},
+	}
 }
 
 type UserStorer struct {
