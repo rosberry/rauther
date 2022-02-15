@@ -158,6 +158,28 @@ describe("email auth:", function () {
             done.apply(null, arguments);
           });
       });
+
+      it("should return error already authorized", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/register")
+          .json()
+          .send({
+            type: "email",
+            email: email,
+            password: userPassword,
+            name: "Test1"
+          })
+          .expectStatus(400)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("already_auth");
+            expect(res).to.not.have.property("uid");
+            done.apply(null, arguments);
+          });
+      });
     });
 
     describe("logout", function () {
@@ -255,6 +277,27 @@ describe("email auth:", function () {
           .end(function (err, raw, res) {
             expect(res).to.have.property("result").that.is.true;
             expect(res).to.not.have.property("error");
+            done.apply(null, arguments);
+          });
+      });
+
+      it("should return error already authorized", function (done) {
+        hippie(spec)
+          .header("Authorization", "Bearer " + apiToken)
+          .base(baseUrl)
+          .post("/login")
+          .json()
+          .send({
+            type: "email",
+            email: email,
+            password: userPassword,
+            name: "Test1"
+          })
+          .expectStatus(400)
+          .end(function (err, raw, res) {
+            expect(res).to.have.property("result").that.is.false;
+            expect(res).to.have.property("error");
+            expect(res.error).to.have.property("code").that.equals("already_auth");
             done.apply(null, arguments);
           });
       });
