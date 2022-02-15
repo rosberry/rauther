@@ -1134,7 +1134,7 @@ describe('Check merge flow:', function () {
 
         await user1
           .otpInitLink(phone)
-          .otpLink(phone, otpCode, 'merge')
+          .otpLink(phone, otpCode, authTypes.otp, 'merge')
           .end()
 
         apiToken2 = user2.apiToken
@@ -1505,7 +1505,7 @@ describe('Check merge flow:', function () {
 
         await user1
           .otpInitLink(phone)
-          .otpLink(phone, otpCode, 'merge')
+          .otpLink(phone, otpCode, authTypes.otp, 'merge')
           .end()
 
         apiToken2 = user2.apiToken
@@ -2636,7 +2636,7 @@ describe('Check merge flow:', function () {
           .end()
 
         await user1
-          .socialLink(googleToken, 'merge')
+          .socialLink(googleToken, authTypes.social, 'merge')
           .end()
 
         apiToken2 = user2.apiToken
@@ -2935,7 +2935,7 @@ describe('Check merge flow:', function () {
           .end()
 
         await user1
-          .socialLink(googleToken, 'merge')
+          .socialLink(googleToken, authTypes.social, 'merge')
           .end()
 
         apiToken2 = user2.apiToken
