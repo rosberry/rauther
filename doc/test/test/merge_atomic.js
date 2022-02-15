@@ -2218,7 +2218,7 @@ describe('Check merge flow:', function () {
   })
 
   // Social: same social type and differrent auth keys (requirements: googleToken, appleToken)
-  describe.only('I want to test merging social account with existing social account with different auth key', function () {
+  describe('I want to test merging social account with existing social account with different auth key', function () {
     context('Given user 1 and user 2 with social accounts with different auth keys', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
