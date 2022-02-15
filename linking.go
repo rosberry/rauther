@@ -127,8 +127,15 @@ func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool) error {
 		return fmt.Errorf("failed to move auth identities: %w", err)
 	}
 
+	// TODO: check mergeConfirm before moveAuthIdentities?
 	if !mergeConfirm {
-		return newMergeError(nil)
+
+		if r.Modules.CustomizableMergeAccount {
+			info := current.(user.CustomMergeUser).GetMergeInfo(link)
+			return newMergeError(nil, info)
+		}
+
+		return newMergeError(nil, nil)
 	}
 
 	err = current.(user.MergeUser).Merge(link)
@@ -203,7 +210,7 @@ func (r *Rauther) moveAuthIdentities(current, link user.User, mergeConfirm bool)
 	}
 
 	if len(failedMethods) > 0 && !mergeConfirm {
-		return newMergeError(failedMethods)
+		return newMergeError(failedMethods, nil)
 	}
 
 	return nil
@@ -213,6 +220,7 @@ type (
 	MergeError struct {
 		e                 error
 		removeAuthMethods []authDescrip
+		info              interface{}
 	}
 
 	authDescrip struct {
@@ -222,10 +230,11 @@ type (
 	}
 )
 
-func newMergeError(authMethods []authDescrip) MergeError {
+func newMergeError(authMethods []authDescrip, data interface{}) MergeError {
 	return MergeError{
 		e:                 errMergeWarning,
 		removeAuthMethods: authMethods,
+		info:              data,
 	}
 }
 

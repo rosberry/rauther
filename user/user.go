@@ -84,6 +84,11 @@ type MergeUser interface {
 	Merge(u User) error
 }
 
+type CustomMergeUser interface {
+	MergeUser
+	GetMergeInfo(u User) interface{}
+}
+
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")
 
 const notFoundFieldErrText = "field %s does not exist within the provided item"
