@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gin-gonic/gin"
 	"github.com/rosberry/rauther/authtype"
 	"github.com/rosberry/rauther/user"
 )
@@ -68,7 +69,7 @@ func (r *Rauther) checkUserCanLinkAccount(currentUser user.User, authKey, uid st
 	return nil
 }
 
-func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *authtype.AuthMethod, mergeConfirm bool) error {
+func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *authtype.AuthMethod, mergeConfirm bool, ctx *gin.Context) error {
 	uid := link.(user.AuthableUser).GetUID(at.Key)
 
 	err := r.checkUserCanLinkAccount(sessionInfo.User, at.Key, uid)
@@ -89,7 +90,7 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *autht
 
 	if !link.(user.TempUser).IsTemp() {
 		if r.Modules.MergeAccount {
-			err = r.mergeUsers(sessionInfo.User, link, mergeConfirm)
+			err = r.mergeUsers(sessionInfo.User, link, mergeConfirm, ctx)
 			if err != nil {
 				return fmt.Errorf("merge error: %w", err)
 			}
@@ -120,7 +121,7 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *autht
 	return nil
 }
 
-func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool) error {
+func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool, ctx *gin.Context) error {
 	// move all auth identities from link user to current user
 	err := r.moveAuthIdentities(current, link, mergeConfirm)
 	if err != nil {
@@ -138,7 +139,7 @@ func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool) error {
 		return newMergeError(nil, nil)
 	}
 
-	err = current.(user.MergeUser).Merge(link)
+	err = current.(user.MergeUser).Merge(link, ctx)
 	if err != nil {
 		return fmt.Errorf("failed to run merge function: %w", err)
 	}

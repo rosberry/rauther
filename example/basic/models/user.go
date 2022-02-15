@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/rosberry/rauther/user"
 	"github.com/rs/zerolog/log"
 )
@@ -160,8 +162,33 @@ func (u *User) SetTemp(temp bool) {
 	u.Temp = temp
 }
 
-func (u *User) Merge(additionalUser user.User) error {
+func (u *User) Merge(additionalUser user.User, ctx *gin.Context) error {
 	log.Printf("Merge %+v", additionalUser)
+
+	type MergeConfigRequest struct {
+		MergeConfig *struct {
+			Email    bool `json:"email"`
+			Phone    bool `json:"phone"`
+			Username bool `json:"name"`
+		} `json:"mergeConfig" binding:"required"`
+	}
+
+	var request MergeConfigRequest
+
+	if err := ctx.Copy().ShouldBindBodyWith(&request, binding.JSON); err == nil {
+		log.Info().Interface("MergeConfigRequest", request).Msg("[User][Merge] Custom merge succeed")
+		mergeUser := additionalUser.(*User)
+
+		if request.MergeConfig.Email {
+			u.Email = mergeUser.Email
+		}
+		if request.MergeConfig.Phone {
+			u.Phone = mergeUser.Phone
+		}
+		if request.MergeConfig.Username {
+			u.Username = mergeUser.Username
+		}
+	}
 
 	return nil
 }
