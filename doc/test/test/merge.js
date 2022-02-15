@@ -48,6 +48,10 @@ describe("check merge flow:", function () {
     this.slow(200);
 
     before(function (done) {
+        if (!config.merge) {
+          this.skip()
+        }
+
         // if using mocha, dereferencing can be performed prior during initialization via the delay flag:
         // https://mochajs.org/#delayed-root-suite
         parser.dereference(specFile, function (err, api) {
