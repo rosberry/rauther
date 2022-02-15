@@ -4510,10 +4510,11 @@ describe('Check merge flow:', function () {
 
   // Password: confirmed account after merge with code
   describe('I want to test that after merging with code, not confirmed password account should be confirmed', function () {
-    context('Given user 1 with OTP account and user 2 with confirmed password account and base timeout', function () {
+    context('Given user 1 with OTP account and user 2 with not confirmed password account and base timeout', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       const deviceID2 = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
+      let apiToken2 = ''
 
       const phone = '+7' + (Math.floor(Math.random() * 999999999))
       const otpCode = staticCodes.otp
@@ -4531,9 +4532,11 @@ describe('Check merge flow:', function () {
 
         apiToken = otpClient.apiToken
 
-        await new helper.NewClient(deviceID2)
+        const passwordClient = await new helper.NewClient(deviceID2)
           .passwordRegister(email, password)
           .end()
+
+        apiToken2 = passwordClient.apiToken
 
         await helper.sleep(config.sentCodeTimeout)
       })
@@ -4579,7 +4582,7 @@ describe('Check merge flow:', function () {
         })
       })
 
-      describe('When user 1 requests for merge password account with code and merge confirm parameter set to true', function () {
+      describe('When user 1 requests for merge password account with code and no merge confirm parameter', function () {
         let resData = null
 
         before(function (done) {
@@ -4594,28 +4597,42 @@ describe('Check merge flow:', function () {
               uid: email,
               password: password,
               code: pswdCode,
-              confirmMerge: true
             })
-            .expectStatus(200)
+            .expectStatus(mergeConflictStatus)
             .end(function (_, raw, res) {
               resData = res
               done.apply(null, arguments)
             })
         })
 
-        it('Then request should return result true', function (done) {
-          expect(resData).to.have.property('result').that.is.true
-          expect(resData).to.not.have.property('error')
+        it('Then request should return result false', function (done) {
+          expect(resData).to.have.property('result').that.is.false
+          expect(resData).to.have.property('error')
+          done()
+        })
+
+        it(`Then property code of error should equal ${errors.mergeWarning}`, function (done) {
+          expect(resData.error).to.have.property('code').that.equals(errors.mergeWarning)
+          done()
+        })
+
+        it('Then property info should exist', function (done) {
+          expect(resData).to.have.property('info')
+          done()
+        })
+
+        it('Then property lost of info should exist and should be zero length', function (done) {
+          expect(resData.info).to.have.property('lost').that.have.length(0)
           done()
         })
       })
 
-      describe('When user 1 requests profile', function () {
+      describe('When user 2 requests profile', function () {
         let resData = null
 
         before(function (done) {
           hippie(spec)
-            .header('Authorization', 'Bearer ' + apiToken)
+            .header('Authorization', 'Bearer ' + apiToken2)
             .base(baseUrl)
             .get(endpoints.profile)
             .json()
@@ -4631,13 +4648,6 @@ describe('Check merge flow:', function () {
           expect(resData).to.not.have.property('error')
           expect(resData).to.have.property('user').that.is.an('object')
           expect(resData.user).to.have.property('guest').that.is.false
-          done()
-        })
-
-        it(`Then property auths should contain ${authTypes.otp} type that is confirmed`, function (done) {
-          const auths = resData.user.auths
-          expect(auths).to.have.property(authTypes.otp).that.is.an('object')
-          expect(auths[authTypes.otp]).to.have.property('confirmed').that.is.true
           done()
         })
 
