@@ -463,8 +463,8 @@ describe('Check link account flow:', function () {
 
   // Password: not confirmed base account
   // TODO: user_not_found? May be user_not_confirmed?
-  describe('I want to test password linking with not confirmed existing password account', function () {
-    context('Given user 1 with password account and password auth identity', function () {
+  describe('I want to test linking not confirmed password account', function () {
+    context('Given user 1 with not confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
 
@@ -3725,8 +3725,8 @@ describe('Check link account flow:', function () {
   })
 
   // Social: not confirmed base account (requirements: googleToken)
-  describe('I want to test social linking with not confirmed existing password account', function () {
-    context('Given user 1 with password account and social auth identity', function () {
+  describe('I want to test social linking not confirmed password account', function () {
+    context('Given user 1 with not confirmed password account', function () {
       const deviceID = 'test' + (Math.floor(Math.random() * 99999))
       let apiToken = ''
 
