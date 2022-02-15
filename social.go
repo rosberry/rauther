@@ -138,7 +138,7 @@ func (r *Rauther) socialSignInHandler(c *gin.Context) {
 			mergeConfirm = requestWithMergeConfirm.GetConfirmMerge()
 		}
 
-		err := r.linkAccount(sessionInfo, u, at, mergeConfirm)
+		err := r.linkAccount(sessionInfo, u, at, mergeConfirm, c)
 		if err != nil {
 			var mergeErr MergeError
 			var customErr CustomError

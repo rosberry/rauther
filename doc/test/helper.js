@@ -147,10 +147,11 @@ class APIClient {
     return this
   }
 
-  otpAuth (uid, code, type = authTypes.otp, action = 'auth') {
+  otpAuth (uid, code, type = authTypes.otp, action = 'auth', name = 'otpUser') {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid,
+        name: name,
         code: code
       }
 
