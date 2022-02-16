@@ -123,23 +123,18 @@ func (r *Rauther) linkAccount(sessionInfo sessionInfo, link user.User, at *autht
 
 func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool, ctx *gin.Context) error {
 	// move all auth identities from link user to current user
-	err := r.moveAuthIdentities(current, link, mergeConfirm)
-	if err != nil {
-		return fmt.Errorf("failed to move auth identities: %w", err)
-	}
+	failedMethods := r.moveAuthIdentities(current, link, mergeConfirm)
 
-	// TODO: check mergeConfirm before moveAuthIdentities?
 	if !mergeConfirm {
-
 		if r.Modules.CustomizableMergeAccount {
 			info := current.(user.CustomMergeUser).GetMergeInfo(link)
-			return newMergeError(nil, info)
+			return newMergeError(failedMethods, info)
 		}
 
-		return newMergeError(nil, nil)
+		return newMergeError(failedMethods, nil)
 	}
 
-	err = current.(user.MergeUser).Merge(link, ctx)
+	err := current.(user.MergeUser).Merge(link, ctx)
 	if err != nil {
 		return fmt.Errorf("failed to run merge function: %w", err)
 	}
@@ -152,7 +147,7 @@ func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool, ctx *gi
 	return nil
 }
 
-func (r *Rauther) moveAuthIdentities(current, link user.User, mergeConfirm bool) error {
+func (r *Rauther) moveAuthIdentities(current, link user.User, mergeConfirm bool) []authDescrip {
 	failedMethods := []authDescrip{}
 
 	for key, at := range r.methods.List {
@@ -210,11 +205,7 @@ func (r *Rauther) moveAuthIdentities(current, link user.User, mergeConfirm bool)
 		}
 	}
 
-	if len(failedMethods) > 0 && !mergeConfirm {
-		return newMergeError(failedMethods, nil)
-	}
-
-	return nil
+	return failedMethods
 }
 
 type (
