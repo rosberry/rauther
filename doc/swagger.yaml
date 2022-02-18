@@ -688,6 +688,15 @@ definitions:
       code:
         example: "1285"
         type: string
+        description: should exist for confirmation account if it hasn't already been done
+      merge:
+        type: boolean
+        example: true
+        description: should exist for activate merge mode, by default enabled link mode
+      confirmMerge:
+        type: boolean
+        example: true
+        description: should exist for confirmation merge action
     required:
       - type
       - uid
@@ -727,7 +736,12 @@ definitions:
       token:
         type: string
         description: token from oauth service
+      confirmMerge:
+        type: boolean
+        example: true
+        description: should exist for confirmation merge action, not for login or register
     required:
+      - type
       - token
 
   SocialSignInResponse:
@@ -751,6 +765,13 @@ definitions:
       code:
         example: "1285"
         type: string
+      confirmMerge:
+        type: boolean
+        example: true
+        description: should exist for confirmation merge action, not for login or register
+    required:
+      - phone
+      - code
 
   CheckLoginFieldRequest:
     properties:
@@ -788,6 +809,7 @@ definitions:
         type: string
     required:
       - type
+      - uid
 
   PasswordInitLinkResponse:
     type: object
