@@ -1,0 +1,8 @@
+<diagram program="umletino" version="14.4.0-SNAPSHOT"><zoom_level>10</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>250</x><y>220</y><w>320</w><h>310</h></coordinates><panel_attributes>title=Social link
+desc=user exists = false
+obj=Client~a 
+obj=Backend~b 
+id1-&gt;&gt;&gt;id2:POST /social/login\n type, \ntoken
+id2.&gt;id1:&lt;successful link&gt;\nresult: true
+
+</panel_attributes><additional_attributes></additional_attributes></element></diagram>

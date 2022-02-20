@@ -1,7 +1,7 @@
-<diagram program="umletino" version="14.4.0-SNAPSHOT"><zoom_level>10</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>240</x><y>18</y><w>440</w><h>760</h></coordinates><panel_attributes>title=OTP merge
+<diagram program="umletino" version="14.4.0-SNAPSHOT"><zoom_level>10</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>70</x><y>0</y><w>440</w><h>790</h></coordinates><panel_attributes>title=OTP merge
 desc=user exists = true
 autoTick=true
-obj=User~a 
+obj=Client~a 
 obj=Backend~b 
 id1-&gt;&gt;&gt;id2:POST /otp/{key}/code\nphone
 id2.&gt;id1:result: true
@@ -11,6 +11,6 @@ id1-&gt;&gt;&gt;id2:POST /otp/{key}/auth\nphone,\ncode, \nconfirmMerge: false
 id2.&gt;id1:result:false, \nerror.code:merge_warning, \nlost auth identities, \nuser data
 --=mw
 id1-&gt;&gt;&gt;id2:POST /otp/{key}/auth\nphone,\ncode, \nconfirmMerge: true
-id2.&gt;id1:succeed merge
+id2.&gt;id1:&lt;successful merge&gt;\nresult: true
 
 </panel_attributes><additional_attributes></additional_attributes></element></diagram>
