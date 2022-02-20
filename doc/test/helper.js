@@ -240,10 +240,11 @@ class APIClient {
     return this
   }
 
-  socialLogin (token, type = authTypes.social, action = 'auth') {
+  socialLogin (token, type = authTypes.social, action = 'auth', name = 'socialUser') {
     this.promise = this.promise.then(() => {
       const body = {
         type: type,
+        name: name,
         token: token
       }
       if (action === 'merge') {
