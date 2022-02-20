@@ -126,12 +126,13 @@ func (r *Rauther) mergeUsers(current, link user.User, mergeConfirm bool, ctx *gi
 	failedMethods := r.moveAuthIdentities(current, link, mergeConfirm)
 
 	if !mergeConfirm {
+		var info interface{}
+
 		if r.Modules.CustomizableMergeAccount {
-			info := current.(user.CustomMergeUser).GetMergeInfo(link)
-			return newMergeError(failedMethods, info)
+			info = current.(user.CustomMergeUser).GetMergeInfo(link)
 		}
 
-		return newMergeError(failedMethods, nil)
+		return newMergeError(failedMethods, info)
 	}
 
 	err := current.(user.MergeUser).Merge(link, ctx)

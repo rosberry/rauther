@@ -131,9 +131,10 @@ func main() { // nolint
 			},
 		},
 		{
-			Key:            "google",
-			Type:           authtype.Social,
-			SocialAuthType: authtype.SocialAuthTypeGoogle,
+			Key:                 "google",
+			Type:                authtype.Social,
+			SocialSignInRequest: &CustomSocialSignInRequest{},
+			SocialAuthType:      authtype.SocialAuthTypeGoogle,
 		},
 		{
 			Key:                 "apple",
@@ -196,6 +197,7 @@ func main() { // nolint
 	}
 }
 
+// senders
 type fakeEmailSender struct{}
 
 func (s *fakeEmailSender) Send(event sender.Event, recipient string, message string) error {
@@ -217,6 +219,7 @@ func (s *fakeTelegramSender) Send(event sender.Event, recipient string, message 
 	return nil
 }
 
+// Email auths
 type EmailSignUp struct {
 	Email        string  `json:"email" form:"email" binding:"required"`
 	Name         *string `json:"name"`
@@ -273,6 +276,7 @@ type CheckPhoneRequest struct {
 
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
 
+// otp auths
 type otpRequest struct {
 	Phone        string  `json:"phone" binding:"required"`
 	Code         string  `json:"code"`
@@ -297,6 +301,7 @@ func (r *otpRequest) Fields() map[string]interface{} {
 	}
 }
 
+// social auths
 type CustomSocialSignInRequest struct {
 	Name         string `json:"name"`
 	Token        string `json:"token" binding:"required"`
