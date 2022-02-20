@@ -175,7 +175,7 @@ class APIClient {
     return this.otpGetCode(uid, type)
   }
 
-  otpLink (uid, code, action = 'link', type = authTypes.otp) {
+  otpLink (uid, code, type = authTypes.otp, action = 'link') {
     return this.otpAuth(uid, code, type, action)
   }
 
@@ -255,7 +255,7 @@ class APIClient {
     return this
   }
 
-  socialLink (token, action = 'link', type = authTypes.social) {
+  socialLink (token, type = authTypes.social, action = 'link') {
     return this.socialLogin(token, type, action)
   }
 
