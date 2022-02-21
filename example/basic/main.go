@@ -79,15 +79,17 @@ func main() { // nolint
 
 	rauth.AddAuthMethods([]authtype.AuthMethod{
 		{
-			Key:    "email",
-			Sender: &fakeEmailSender{},
+			Key:           "email",
+			Sender:        &fakeEmailSender{},
+			SignUpRequest: &EmailSignUp{},
 			CodeGenerator: func(l int) string {
 				return confirmPasswordCode
 			},
 		},
 		{
-			Key:    "email2",
-			Sender: &fakeEmailSender{},
+			Key:           "email2",
+			Sender:        &fakeEmailSender{},
+			SignUpRequest: &EmailSignUp{},
 			CodeGenerator: func(l int) string {
 				return confirmPasswordCode2
 			},
@@ -129,9 +131,10 @@ func main() { // nolint
 			},
 		},
 		{
-			Key:            "google",
-			Type:           authtype.Social,
-			SocialAuthType: authtype.SocialAuthTypeGoogle,
+			Key:                 "google",
+			Type:                authtype.Social,
+			SocialSignInRequest: &CustomSocialSignInRequest{},
+			SocialAuthType:      authtype.SocialAuthTypeGoogle,
 		},
 		{
 			Key:                 "apple",
@@ -157,6 +160,7 @@ func main() { // nolint
 
 	rauth.Modules.LinkAccount = true
 	// rauth.Modules.MergeAccount = false
+	// rauth.Modules.CustomizableMergeAccount = false
 	rauth.Modules.GuestUser = true
 	rauth.Modules.ConfirmableUser = true
 	rauth.Modules.RecoverableUser = true
@@ -193,6 +197,7 @@ func main() { // nolint
 	}
 }
 
+// senders
 type fakeEmailSender struct{}
 
 func (s *fakeEmailSender) Send(event sender.Event, recipient string, message string) error {
@@ -214,6 +219,32 @@ func (s *fakeTelegramSender) Send(event sender.Event, recipient string, message 
 	return nil
 }
 
+// Email auths
+type EmailSignUp struct {
+	Email        string  `json:"email" form:"email" binding:"required"`
+	Name         *string `json:"name"`
+	Password     string  `json:"password" form:"password" binding:"required"`
+	ConfirmMerge bool    `json:"confirmMerge" form:"confirmMerge"`
+}
+
+func (r *EmailSignUp) Fields() map[string]interface{} {
+	log.Error().Interface("request", *r).Msg("")
+	return map[string]interface{}{
+		"email": r.Email,
+		"username": func() interface{} {
+			if r.Name == nil {
+				return nil
+			}
+
+			return *r.Name
+		}(),
+	}
+}
+
+func (r EmailSignUp) GetUID() (uid string)           { return r.Email } // trim spaces, toLower
+func (r EmailSignUp) GetPassword() (password string) { return r.Password }
+func (r EmailSignUp) GetConfirmMerge() bool          { return r.ConfirmMerge }
+
 type phoneSignUp struct {
 	Phone        string `json:"phone" binding:"required"`
 	Password     string `json:"password" binding:"required"`
@@ -226,6 +257,7 @@ func (r *phoneSignUp) GetPassword() (password string) { return r.Password }
 func (r *phoneSignUp) Fields() map[string]string {
 	return map[string]string{
 		"username": r.Name,
+		"phone":    r.Phone,
 	}
 }
 func (r *phoneSignUp) GetConfirmMerge() bool { return r.ConfirmMerge }
@@ -244,6 +276,7 @@ type CheckPhoneRequest struct {
 
 func (r *CheckPhoneRequest) GetUID() (uid string) { return r.Phone }
 
+// otp auths
 type otpRequest struct {
 	Phone        string  `json:"phone" binding:"required"`
 	Code         string  `json:"code"`
@@ -257,6 +290,7 @@ func (r *otpRequest) GetConfirmMerge() bool          { return r.ConfirmMerge }
 
 func (r *otpRequest) Fields() map[string]interface{} {
 	return map[string]interface{}{
+		"phone": r.Phone,
 		"username": func() interface{} {
 			if r.Name == nil {
 				return nil
@@ -267,6 +301,7 @@ func (r *otpRequest) Fields() map[string]interface{} {
 	}
 }
 
+// social auths
 type CustomSocialSignInRequest struct {
 	Name         string `json:"name"`
 	Token        string `json:"token" binding:"required"`

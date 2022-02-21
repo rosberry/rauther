@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/rosberry/auth"
 )
 
@@ -81,7 +82,12 @@ type TempUser interface {
 
 type MergeUser interface {
 	User
-	Merge(u User) error
+	Merge(u User, ctx *gin.Context) error
+}
+
+type CustomMergeUser interface {
+	MergeUser
+	GetMergeInfo(u User) interface{}
 }
 
 var errObjecNotPointer = errors.New("cannot assign to the item passed, item must be a pointer in order to assign")

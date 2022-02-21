@@ -147,10 +147,11 @@ class APIClient {
     return this
   }
 
-  otpAuth (uid, code, type = authTypes.otp, action = 'auth') {
+  otpAuth (uid, code, type = authTypes.otp, action = 'auth', name = 'otpUser') {
     this.promise = this.promise.then(() => {
       const body = {
         phone: uid,
+        name: name,
         code: code
       }
 
@@ -242,10 +243,11 @@ class APIClient {
     return this
   }
 
-  socialLogin (token, type = authTypes.social, action = 'auth') {
+  socialLogin (token, type = authTypes.social, action = 'auth', name = 'socialUser') {
     this.promise = this.promise.then(() => {
       const body = {
         type: type,
+        name: name,
         token: token
       }
       if (action === 'merge') {

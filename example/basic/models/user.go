@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/rosberry/rauther/user"
 	"github.com/rs/zerolog/log"
 )
@@ -20,7 +22,8 @@ type (
 		Username string `auth:"username" json:"username"`
 
 		Guest bool   `json:"guest"`
-		Email string `auth:"email"`
+		Email string `auth:"email" json:"email"`
+		Phone string `auth:"phone" json:"phone"`
 
 		FirstName string `auth:"fname" json:"firstName"`
 		LastName  string `auth:"lname" json:"lastName"`
@@ -159,10 +162,62 @@ func (u *User) SetTemp(temp bool) {
 	u.Temp = temp
 }
 
-func (u *User) Merge(additionalUser user.User) error {
+func (u *User) Merge(additionalUser user.User, ctx *gin.Context) error {
 	log.Printf("Merge %+v", additionalUser)
 
+	type MergeConfigRequest struct {
+		MergeConfig *struct {
+			Email    bool `json:"email"`
+			Phone    bool `json:"phone"`
+			Username bool `json:"name"`
+		} `json:"mergeConfig" binding:"required"`
+	}
+
+	var request MergeConfigRequest
+
+	if err := ctx.Copy().ShouldBindBodyWith(&request, binding.JSON); err == nil {
+		log.Info().Interface("MergeConfigRequest", request).Msg("[User][Merge] Custom merge succeed")
+		mergeUser := additionalUser.(*User)
+
+		if request.MergeConfig.Email {
+			u.Email = mergeUser.Email
+		}
+		if request.MergeConfig.Phone {
+			u.Phone = mergeUser.Phone
+		}
+		if request.MergeConfig.Username {
+			u.Username = mergeUser.Username
+		}
+	}
+
 	return nil
+}
+
+func (u *User) GetMergeInfo(additionalUser user.User) interface{} {
+	type ResponseUser struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Phone    string `json:"phone"`
+	}
+	type Response struct {
+		MainUser       ResponseUser `json:"mainUser"`
+		AdditionalUser ResponseUser `json:"additionalUser"`
+	}
+
+	mergeUser := additionalUser.(*User)
+
+	return Response{
+		MainUser: ResponseUser{
+			Username: u.Username,
+			Email:    u.Email,
+			Phone:    u.Phone,
+		},
+		AdditionalUser: ResponseUser{
+			Username: mergeUser.Username,
+			Email:    mergeUser.Email,
+			Phone:    mergeUser.Phone,
+		},
+	}
 }
 
 type UserStorer struct {

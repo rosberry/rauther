@@ -509,7 +509,7 @@ func (r *Rauther) linkPasswordAccount(c *gin.Context) {
 		confirmMerge = request.Merge && request.ConfirmMerge
 	}
 
-	err = r.linkAccount(sessionInfo, laUser, at, confirmMerge)
+	err = r.linkAccount(sessionInfo, laUser, at, confirmMerge, c)
 	if err != nil {
 		var customErr CustomError
 		var mergeErr MergeError

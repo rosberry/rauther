@@ -5,15 +5,16 @@ import (
 )
 
 type Checker struct {
-	Authable         bool
-	PasswordAuthable bool
-	Guest            bool
-	Confirmable      bool
-	Recoverable      bool
-	CodeSentTime     bool
-	OTPAuth          bool
-	LinkAccount      bool
-	MergeAccount     bool
+	Authable           bool
+	PasswordAuthable   bool
+	Guest              bool
+	Confirmable        bool
+	Recoverable        bool
+	CodeSentTime       bool
+	OTPAuth            bool
+	LinkAccount        bool
+	MergeAccount       bool
+	CustomMergeAccount bool
 }
 
 func New(user user.User) *Checker {
@@ -71,6 +72,11 @@ func (c *Checker) IsMergeAccount(u user.User) (ok bool) {
 	return
 }
 
+func (c *Checker) IsCustomMergeAccount(u user.User) (ok bool) {
+	_, ok = u.(user.CustomMergeUser)
+	return
+}
+
 func (c *Checker) checkAllInterfaces(u user.User) {
 	c.Authable = c.IsAuthableUser(u)
 	c.PasswordAuthable = c.IsPasswordAuthableUser(u)
@@ -81,4 +87,5 @@ func (c *Checker) checkAllInterfaces(u user.User) {
 	c.OTPAuth = c.IsOTPAuth(u)
 	c.LinkAccount = c.IsLinkAccount(u)
 	c.MergeAccount = c.IsMergeAccount(u)
+	c.CustomMergeAccount = c.IsCustomMergeAccount(u)
 }
