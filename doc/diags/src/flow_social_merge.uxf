@@ -1,0 +1,14 @@
+<diagram program="umletino" version="14.4.0-SNAPSHOT"><zoom_level>10</zoom_level><element><id>UMLSequenceAllInOne</id><coordinates><x>30</x><y>0</y><w>440</w><h>690</h></coordinates><panel_attributes>title=Social merge
+desc=user exists = true
+autoTick=true
+obj=Client~a 
+obj=Backend~b 
+combinedFragment=merge warning~mw a b
+a: confirmMerge=false
+id1-&gt;&gt;&gt;id2:POST /social/login\n type, \ntoken, \nconfirmMerge: false
+id2.&gt;id1:result:false, \nerror.code:merge_warning, \nlost auth identities, \nuser data
+--=mw
+id1-&gt;&gt;&gt;id2:POST /social/login\n type, \ntoken, \nconfirmMerge: true
+id2.&gt;id1:&lt;successful merge&gt;\nresult: true
+
+</panel_attributes><additional_attributes></additional_attributes></element></diagram>
